@@ -320,10 +320,15 @@ def compute(site: dict) -> dict:
         "synthetic": site["synthetic"],
         "sample": site["sample"],
         "heuristic": H.HEURISTIC_UNVALIDATED,
+        "site": {k: site[k] for k in ("lat", "lon", "kw", "tilt", "azimuth", "loss_pct")},
+        "flag_below": H.FLAG_BELOW,
+        "propose_min_confidence": H.PROPOSE_MIN_CONFIDENCE,
         "baseline": {
             "learnt": baseline is not None,
             "ratio_to_pvgis": None if baseline is None else round(baseline, 3),
             "points_used": current["points"],
+            "points_needed": H.MIN_CALIBRATION_POINTS,
+            "points_max": H.CALIBRATION_POINTS,
             "relearnt_after": current["since"],
             # Baselines before each re-learn: evidence of how the plant did before a fix.
             "earlier": [{"since": s["since"], "until": s["until"], "points_used": s["points"],

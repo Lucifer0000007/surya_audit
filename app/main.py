@@ -4,11 +4,12 @@ import base64
 import binascii
 import uuid
 from datetime import date
+from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from mangum import Mangum
 from pydantic import BaseModel, Field
 
@@ -20,6 +21,15 @@ app = FastAPI(title="Surya Audit", docs_url=None, redoc_url=None, openapi_url=No
 store = MemoryStore()
 
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
+INDEX_HTML = Path(__file__).resolve().parent / "index.html"
+# The page is one self-contained file: everything inline, API calls to this origin only.
+PAGE_HEADERS = {
+    "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
+                               "img-src 'self' data: blob:; connect-src 'self'; base-uri 'none'; "
+                               "form-action 'none'; frame-ancestors 'none'",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+}
 
 
 class SiteIn(BaseModel):
@@ -63,6 +73,11 @@ def _site(site_id: str) -> dict:
 
 def _upstream(e: expected.UpstreamError) -> HTTPException:
     return HTTPException(502, f"expectation source unavailable: {e}")
+
+
+@app.get("/", response_class=HTMLResponse)
+def index() -> HTMLResponse:
+    return HTMLResponse(INDEX_HTML.read_text(encoding="utf-8"), headers=PAGE_HEADERS)
 
 
 @app.get("/health")

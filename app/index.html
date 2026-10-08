@@ -1,0 +1,1008 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Surya Audit</title>
+<meta name="description" content="Check whether your rooftop solar plant produces what it should, and collect evidence before you contact the installer.">
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --surface-2: #f1f0ec;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11, 11, 11, 0.10);
+    --series: #2a78d6;
+    --dim: #c9c8c0;
+    --accent: #256abf;
+    --accent-ink: #ffffff;
+    --critical: #d03b3b;
+    --warning: #fab219;
+    --good: #0ca30c;
+    --good-text: #006300;
+    --focus: #256abf;
+    --radius: 12px;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --surface-2: #242422;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --border: rgba(255, 255, 255, 0.10);
+      --series: #3987e5;
+      --dim: #4b4b47;
+      --good-text: #0ca30c;
+      --focus: #86b6ef;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--page); color: var(--ink); line-height: 1.5; font-size: 16px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+  [hidden] { display: none !important; }
+  a { color: var(--accent); }
+  @media (prefers-color-scheme: dark) { a { color: #86b6ef; } }
+  h1, h2, h3 { line-height: 1.25; margin: 0; }
+  h2 { font-size: 1.15rem; }
+  h3 { font-size: 1rem; }
+  p { margin: 0; }
+  .muted { color: var(--ink-2); }
+  .small { font-size: 0.875rem; }
+
+  .topbar { border-bottom: 1px solid var(--border); background: var(--surface); }
+  .topbar .wrap { display: flex; align-items: center; gap: 12px; min-height: 56px; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 650; font-size: 1.1rem; }
+  .brand svg { flex: none; }
+  .tagline { color: var(--ink-2); font-size: 0.875rem; margin-left: auto; text-align: right; }
+
+  main { padding-top: 16px; padding-bottom: 32px; display: grid; gap: 16px; }
+  #site { display: grid; gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; display: grid; gap: 12px; min-width: 0; }
+  .card > header { display: grid; gap: 4px; }
+
+  .banner { display: flex; gap: 10px; align-items: flex-start; border-radius: var(--radius); padding: 12px 14px; border: 1px solid var(--border); background: var(--surface); }
+  .banner svg { flex: none; margin-top: 2px; }
+  .banner strong { display: block; }
+  .banner.synthetic { border-color: var(--warning); background: color-mix(in srgb, var(--warning) 14%, var(--surface)); }
+  #banners { display: grid; gap: 8px; }
+  #banners:empty { display: none; }
+
+  .plant-line { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; color: var(--ink-2); font-size: 0.9rem; }
+
+  .eyebrow { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-2); }
+  .hero { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .hero-num { font-size: 3.25rem; font-weight: 650; line-height: 1; }
+  .hero-unit { color: var(--ink-2); }
+  .verdict { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 600; }
+  .callout { display: flex; gap: 10px; align-items: flex-start; border-radius: 10px; padding: 10px 12px; background: var(--surface-2); }
+  .callout svg { flex: none; margin-top: 3px; }
+  .callout.critical { background: color-mix(in srgb, var(--critical) 12%, var(--surface)); }
+  .callout ul { margin: 4px 0 0; padding-left: 18px; }
+
+  .dots { display: inline-flex; gap: 3px; vertical-align: middle; }
+  .dots i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--ink-2); display: block; }
+  .dots i.on { background: var(--ink); border-color: var(--ink); }
+  .conf { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; color: var(--ink-2); font-weight: 500; white-space: nowrap; }
+
+  form { display: grid; gap: 12px; }
+  .fields { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  label { display: grid; gap: 4px; font-size: 0.875rem; color: var(--ink-2); font-weight: 500; }
+  input, select, textarea { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--axis); border-radius: 8px; padding: 9px 10px; min-height: 44px; width: 100%; min-width: 0; }
+  textarea { min-height: 280px; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 0.85rem; line-height: 1.45; resize: vertical; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, summary:focus-visible, svg:focus-visible, a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  button { font: inherit; font-weight: 600; border-radius: 8px; padding: 10px 16px; min-height: 44px; cursor: pointer; border: 1px solid transparent; background: var(--accent); color: var(--accent-ink); }
+  button.secondary { background: transparent; color: var(--ink); border-color: var(--axis); }
+  button.link { background: none; border: 0; padding: 6px 0; min-height: 0; color: var(--accent); font-weight: 500; text-decoration: underline; }
+  @media (prefers-color-scheme: dark) { button.link { color: #86b6ef; } }
+  button:disabled { opacity: 0.55; cursor: progress; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  details > summary { cursor: pointer; color: var(--ink-2); font-size: 0.9rem; }
+  .file-pick { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1px dashed var(--axis); border-radius: 8px; color: var(--ink); font-size: 0.95rem; cursor: pointer; min-height: 44px; }
+  .file-pick input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .file-pick:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .photo-review { display: grid; grid-template-columns: 72px 1fr; gap: 12px; align-items: start; padding: 10px; border-radius: 10px; background: var(--surface-2); }
+  .photo-review img { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; }
+  .note { font-size: 0.875rem; color: var(--ink-2); }
+
+  .actions-list, .causes { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  .action { border: 1px solid var(--border); border-radius: 10px; padding: 12px; display: grid; gap: 8px; }
+  .action .approve { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+  .action .approve label { flex: 1 1 160px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--surface-2); width: fit-content; }
+  .chip svg { flex: none; }
+  .cause { border-top: 1px solid var(--border); padding-top: 12px; display: grid; gap: 6px; }
+  .cause:first-child { border-top: 0; padding-top: 0; }
+  .cause-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+  .cause-head .rank { color: var(--ink-2); font-weight: 500; margin-right: 6px; }
+  .cause ul { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 0.9rem; display: grid; gap: 4px; }
+
+  .chart { position: relative; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
+  .chart .bar { fill: var(--series); }
+  .chart .bar.dip { fill: var(--critical); }
+  .chart .bar.dim { fill: var(--dim); }
+  .chart .bar.unknown { fill-opacity: 0.45; }
+  .chart .bar.active { fill-opacity: 1; filter: brightness(1.15); }
+  .chart .grid { stroke: var(--grid); stroke-width: 1; }
+  .chart .usual { stroke: var(--axis); stroke-width: 1; }
+  .chart .threshold { stroke: var(--critical); stroke-width: 1; stroke-dasharray: 4 3; }
+  .chart .approved { stroke: var(--ink-2); stroke-width: 1; }
+  .chart text { fill: var(--ink-2); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .chart .hit { fill: transparent; }
+  .tip { position: absolute; top: 0; pointer-events: none; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12); border-radius: 8px; padding: 8px 10px; font-size: 0.8rem; min-width: 150px; max-width: 220px; z-index: 2; }
+  .tip strong { display: block; font-size: 0.95rem; color: var(--ink); }
+  .tip span { display: block; color: var(--ink-2); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.8rem; color: var(--ink-2); list-style: none; margin: 0; padding: 0; }
+  .legend li { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 10px; height: 12px; border-radius: 2px 2px 0 0; display: inline-block; }
+  .key-line { width: 14px; height: 0; border-top: 1px solid var(--critical); display: inline-block; }
+  .key-line.dash { border-top-style: dashed; }
+  .key-line.solid { border-top-color: var(--ink-2); width: 1px; height: 12px; border-top: 0; border-left: 1px solid var(--ink-2); }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th:first-child, td:first-child, th:last-child, td:last-child { text-align: left; }
+  th { color: var(--ink-2); font-weight: 600; }
+
+  .status { min-height: 1.5em; color: var(--ink-2); font-size: 0.9rem; }
+  .error { color: var(--critical); font-weight: 600; }
+  @media (prefers-color-scheme: dark) { .error { color: #ff7a7a; } }
+  .busy { opacity: 0.6; transition: opacity 0.2s; }
+  footer { padding: 8px 16px 40px; color: var(--ink-2); font-size: 0.8rem; display: grid; gap: 6px; }
+  @media (max-width: 480px) {
+    .tagline { display: none; }
+    .hero-num { font-size: 2.75rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="#eda100"/><g stroke="#eda100" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg>
+      <span>Surya Audit</span>
+    </div>
+    <p class="tagline">Is your rooftop solar producing what it should?</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="banners"></div>
+  <p id="error" class="error" role="alert" hidden></p>
+  <div id="retry" class="row" hidden><button type="button" id="retry-btn">Try again</button></div>
+
+  <section id="setup" class="card" hidden aria-labelledby="setup-title">
+    <header>
+      <h1 id="setup-title" style="font-size:1.3rem">Set up your plant</h1>
+      <p class="muted">Surya Audit compares your readings with what a plant like yours should produce in the weather you actually had.</p>
+    </header>
+    <form id="setup-form">
+      <div class="fields">
+        <label>Latitude<input name="lat" type="number" step="any" min="-90" max="90" required inputmode="decimal" placeholder="26.85"></label>
+        <label>Longitude<input name="lon" type="number" step="any" min="-180" max="180" required inputmode="decimal" placeholder="80.95"></label>
+      </div>
+      <div class="row"><button type="button" class="link" id="locate">Use my location</button><span class="note">Rounded to about 1 km.</span></div>
+      <div class="fields">
+        <label>Plant size (kW)<input name="kw" type="number" step="any" min="0.1" max="100" required inputmode="decimal" placeholder="3"></label>
+        <label>Panel tilt (degrees)<input name="tilt" type="number" step="any" min="0" max="90" required value="20" inputmode="numeric"></label>
+        <label>Panels face
+          <select name="azimuth">
+            <option value="180" selected>South</option><option value="135">South-east</option><option value="225">South-west</option>
+            <option value="90">East</option><option value="270">West</option><option value="45">North-east</option>
+            <option value="315">North-west</option><option value="0">North</option>
+          </select>
+        </label>
+      </div>
+      <details>
+        <summary>System loss (optional)</summary>
+        <label style="margin-top:8px">Total system loss (%)<input name="loss_pct" type="number" step="any" min="0" max="50" inputmode="decimal" placeholder="Leave empty if unknown"></label>
+        <p class="note">If you leave this empty, a SAMPLE value is assumed and every result is marked as using sample values.</p>
+      </details>
+      <div class="row"><button type="submit">Start auditing</button></div>
+    </form>
+  </section>
+
+  <div id="site" hidden>
+    <div class="plant-line">
+      <span id="plant-summary"></span>
+      <span class="row"><a id="plant-link" href="#">Link to this plant</a><button type="button" class="link" id="switch">Set up the plant again</button></span>
+    </div>
+    <p class="note">Bookmark the link to open this plant on another device. Keep it private: anyone who has it can see and change this plant’s readings. To share evidence, use Copy text or Download evidence.</p>
+
+    <section class="card" id="headline" data-testid="headline" aria-live="polite"></section>
+
+    <section class="card" id="log" aria-labelledby="log-title">
+      <header>
+        <h2 id="log-title">Log a reading</h2>
+        <p class="muted small">Type the energy your plant produced, or fill the form from a photo. Nothing is saved until you press Save.</p>
+      </header>
+      <label class="file-pick" id="photo-pick">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+        <span>Fill from a photo of your inverter app or meter</span>
+        <input id="photo" type="file" accept="image/png,image/jpeg,image/*">
+      </label>
+      <p class="note">Your photo is sent to Google Gemini to read the numbers. Surya Audit does not store it.</p>
+      <div id="photo-review" class="photo-review" hidden>
+        <img id="photo-thumb" alt="Your photo">
+        <div><p id="photo-note"></p><button type="button" class="link" id="photo-clear">Discard photo</button></div>
+      </div>
+      <form id="reading-form">
+        <div class="fields">
+          <label>Date<input name="date" type="date" required></label>
+          <label>Energy produced (kWh)<input name="kwh" type="number" step="any" min="0" required inputmode="decimal"></label>
+          <label>Period
+            <select name="kind"><option value="daily">One day</option><option value="weekly">One week, ending on that date</option></select>
+          </label>
+        </div>
+        <div class="row"><button type="submit">Save reading</button></div>
+      </form>
+    </section>
+
+    <section class="card" id="suggestions" aria-labelledby="sugg-title">
+      <header>
+        <h2 id="sugg-title">Suggestions</h2>
+        <p class="muted small">Suggestions, not orders. Approving one records your decision; nothing happens automatically.</p>
+      </header>
+      <ul class="actions-list" id="action-list"></ul>
+    </section>
+
+    <section class="card" id="timeline" data-testid="timeline" aria-labelledby="tl-title">
+      <header>
+        <h2 id="tl-title">Readings</h2>
+        <p class="muted small" id="tl-sub"></p>
+      </header>
+      <div class="chart" id="chart"></div>
+      <ul class="legend" id="legend"></ul>
+      <details>
+        <summary>Show readings as a table</summary>
+        <div class="table-wrap"><table id="table"></table></div>
+      </details>
+      <p class="note" id="sources"></p>
+    </section>
+
+    <section class="card" id="causes" aria-labelledby="causes-title">
+      <header>
+        <h2 id="causes-title">Possible causes</h2>
+        <p class="muted small">Ranked with a confidence level. These are possibilities, not a diagnosis.</p>
+      </header>
+      <ol class="causes" id="cause-list"></ol>
+    </section>
+
+    <section class="card" id="complaint" aria-labelledby="complaint-title">
+      <header>
+        <h2 id="complaint-title">Complaint draft</h2>
+        <p class="muted small">A draft with your evidence, for you to check, complete and file yourself. It is never sent.</p>
+      </header>
+      <div id="escalation"></div>
+      <div class="row"><button type="button" id="draft-btn" class="secondary">Draft a complaint</button></div>
+      <div id="draft-out" hidden>
+        <div class="callout" id="draft-stale" hidden><p>The readings or approvals changed since this draft. Draft it again to update it.</p></div>
+        <div class="callout"><p><strong>Nothing has been sent.</strong> Replace every &lt;&lt;OWNER TO FILL&gt;&gt; before you file it.</p></div>
+        <label for="draft-text" style="margin-top:12px">Draft complaint</label>
+        <textarea id="draft-text" spellcheck="true"></textarea>
+        <div class="row">
+          <button type="button" class="secondary" id="copy-btn">Copy text</button>
+          <button type="button" class="secondary" id="download-btn">Download evidence (JSON)</button>
+        </div>
+        <p class="note" id="categories"></p>
+      </div>
+    </section>
+  </div>
+
+  <p id="status" class="status" role="status" aria-live="polite"></p>
+</main>
+
+<footer class="wrap">
+  <p>Possible causes with confidence levels, not a diagnosis. Every threshold is an unvalidated heuristic.</p>
+  <p>Expected output: <a href="https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis_en" rel="noreferrer">PVGIS</a> (EU JRC), adjusted for actual weather from <a href="https://power.larc.nasa.gov/" rel="noreferrer">NASA POWER</a>.</p>
+</footer>
+
+<script>
+'use strict';
+
+const CAUSES = {
+  sudden_fault: 'Sudden fault',
+  soiling: 'Dust on the panels',
+  low_from_day_one: 'Low since the start',
+  weather_noise: 'Weather or normal variation',
+};
+const ACTIONS = {
+  clean_panels: 'Clean the panels',
+  check_inverter: 'Check the inverter',
+  request_inspection: 'Ask the installer for an inspection',
+};
+const OUTCOMES = {
+  not_approved: 'Waiting for your approval',
+  pending: 'Checking the next readings',
+  recovered: 'Output came back',
+  not_recovered: 'Output did not come back',
+};
+const LEVELS = { low: 1, medium: 2, high: 3 };
+const FACING = { 0: 'north', 45: 'north-east', 90: 'east', 135: 'south-east', 180: 'south', 225: 'south-west', 270: 'west', 315: 'north-west' };
+const CHART_MAX = 60;
+const STORE_KEY = 'surya-audit-site';
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+const state = { id: null, audit: null, photoUrl: null, draft: null, defaultDate: null, photoSeq: 0 };
+const $ = (id) => document.getElementById(id);
+
+// ---------- small helpers (all text goes in through textContent) ----------
+function el(tag, props, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'text') node.textContent = v;
+    else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
+    else node.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of children) {
+    if (c == null || c === false) continue;
+    node.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  }
+  return node;
+}
+function svg(tag, attrs, text) {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) node.setAttribute(k, v);
+  if (text != null) node.textContent = text;
+  return node;
+}
+function icon(kind) {
+  const paths = {
+    warn: 'M12 3 2 21h20L12 3zm0 6v5m0 3v.5',
+    ok: 'M4 12.5 9.5 18 20 6.5',
+    cross: 'M6 6l12 12M18 6 6 18',
+    clock: 'M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z',
+    info: 'M12 11v6m0-9.5V8M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z',
+  };
+  const colors = { warn: 'var(--critical)', ok: 'var(--good-text)', cross: 'var(--critical)', clock: 'var(--ink-2)', info: 'var(--ink-2)' };
+  const s = svg('svg', { width: 16, height: 16, viewBox: '0 0 24 24', 'aria-hidden': 'true', fill: 'none',
+    stroke: colors[kind], 'stroke-width': 2.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
+  s.append(svg('path', { d: paths[kind] }));
+  return s;
+}
+function storeGet() { try { return localStorage.getItem(STORE_KEY); } catch { return null; } }
+function storeSet(v) { try { localStorage.setItem(STORE_KEY, v); } catch { /* per-viewer convenience only */ } }
+function storeClear() { try { localStorage.removeItem(STORE_KEY); } catch { /* ignore */ } }
+
+const pct = (v) => `${Math.round(v * 100)}%`;
+const kwh = (v) => (Math.round(v * 10) / 10).toLocaleString('en-IN', { maximumFractionDigits: 1 });
+function fmtDate(iso, short) {
+  const d = new Date(`${iso}T00:00:00`);
+  return d.toLocaleDateString('en-IN', short ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function todayIso() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function refText(p) { return p.compared_with === 'plant_usual' ? 'of usual' : 'of the estimate'; }
+
+function say(msg) { $('status').textContent = msg || ''; }
+function showError(msg) { const e = $('error'); e.textContent = msg || ''; e.hidden = !msg; }
+
+async function api(method, path, body) {
+  let res;
+  try {
+    res = await fetch(path, {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : {},
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new Error('Could not reach Surya Audit. Check your connection and try again.');
+  }
+  let data = null;
+  try { data = await res.json(); } catch { /* no body */ }
+  if (!res.ok) {
+    const detail = data && data.detail;
+    const err = new Error(typeof detail === 'string' ? detail : 'Please check the values you entered.');
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+async function busy(button, fn) {
+  const site = $('site');
+  if (button) button.disabled = true;
+  site.classList.add('busy');
+  showError('');
+  try { return await fn(); }
+  catch (e) { showError(e.message); return null; }
+  finally { if (button) button.disabled = false; site.classList.remove('busy'); }
+}
+
+// ---------- setup ----------
+function resetDraft() {
+  state.draft = null;
+  $('draft-out').hidden = true;
+  $('draft-stale').hidden = true;
+  $('draft-text').value = '';
+  $('categories').textContent = '';
+}
+function markDraftStale() { if (state.draft) $('draft-stale').hidden = false; }
+
+function showSetup(message) {
+  state.id = null; state.audit = null;
+  resetDraft();
+  clearPhoto();
+  $('reading-form').reset();
+  $('retry').hidden = true;
+  $('site').hidden = true;
+  $('banners').replaceChildren();
+  $('setup').hidden = false;
+  say(message || '');
+}
+
+$('locate').addEventListener('click', () => {
+  if (!navigator.geolocation) { showError('Location is not available in this browser. Type the latitude and longitude instead.'); return; }
+  say('Finding your location…');
+  navigator.geolocation.getCurrentPosition((pos) => {
+    const f = $('setup-form');
+    f.lat.value = pos.coords.latitude.toFixed(2);
+    f.lon.value = pos.coords.longitude.toFixed(2);
+    say('Location filled in.');
+  }, () => { say(''); showError('Could not get your location. Type the latitude and longitude instead.'); });
+});
+
+$('setup-form').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const f = ev.target;
+  const body = {
+    lat: Number(f.lat.value), lon: Number(f.lon.value), kw: Number(f.kw.value),
+    tilt: Number(f.tilt.value), azimuth: Number(f.azimuth.value),
+  };
+  if (f.loss_pct.value !== '') body.loss_pct = Number(f.loss_pct.value);
+  const button = f.querySelector('button[type=submit]');
+  button.disabled = true; showError('');
+  try {
+    say('Fetching the expected output for your location…');
+    const site = await api('POST', '/api/sites', body);
+    storeSet(site.id);
+    await load(site.id);
+    say('Plant saved. Log your first reading.');
+  } catch (e) { say(''); showError(e.message); }
+  finally { button.disabled = false; }
+});
+
+$('switch').addEventListener('click', () => {
+  const link = `${location.origin}/?site=${state.id}`;
+  if (!confirm(`Set up the plant again? This plant's readings stay saved, and this link still opens it: ${link}`)) return;
+  if (storeGet() === state.id) storeClear();
+  if (location.search) history.replaceState(null, '', location.pathname);
+  showSetup('');
+});
+
+// ---------- readings ----------
+$('reading-form').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const f = ev.target;
+  const body = { date: f.date.value, kwh: Number(f.kwh.value), kind: f.kind.value };
+  const saved = state.audit && state.audit.timeline.find((p) => p.date === body.date);
+  if (saved && !confirm(`A reading for ${fmtDate(body.date)} is already saved (${kwh(saved.kwh)} kWh). Replace it?`)) return;
+  const audit = await busy(f.querySelector('button[type=submit]'),
+    () => api('POST', `/api/sites/${encodeURIComponent(state.id)}/readings`, body));
+  if (!audit) return;
+  f.kwh.value = '';
+  clearPhoto();
+  render(audit);
+  markDraftStale();
+  say(`Saved the reading for ${fmtDate(body.date)}.`);
+});
+
+function clearPhoto() {
+  state.photoSeq += 1;  // a reply for a discarded photo is ignored
+  if (state.photoUrl) URL.revokeObjectURL(state.photoUrl);
+  state.photoUrl = null;
+  $('photo').value = '';
+  $('photo-thumb').removeAttribute('src');
+  $('photo-review').hidden = true;
+}
+$('photo-clear').addEventListener('click', () => { clearPhoto(); say('Photo discarded.'); });
+
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('This photo could not be opened here. Try a JPEG or PNG screenshot, or type the reading.'));
+    img.src = url;
+  });
+}
+
+// Re-encode on this device: smaller upload, and photo metadata such as location is dropped.
+async function photoToJpegBase64(file) {
+  const url = URL.createObjectURL(file);
+  state.photoUrl = url;
+  const img = await loadImage(url);
+  const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+  canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+  const dataUrl = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(new Error('Could not read the photo.'));
+    r.readAsDataURL(blob);
+  });
+  return String(dataUrl).split(',')[1];
+}
+
+$('photo').addEventListener('change', async (ev) => {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  showError('');
+  if (state.photoUrl) URL.revokeObjectURL(state.photoUrl);
+  const seq = ++state.photoSeq;
+  let image;
+  try { image = await photoToJpegBase64(file); }
+  catch (e) { if (seq === state.photoSeq) { clearPhoto(); showError(e.message); } return; }
+  if (seq !== state.photoSeq) return;
+  $('photo-thumb').src = state.photoUrl;
+  $('photo-review').hidden = false;
+  $('photo-note').textContent = 'Reading your photo…';
+  try {
+    const res = await api('POST', `/api/sites/${encodeURIComponent(state.id)}/extract`, { image_base64: image, mime_type: 'image/jpeg' });
+    if (seq !== state.photoSeq) return;
+    const c = res.candidate || {};
+    const f = $('reading-form');
+    if (c.date) f.date.value = c.date;
+    if (c.kwh != null) f.kwh.value = c.kwh;
+    if (c.kind) f.kind.value = c.kind;
+    const parts = [];
+    if (c.what_was_read) parts.push(`Read from your photo: ${c.what_was_read}.`);
+    if (c.kwh == null && c.cumulative_meter_kwh != null) {
+      parts.push(`It shows a lifetime total of ${kwh(c.cumulative_meter_kwh)} kWh. Enter the energy for one day or week instead: the difference between two meter readings.`);
+    }
+    parts.push('Check the values below and correct them before you save. Nothing is saved yet.');
+    $('photo-note').textContent = parts.join(' ');
+  } catch (e) {
+    if (seq !== state.photoSeq) return;
+    $('photo-note').textContent = `${e.message} The photo was not saved.`;
+    $('reading-form').kwh.focus();
+  }
+});
+
+// ---------- approve ----------
+async function approve(action, dateValue, button) {
+  const audit = await busy(button, () => api('POST',
+    `/api/sites/${encodeURIComponent(state.id)}/actions/${encodeURIComponent(action.id)}/approve`,
+    dateValue ? { approved_on: dateValue } : {}));
+  if (!audit) return;
+  render(audit);
+  markDraftStale();
+  say(`Approved: ${ACTIONS[action.kind] || action.kind}. The next readings will show whether output comes back.`);
+}
+
+// ---------- complaint ----------
+$('draft-btn').addEventListener('click', async (ev) => {
+  const draft = await busy(ev.currentTarget, () => api('POST', `/api/sites/${encodeURIComponent(state.id)}/complaint`));
+  if (!draft) return;
+  state.draft = draft;
+  $('draft-stale').hidden = true;
+  $('draft-text').value = draft.draft_text;
+  const cats = draft.mnre_categories.suggested;
+  $('categories').textContent = cats.length
+    ? `Suggested complaint categories: ${cats.join(', ')}. ${draft.mnre_categories.note}`
+    : draft.mnre_categories.note;
+  $('draft-out').hidden = false;
+  const text = $('draft-text');
+  text.focus();
+  text.setSelectionRange(0, 0);
+  text.scrollTop = 0;
+  say('Draft ready. Nothing has been sent.');
+});
+
+$('copy-btn').addEventListener('click', async () => {
+  const text = $('draft-text').value;
+  try { await navigator.clipboard.writeText(text); say('Draft copied.'); }
+  catch { $('draft-text').select(); say('Select-all done: copy it with your keyboard or long-press.'); }
+});
+
+$('download-btn').addEventListener('click', () => {
+  if (!state.draft) return;
+  const payload = { ...state.draft, draft_text: $('draft-text').value };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = el('a', { href: url, download: `surya-audit-evidence-${todayIso()}.json` });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+// ---------- rendering ----------
+function render(audit) {
+  state.audit = audit;
+  $('setup').hidden = true;
+  $('site').hidden = false;
+  renderBanners(audit);
+  renderPlant(audit);
+  renderHeadline(audit);
+  renderActions(audit);
+  renderTimeline(audit);
+  renderCauses(audit);
+  renderEscalation(audit);
+  syncDate();
+}
+
+// The date field follows "today" unless the owner picked another date.
+function syncDate() {
+  const f = $('reading-form');
+  const today = todayIso();
+  if (!f.date.value || f.date.value === state.defaultDate) f.date.value = today;
+  state.defaultDate = today;
+  f.date.max = today;
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && state.audit) syncDate(); });
+
+function renderBanners(a) {
+  const box = $('banners');
+  box.replaceChildren();
+  if (a.synthetic) {
+    box.append(el('div', { class: 'banner synthetic', role: 'note' }, icon('warn'),
+      el('div', {}, el('strong', { text: 'Synthetic data' }),
+        el('span', { text: 'This plant and its readings are made up for a demo. They do not describe a real plant.' }))));
+  }
+  if (a.sample) {
+    box.append(el('div', { class: 'banner', role: 'note' }, icon('info'),
+      el('div', {}, el('strong', { text: 'Sample values in use' }),
+        el('span', { text: `No system loss was given, so a SAMPLE value of ${a.site.loss_pct}% is assumed. It is a placeholder, not a measurement.` }))));
+  }
+}
+
+function renderPlant(a) {
+  const s = a.site;
+  const facing = FACING[s.azimuth] ? `facing ${FACING[s.azimuth]}` : `azimuth ${s.azimuth}°`;
+  $('plant-summary').textContent = `${s.kw} kW · tilt ${s.tilt}° · ${facing} · ${s.lat}, ${s.lon}`;
+  $('plant-link').href = `/?site=${encodeURIComponent(state.id)}`;
+}
+
+function confidence(level) {
+  const dots = el('span', { class: 'dots', 'aria-hidden': 'true' });
+  for (let i = 1; i <= 3; i++) dots.append(el('i', { class: i <= LEVELS[level] ? 'on' : '' }));
+  return el('span', { class: 'conf' }, dots, `${level} confidence`);
+}
+
+function renderHeadline(a) {
+  const box = $('headline');
+  box.replaceChildren();
+  const tl = a.timeline;
+  if (!tl.length) {
+    box.append(el('p', { class: 'eyebrow', text: 'No readings yet' }),
+      el('p', { text: `Log your first reading below. The audit learns this plant’s usual output from up to its first ${a.baseline.points_max} usable readings, and needs at least ${a.baseline.points_needed}.` }));
+    return;
+  }
+  const last = tl[tl.length - 1];
+  const detail = [`${kwh(last.kwh)} kWh ${last.kind === 'weekly' ? 'that week' : 'that day'}, expected ${kwh(last.expected_kwh)} kWh.`];
+  if (!last.weather_known) detail.push('Weather for this day is not available yet, so the expectation uses the monthly average.');
+  if (last.low_sun) detail.push('A very dim day: shown, but not used to judge.');
+  box.append(
+    el('p', { class: 'eyebrow', text: `Latest reading · ${fmtDate(last.date)}` }),
+    el('p', { class: 'hero' },
+      el('span', { class: 'hero-num', text: last.relative == null ? '–' : pct(last.relative) }),
+      el('span', { class: 'hero-unit', text: last.compared_with === 'plant_usual' ? 'of this plant’s usual output' : 'of the weather-adjusted estimate' })),
+    el('p', { class: 'muted small', text: detail.join(' ') }));
+  const top = a.hypotheses[0];
+  if (!a.baseline.learnt) {
+    box.append(el('p', { class: 'verdict' }, icon('clock'),
+      `Still learning this plant’s usual output: ${a.baseline.points_used} of ${a.baseline.points_needed} usable readings.`));
+  } else if (!top || top.confidence === 'low') {
+    box.append(el('p', { class: 'verdict' }, icon('info'), 'Nothing stands out: every possible cause is at low confidence.'));
+  } else {
+    box.append(el('p', { class: 'verdict' }, `Top possible cause: ${CAUSES[top.cause] || top.cause}`, confidence(top.confidence)),
+      el('p', { class: 'muted small', text: 'A possible cause, not a diagnosis. See all causes below.' }));
+  }
+  if (a.escalation.suggested) {
+    box.append(el('div', { class: 'callout critical' }, icon('warn'),
+      el('p', { text: 'A step you approved did not bring output back. You can draft a complaint at the end of this page.' })));
+  }
+}
+
+function outcomeChip(v) {
+  const kind = { recovered: 'ok', not_recovered: 'cross', pending: 'clock', not_approved: 'clock' }[v.outcome] || 'info';
+  return el('span', { class: 'chip' }, icon(kind), OUTCOMES[v.outcome] + (v.provisional ? ' (provisional)' : ''));
+}
+
+function renderActions(a) {
+  const list = $('action-list');
+  list.replaceChildren();
+  if (!a.actions.length) {
+    list.append(el('li', { class: 'muted small', text: `No suggestions right now. One appears when the top possible cause reaches ${a.propose_min_confidence} confidence.` }));
+    return;
+  }
+  // A suggestion whose cause the audit no longer rates above low is shown as an earlier one.
+  const level = Object.fromEntries(a.hypotheses.map((h) => [h.cause, h.confidence]));
+  const stale = (x) => x.status === 'proposed' && level[x.cause] === 'low';
+  const rank = (x) => (x.status === 'proposed' && !stale(x) ? 0
+    : (x.verification.outcome === 'pending' || x.verification.provisional) ? 1 : stale(x) ? 2 : 3);
+  const lastDate = a.timeline.length ? a.timeline[a.timeline.length - 1].date : todayIso();
+  const items = [...a.actions].sort((x, y) => rank(x) - rank(y) || y.proposed_on.localeCompare(x.proposed_on));
+  for (const action of items) {
+    const v = action.verification;
+    const li = el('li', { class: 'action', 'data-testid': `action-${action.kind}`, 'data-action-id': action.id },
+      el('h3', { text: ACTIONS[action.kind] || action.kind }),
+      el('p', { text: action.suggestion }),
+      el('p', { class: 'note', text: `Suggested on ${fmtDate(action.proposed_on)} for: ${CAUSES[action.cause] || action.cause}.` }));
+    if (action.status === 'proposed') {
+      const id = `approve-${action.id}`;
+      const input = el('input', { id, type: 'date', value: lastDate, min: action.proposed_on, max: todayIso(), required: true });
+      const button = el('button', { type: 'submit', class: stale(action) ? 'secondary' : null, text: 'Approve' });
+      const form = el('form', { class: 'approve' }, el('label', { for: id }, 'Date you did it (or today)', input), button);
+      form.addEventListener('submit', (ev) => { ev.preventDefault(); approve(action, input.value, button); });
+      li.append(outcomeChip(v));
+      if (stale(action)) {
+        li.append(el('p', { class: 'note', text: 'Earlier suggestion: the audit no longer points to this cause. Approve it only if you did it, so the record stays complete.' }));
+      }
+      li.append(form);
+    } else {
+      li.append(outcomeChip(v), el('p', { class: 'note', text: v.why }));
+    }
+    list.append(li);
+  }
+}
+
+function renderTimeline(a) {
+  const tl = a.timeline;
+  const learnt = a.baseline.learnt;
+  $('tl-sub').textContent = !tl.length ? 'Your readings will appear here.'
+    : learnt ? `Each reading as a share of this plant’s usual output, after adjusting for the day’s weather.${tl.length > CHART_MAX ? ` Showing the latest ${CHART_MAX} of ${tl.length}; the table lists all.` : ''}`
+    : 'Each reading as a share of the weather-adjusted PVGIS estimate, until this plant’s usual output is learnt.';
+  drawChart($('chart'), tl.slice(-CHART_MAX), a.actions, a.flag_below);
+  renderLegend(tl, a);
+  renderTable(tl);
+  renderSources(a);
+}
+
+function renderSources(a) {
+  const copy = (src) => (src.fixture ? ' (recorded copy)' : '');
+  const parts = [
+    `PVGIS monthly yield, retrieved ${a.sources.pvgis.retrieved}${copy(a.sources.pvgis)}`,
+    `NASA POWER monthly averages, retrieved ${a.sources.irradiance_climatology.retrieved}${copy(a.sources.irradiance_climatology)}`,
+  ];
+  const daily = a.timeline.map((p) => p.weather_source).filter(Boolean);
+  if (daily.length) {
+    const dates = daily.map((d) => d.retrieved).sort();
+    const when = dates[0] === dates[dates.length - 1] ? dates[0] : `${dates[0]} to ${dates[dates.length - 1]}`;
+    parts.push(`NASA POWER daily weather, retrieved ${when}${daily.some((d) => d.fixture) ? ' (recorded copy)' : ''}`);
+  }
+  $('sources').textContent = `Expected output from: ${parts.join('; ')}.`;
+}
+
+function barPath(x, yTop, w, h, r) {
+  r = Math.min(r, w / 2, h);
+  const yb = yTop + h;
+  return `M${x},${yb}V${yTop + r}A${r},${r} 0 0 1 ${x + r},${yTop}H${x + w - r}A${r},${r} 0 0 1 ${x + w},${yTop + r}V${yb}Z`;
+}
+
+function pointState(p) {
+  if (p.flagged) return 'dip';
+  if (p.low_sun || p.relative == null) return 'dim';
+  return '';
+}
+
+function drawChart(box, points, actions, flagBelow) {
+  box.replaceChildren();
+  if (!points.length) return;
+  const W = Math.max(280, Math.round(box.clientWidth || 600));
+  const H = 220;
+  const m = { t: 14, r: 8, b: 26, l: 40 };
+  const pw = W - m.l - m.r;
+  const ph = H - m.t - m.b;
+  const top = Math.max(1.25, ...points.map((p) => p.relative || 0));
+  const ymax = Math.ceil(top / 0.25) * 0.25;
+  const y = (v) => m.t + ph * (1 - Math.min(v, ymax) / ymax);
+  const slot = pw / points.length;
+  const bw = Math.min(24, Math.max(1, slot >= 6 ? slot - 2 : slot * 0.8));
+
+  const root = svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', tabindex: '0',
+    'aria-label': `Bar chart of ${points.length} readings. Use the left and right arrow keys to read each one. The table below lists every value.` });
+  for (let t = 0; t <= ymax + 1e-9; t += 0.5) {
+    root.append(svg('line', { class: t === 0 ? 'usual' : 'grid', x1: m.l, x2: W - m.r, y1: y(t), y2: y(t) }),
+      svg('text', { x: m.l - 6, y: y(t) + 4, 'text-anchor': 'end' }, `${Math.round(t * 100)}%`));
+  }
+  root.append(svg('line', { class: 'usual', x1: m.l, x2: W - m.r, y1: y(1), y2: y(1) }));
+
+  const bars = [];
+  points.forEach((p, i) => {
+    const v = p.relative || 0;
+    const x = m.l + i * slot + (slot - bw) / 2;
+    const h = Math.max(2, y(0) - y(v));
+    const cls = ['bar', pointState(p), p.weather_known ? '' : 'unknown'].filter(Boolean).join(' ');
+    const bar = svg('path', { class: cls, d: barPath(x, y(0) - h, bw, h, 4), 'data-dip': String(p.flagged) });
+    bars.push(bar);
+    root.append(bar);
+  });
+  // Dip threshold, drawn over the bars so it stays visible; the legend names it.
+  root.append(svg('line', { class: 'threshold', x1: m.l, x2: W - m.r, y1: y(flagBelow), y2: y(flagBelow) }));
+
+  for (const act of actions) {
+    if (act.status !== 'approved') continue;
+    const idx = points.findIndex((p) => p.date > act.approved_on);
+    if (idx <= 0) continue;
+    const x = m.l + idx * slot;
+    root.append(svg('line', { class: 'approved', x1: x, x2: x, y1: m.t, y2: m.t + ph }));
+  }
+
+  const labelAt = (i, anchor) => root.append(svg('text', { x: m.l + (i + 0.5) * slot, y: H - 6, 'text-anchor': anchor }, fmtDate(points[i].date, true)));
+  labelAt(0, 'start');
+  if (points.length > 1) labelAt(points.length - 1, 'end');
+  if (points.length > 8 && W > 420) labelAt(Math.floor(points.length / 2), 'middle');
+
+  const hit = svg('rect', { class: 'hit', x: m.l, y: m.t, width: pw, height: ph + m.b });
+  root.append(hit);
+  box.append(root);
+
+  const tip = el('div', { class: 'tip', hidden: true });
+  box.append(tip);
+  let current = -1;
+  function show(i) {
+    if (i < 0 || i >= points.length) return;
+    if (current >= 0) bars[current].classList.remove('active');
+    current = i;
+    bars[i].classList.add('active');
+    const p = points[i];
+    const note = p.flagged ? `Dip: below ${Math.round(flagBelow * 100)}%`
+      : p.low_sun ? 'Very dim day: not used to judge'
+      : !p.weather_known ? 'Weather not available yet' : '';
+    tip.replaceChildren(
+      el('strong', { text: p.relative == null ? 'No expectation' : `${pct(p.relative)} ${refText(p)}` }),
+      el('span', { text: `${fmtDate(p.date)}${p.kind === 'weekly' ? ' (week)' : ''}` }),
+      el('span', { text: `${kwh(p.kwh)} kWh, expected ${kwh(p.expected_kwh)}` }),
+      note ? el('span', { text: note }) : null);
+    tip.hidden = false;
+    const scale = box.clientWidth / W;
+    const cx = (m.l + (i + 0.5) * slot) * scale;
+    const left = Math.min(Math.max(0, cx - tip.offsetWidth / 2), box.clientWidth - tip.offsetWidth);
+    tip.style.left = `${left}px`;
+    tip.style.top = `${Math.max(0, y(Math.min(p.relative || 0, ymax)) * scale - tip.offsetHeight - 10)}px`;
+  }
+  function hide() { tip.hidden = true; if (current >= 0) bars[current].classList.remove('active'); }
+  const pick = (ev) => {
+    const r = root.getBoundingClientRect();
+    const x = (ev.clientX - r.left) * (W / r.width);
+    show(Math.floor((x - m.l) / slot));
+  };
+  root.addEventListener('pointermove', pick);
+  root.addEventListener('pointerdown', pick);
+  root.addEventListener('pointerleave', (ev) => { if (ev.pointerType === 'mouse') hide(); });
+  root.addEventListener('blur', hide);
+  root.addEventListener('focus', () => show(current >= 0 ? current : points.length - 1));
+  root.addEventListener('keydown', (ev) => {
+    if (ev.key === 'ArrowLeft') { ev.preventDefault(); show(Math.max(0, current - 1)); }
+    if (ev.key === 'ArrowRight') { ev.preventDefault(); show(Math.min(points.length - 1, current + 1)); }
+    if (ev.key === 'Escape') hide();
+  });
+}
+
+function renderLegend(tl, a) {
+  const legend = $('legend');
+  legend.replaceChildren();
+  if (!tl.length) return;
+  const item = (key, text) => el('li', {}, key, text);
+  const swatch = (color, extra) => el('span', { class: 'swatch', style: `background:${color};${extra || ''}` });
+  const line = Math.round(a.flag_below * 100);
+  legend.append(item(swatch('var(--series)'), 'Reading'),
+    item(swatch('var(--critical)'), `Dip (below ${line}%)`),
+    item(el('span', { class: 'key-line dash' }), `${line}% line`));
+  if (tl.some((p) => p.low_sun)) legend.append(item(swatch('var(--dim)'), 'Too dim to judge'));
+  if (tl.some((p) => !p.weather_known)) legend.append(item(swatch('var(--series)', 'opacity:.45'), 'Weather not available yet'));
+  if (a.actions.some((x) => x.status === 'approved' && tl.some((p) => p.date > x.approved_on))) {
+    legend.append(item(el('span', { class: 'key-line solid' }), 'Suggestion approved'));
+  }
+}
+
+function renderTable(tl) {
+  const table = $('table');
+  table.replaceChildren();
+  if (!tl.length) return;
+  table.append(el('thead', {}, el('tr', {},
+    el('th', { scope: 'col', text: 'Date' }), el('th', { scope: 'col', text: 'kWh' }),
+    el('th', { scope: 'col', text: 'Expected' }), el('th', { scope: 'col', text: 'Share' }), el('th', { scope: 'col', text: 'Note' }))));
+  const body = el('tbody');
+  for (const p of [...tl].reverse()) {
+    const notes = [];
+    if (p.flagged) notes.push('dip');
+    if (p.low_sun) notes.push('too dim to judge');
+    if (!p.weather_known) notes.push('weather not available yet');
+    if (p.kind === 'weekly') notes.push('week');
+    body.append(el('tr', {},
+      el('td', { text: fmtDate(p.date) }), el('td', { text: kwh(p.kwh) }), el('td', { text: kwh(p.expected_kwh) }),
+      el('td', { text: p.relative == null ? '–' : `${pct(p.relative)} ${refText(p)}` }), el('td', { text: notes.join(', ') })));
+  }
+  table.append(body);
+}
+
+function renderCauses(a) {
+  const list = $('cause-list');
+  list.replaceChildren();
+  a.hypotheses.forEach((h, i) => {
+    list.append(el('li', { class: 'cause', 'data-cause': h.cause },
+      el('div', { class: 'cause-head' },
+        el('h3', {}, el('span', { class: 'rank', text: `${i + 1}.` }), CAUSES[h.cause] || h.cause),
+        confidence(h.confidence)),
+      el('ul', {}, ...h.why.map((w) => el('li', { text: w })))));
+  });
+}
+
+function renderEscalation(a) {
+  const box = $('escalation');
+  box.replaceChildren();
+  const e = a.escalation;
+  const button = $('draft-btn');
+  if (e.suggested) {
+    box.append(el('div', { class: 'callout critical' }, icon('warn'),
+      el('div', {}, el('strong', { text: 'Output did not come back after a step you approved.' }),
+        el('ul', {}, ...e.why.map((w) => el('li', { text: w }))))));
+    button.className = '';
+  } else {
+    button.className = 'secondary';
+    if (e.waiting_for_weather.length) {
+      box.append(el('div', { class: 'callout' }, icon('clock'),
+        el('div', {}, el('strong', { text: 'Waiting for published weather before suggesting a complaint.' }),
+          el('ul', {}, ...e.waiting_for_weather.map((w) => el('li', { text: w }))))));
+    } else {
+      box.append(el('p', { class: 'muted small', text: 'Use this if output stays low after the suggestions. You can draft one at any time.' }));
+    }
+  }
+}
+
+let resizeFrame = 0;
+new ResizeObserver(() => {
+  cancelAnimationFrame(resizeFrame);
+  resizeFrame = requestAnimationFrame(() => {
+    if (state.audit && !$('site').hidden) drawChart($('chart'), state.audit.timeline.slice(-CHART_MAX), state.audit.actions, state.audit.flag_below);
+  });
+}).observe($('chart'));
+
+// ---------- start ----------
+async function load(id) {
+  const audit = await api('GET', `/api/sites/${encodeURIComponent(id)}/audit`);
+  state.id = id;
+  render(audit);
+}
+
+(async function init() {
+  const fromUrl = new URLSearchParams(location.search).get('site');
+  const stored = storeGet();
+  let current = null;
+  async function attempt(id) {
+    current = id;
+    $('retry').hidden = true;
+    try {
+      await load(id);
+      if (id === fromUrl && id !== stored && (!stored
+          || confirm('This link opens a different plant from the one this browser remembers. Remember this one instead?'))) {
+        storeSet(id);
+      }
+    } catch (e) {
+      if (e.status !== 404) { showError(e.message); $('retry').hidden = false; return; }
+      if (id === fromUrl) {
+        history.replaceState(null, '', location.pathname);
+        if (stored && stored !== id) {
+          await attempt(stored);
+          if (state.audit) showError('No plant was found for that link. This is the plant this browser remembers.');
+          return;
+        }
+      }
+      if (storeGet() === id) storeClear();
+      showSetup(id === fromUrl ? 'No plant was found for that link. Set up your plant.' : 'That plant was not found. Set it up again.');
+    }
+  }
+  $('retry-btn').addEventListener('click', () => { showError(''); attempt(current); });
+  const first = fromUrl || stored;
+  if (first) await attempt(first); else showSetup();
+})();
+</script>
+</body>
+</html>

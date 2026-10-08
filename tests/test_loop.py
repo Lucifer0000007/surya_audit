@@ -322,3 +322,22 @@ def test_same_date_replaces_reading(client, rows):
 
 def test_heuristics_marked_unvalidated():
     assert heuristics.HEURISTIC_UNVALIDATED is True
+
+
+def test_page_is_served_self_contained(client):
+    resp = client.get("/")
+    assert resp.status_code == 200 and resp.headers["content-type"].startswith("text/html")
+    assert "<title>Surya Audit</title>" in resp.text
+    assert "<script src" not in resp.text and "<link" not in resp.text  # one dependency-free file
+    csp = resp.headers["content-security-policy"]
+    assert "default-src 'none'" in csp and "connect-src 'self'" in csp
+
+
+def test_audit_carries_what_the_page_needs(client, rows):
+    site = new_site(client)
+    audit = post_rows(client, site["id"], rows[:1])
+    assert audit["site"] == {k: site[k] for k in ("lat", "lon", "kw", "tilt", "azimuth", "loss_pct")}
+    assert audit["flag_below"] == heuristics.FLAG_BELOW
+    assert audit["propose_min_confidence"] == heuristics.PROPOSE_MIN_CONFIDENCE
+    assert audit["baseline"]["points_needed"] == heuristics.MIN_CALIBRATION_POINTS
+    assert audit["baseline"]["points_max"] == heuristics.CALIBRATION_POINTS
