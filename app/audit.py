@@ -188,7 +188,7 @@ def _classify(usable: list[dict], current: dict) -> list[dict]:
             (H.LOW_FROM_DAY_ONE_RATIO - baseline) / (H.LOW_FROM_DAY_ONE_RATIO - H.LOW_FROM_DAY_ONE_FULL)
             + H.SCORE_FLOOR_WHEN_PRESENT)
         recent_text = (f"recent readings with published weather are at {recent_ratio:.0%}" if recent_ratio is not None
-                       else "weather for the recent readings is not published yet, so they cannot show otherwise")
+                       else "weather for the recent readings is not available yet, so they cannot show otherwise")
         hyps["low_from_day_one"]["why"].append(
             f"Over {first}, the plant produced {baseline:.0%} of the weather-adjusted PVGIS estimate, and "
             f"{recent_text}. That fits under-sized or mis-installed equipment, dust already "
@@ -258,7 +258,7 @@ def _verify(action: dict, usable: list[dict]) -> dict:
                 "why": f"{len(window)} of {H.VERIFY_POINTS} usable readings logged after {action['approved_on']}."}
     value = median(window)
     unknown = sum(not p["weather_known"] for p in after[: H.VERIFY_POINTS])
-    note = (f" Weather for {unknown} of those readings is not published yet, so this verdict may change."
+    note = (f" Weather for {unknown} of those readings is not available yet, so this verdict may change."
             if unknown else "")
     if value >= bar:
         return {"outcome": "recovered", "back_later": False, "provisional": bool(unknown),

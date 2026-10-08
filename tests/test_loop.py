@@ -241,7 +241,7 @@ def test_unpublished_weather_does_not_clear_a_low_plant(client, rows):
     audit = post_rows(client, sid, [{"date": f"2026-10-0{d}", "kwh": "11.2"} for d in (4, 5, 6)])
     top = audit["hypotheses"][0]
     assert top["cause"] == "low_from_day_one" and top["confidence"] == "medium"
-    assert "not published yet" in top["why"][0]
+    assert "not available yet" in top["why"][0]
     noise = next(h for h in audit["hypotheses"] if h["cause"] == "weather_noise")
     assert noise["score"] <= top["score"]
 
@@ -255,10 +255,10 @@ def test_verdict_waits_for_published_weather(client, rows, monkeypatch):
     audit = post_rows(client, sid, [{"date": f"2026-10-0{d}", "kwh": "6.6"} for d in (4, 5, 6)])
     verification = action_of(audit, "check_inverter")["verification"]
     assert verification["outcome"] == "not_recovered" and verification["provisional"] is True
-    assert "not published yet" in verification["why"]
+    assert "not available yet" in verification["why"]
     assert not audit["escalation"]["suggested"] and audit["escalation"]["waiting_for_weather"]
     draft = client.post(f"/api/sites/{sid}/complaint").json()["draft_text"]
-    assert "Weather for 3 of those low readings is not published yet" in draft
+    assert "Weather for 3 of those low readings is not available yet" in draft
 
     def published(lat, lon, start, end):
         days = {(start + timedelta(days=i)).isoformat(): 4.7 for i in range((end - start).days + 1)}
@@ -278,6 +278,7 @@ def test_complaint_before_baseline_is_learnt(client, rows):
     assert "not enough readings yet" in draft
     assert "of the weather-adjusted PVGIS estimate (used because the plant's own usual output was not learnt yet" in draft
     assert "own usual output (after" not in draft
+    assert "Subject: <<OWNER TO FILL: subject" in draft  # nothing flagged or listed, so no low-output claim
 
 
 def test_new_suggestion_never_overwrites_an_old_one():

@@ -34,7 +34,9 @@ def draft(site: dict, audit: dict) -> dict:
         "DRAFT: review, complete and file this yourself. Nothing has been sent.",
         "",
         "To: " + _fill("installer / vendor name and complaint channel"),
-        "Subject: Rooftop solar plant producing below expected output",
+        # Only claim low output when the audit shows dips or a listed cause.
+        "Subject: " + ("Rooftop solar plant producing below expected output" if flagged or listed
+                       else _fill("subject: what you are complaining about")),
         "",
         f"Consumer / application number: {_fill('PM Surya Ghar application or consumer number')}",
         f"Owner: {_fill('your name and phone number')}",
@@ -71,7 +73,7 @@ def draft(site: dict, audit: dict) -> dict:
                          + (f" (first on {dips[0]['date']}, last on {dips[-1]['date']})." if dips else "."))
     unpublished = sum(not p["weather_known"] for p in flagged)
     if unpublished:
-        lines.append(f"Weather for {unpublished} of those low readings is not published yet, so their "
+        lines.append(f"Weather for {unpublished} of those low readings is not available yet, so their "
                      "expectation uses the monthly average and may change.")
     if listed:
         lines.append("Possible causes from my audit (confidence levels, not a diagnosis):")
