@@ -48,12 +48,19 @@ Needs [uv](https://docs.astral.sh/uv/) and Python 3.12.
 
 ```bash
 uv sync
-uv run uvicorn app.main:app --reload            # live PVGIS / NASA POWER
-bash scripts/verify.sh                          # offline end-to-end check
+uv run uvicorn app.main:app --reload            # live PVGIS / NASA POWER; the page is at http://127.0.0.1:8000/
+bash scripts/verify.sh                          # offline end-to-end check, including the Playwright screen check
 uv run python scripts/make_synthetic_site.py    # regenerate the synthetic scenario
+uv run python scripts/load_demo.py http://127.0.0.1:8000   # load the SYNTHETIC scenario, prints the page link
 ```
 
-Photo reading uses Gemini (`gemini-3.8-flash`) through the Strands Agents SDK and needs `GEMINI_API_KEY` in the environment. Without it, `/extract` answers 503 and the owner types the reading by hand. PNG and JPEG only, up to 5 MB. Images are not stored or logged.
+The screen check (`e2e/`, Playwright 1.64.0) needs Node; `verify.sh` installs it and Chromium on first run and saves screenshots to the git-ignored `local_screens/`.
+
+## The page
+
+`GET /` serves one self-contained `app/index.html`: no external scripts, styles or fonts, and a Content-Security-Policy that only allows calls back to the same server. On it the owner sets up the plant, logs a reading (typed, or filled from a photo and then confirmed), sees each reading as a share of the plant's usual output with dips flagged, reads the ranked possible causes, approves suggestions, and drafts the complaint. The site id is remembered in the browser (`localStorage`); `/?site=<id>` opens a specific site. That link is the only key to the plant: anyone who has it can see and change its readings, so keep it private and share evidence with Copy text or Download evidence instead.
+
+Photo reading uses Gemini (`gemini-3.8-flash`) through the Strands Agents SDK and needs `GEMINI_API_KEY` in the environment. Without it, `/extract` answers 503 and the owner types the reading by hand. The API takes PNG or JPEG up to 5 MB; the page re-encodes the photo on the device as a JPEG of at most 1600 px, which also drops photo metadata such as location. Images are not stored or logged.
 
 ## API
 
