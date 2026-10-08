@@ -51,7 +51,34 @@ from a source, it says so. Vendor pages are labelled as such.
 - PM Surya Ghar vendors must provide 5 years of O&M, but cleaning is often excluded in practice (Delhi portal; vendor
   pages). The page tells the owner to check their own contract.
 
-## Not used by the page yet
+## Fonts (inlined, Phase 7)
 
-Fonts (Noto Sans Devanagari / Gurmukhi, SIL OFL 1.1) and browser-API facts for Phase 7 are kept in the research
-log until that phase adds them here with their URLs.
+Noto Sans Devanagari Regular and Noto Sans Gurmukhi Regular, unhinted static TTFs from the Noto project
+(https://raw.githubusercontent.com/notofonts/notofonts.github.io/main/fonts/NotoSansDevanagari/unhinted/ttf/NotoSansDevanagari-Regular.ttf,
+.../NotoSansGurmukhi/unhinted/ttf/NotoSansGurmukhi-Regular.ttf), **SIL Open Font License 1.1**, Copyright 2022 The
+Noto Project Authors (https://raw.githubusercontent.com/google/fonts/main/ofl/notosansdevanagari/OFL.txt). Retrieved
+2026-10-08. Subset to the characters the page uses (67 Devanagari, 64 Gurmukhi, plus digits and punctuation) with
+fontTools 4.66.1 and brotli 1.2.0, run through uvx:
+
+```
+pyftsubset NotoSansDevanagari-Regular.ttf --text-file=deva.txt --layout-features='*' --flavor=woff2 --no-hinting --desubroutinize --output-file=deva.woff2
+pyftsubset NotoSansGurmukhi-Regular.ttf  --text-file=guru.txt --layout-features='*' --flavor=woff2 --no-hinting --desubroutinize --output-file=guru.woff2
+```
+
+`--layout-features='*'` keeps the OpenType shaping features Indic scripts need (fontTools subset docs,
+https://fonttools.readthedocs.io/en/latest/subset/index.html, retrieved 2026-10-08). Results: 29,037 and 9,384 bytes,
+inlined as base64 `@font-face` data URLs (about 51 KB in the page), which needs `font-src data:` in the CSP.
+`bash scripts/build_fonts.sh` runs exactly these commands with the versions pinned, writes the character lists to
+`fixtures/fonts/`, and splices the new subsets into the page; `tests/test_loop.py` fails when the page uses a character
+outside those lists.
+
+## Browser facts used by Phase 7
+
+- `speechSynthesis`: Chrome ships a network Hindi voice (hi-IN) but no Punjabi (pa-IN) voice, so the page shows the
+  read-aloud button only when a voice for the chosen language exists.
+- `SpeechRecognition`: in Chrome the audio is sent to Google's servers for recognition; hi-IN is listed, pa-IN is
+  not. The page says so next to the microphone and only shows the microphone where the API exists.
+- `navigator.vibrate`: Android Chrome, after a user gesture; not iOS Safari. The page calls it only after a
+  confirmation and ignores failure.
+- Sources: MDN Web Docs (https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition,
+  https://developer.mozilla.org/en-US/docs/Web/API/Navigator/vibrate), Chrome developer documentation, retrieved 2026-10-08.
