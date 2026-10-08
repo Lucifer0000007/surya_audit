@@ -26,26 +26,40 @@ log = logging.getLogger(__name__)
 GOOGLE_KEY = re.compile(r"AIza[0-9A-Za-z_-]{20,}")
 
 
-def describe_failure(e: BaseException, depth: int = 4) -> str:
+def _chain(e: BaseException | None, depth: int = 4):
+    """The exception and its causes, at most `depth` deep and never twice (chains can loop)."""
+    seen = set()
+    while e is not None and id(e) not in seen and len(seen) < depth:
+        seen.add(id(e))
+        yield e
+        e = e.__cause__ or e.__context__
+
+
+def gemini_busy(e: BaseException) -> bool:
+    """Google's "high demand" (503) or rate limit (429): worth telling the owner to retry."""
+    from google.genai.errors import APIError
+
+    return any(isinstance(x, APIError) and x.code in (429, 503) for x in _chain(e))
+
+
+def describe_failure(e: BaseException) -> str:
     """Why photo reading failed, without anything read from the photo: class names along the
     cause chain; for Gemini API errors Google's own code, status and message (redacted, capped);
     for output validation errors only field locations and error types, never the values."""
     from google.genai.errors import APIError
     from pydantic import ValidationError
 
-    parts, seen = [], set()
-    while e is not None and id(e) not in seen and len(parts) < depth:
-        seen.add(id(e))
-        part = f"{type(e).__module__}.{type(e).__qualname__}"
-        if isinstance(e, APIError):
-            message = GOOGLE_KEY.sub("<redacted>", str(e.message or ""))[:200]
-            part += f" code={e.code} status={e.status} message={message!r}"
-        elif isinstance(e, ValidationError):
+    parts = []
+    for x in _chain(e):
+        part = f"{type(x).__module__}.{type(x).__qualname__}"
+        if isinstance(x, APIError):
+            message = GOOGLE_KEY.sub("<redacted>", str(x.message or ""))[:200]
+            part += f" code={x.code} status={x.status} message={message!r}"
+        elif isinstance(x, ValidationError):
             fields = [(err["loc"], err["type"])
-                      for err in e.errors(include_input=False, include_url=False, include_context=False)]
+                      for err in x.errors(include_input=False, include_url=False, include_context=False)]
             part += f" fields={fields[:5]}"
         parts.append(part)
-        e = e.__cause__ or e.__context__
     return " <- ".join(parts)
 
 # Base64 grows an image by a third, and Lambda takes "6 MB each for request and response (synchronous)":
@@ -161,6 +175,8 @@ def extract_reading(site_id: str, body: ExtractIn) -> dict:
     except Exception as e:
         # What failed, so a broken photo path is visible in the logs; never the image, its text or the key.
         log.warning("photo reading failed: %s", describe_failure(e))
+        if gemini_busy(e):
+            raise HTTPException(503, "Photo reading is busy right now. Try again in a minute, or type the reading by hand.")
         raise HTTPException(502, "Could not read the photo. Please type the reading by hand.")
     return {
         "candidate": candidate.model_dump() if candidate else None,

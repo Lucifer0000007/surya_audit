@@ -5,6 +5,7 @@ never logged or stored. Without a Gemini key (see app/config.py) this raises Vis
 the owner types the reading by hand.
 """
 
+import asyncio
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -14,6 +15,10 @@ from app.config import gemini_key
 MODEL_ID = "gemini-3.8-flash"  # https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash, retrieved 2026-10-08
 # Strands maps the format to a MIME type via mimetypes.types_map, which lacks .webp on Python 3.12.
 FORMATS = {"image/png": "png", "image/jpeg": "jpeg"}
+# Reading a screen needs little reasoning; gemini-3.8-flash accepts thinking levels low/medium/high (CLAUDE.md).
+THINKING_LEVEL = "low"
+# Fail cleanly (and get logged) well inside the 29 s the deployed function has.
+GEMINI_TIMEOUT_MS = 20_000
 
 PROMPT = (
     "This is a photo of a rooftop solar inverter app screen or an electricity meter, sent by the "
@@ -41,13 +46,25 @@ def extract(image: bytes, mime_type: str) -> Candidate:
     if not key:
         raise VisionUnavailable()
     # Imported here so the app boots and tests run without the Gemini client being used.
-    from strands import Agent
     from strands.models.gemini import GeminiModel
 
-    model = GeminiModel(client_args={"api_key": key}, model_id=MODEL_ID)
-    agent = Agent(model=model, callback_handler=None)
-    result = agent(
-        [{"text": PROMPT}, {"image": {"format": FORMATS[mime_type], "source": {"bytes": image}}}],
-        structured_output_model=Candidate,
+    # One call to Gemini's native structured output (JSON matching Candidate) through the Strands
+    # Gemini provider. An Agent with structured_output_model runs a tool-calling loop that can take
+    # several image-carrying turns, which ran past the function's time limit on the first live test.
+    model = GeminiModel(
+        client_args={"api_key": key, "http_options": {"timeout": GEMINI_TIMEOUT_MS}},
+        model_id=MODEL_ID,
+        params={"thinking_config": {"thinking_level": THINKING_LEVEL}},
     )
-    return result.structured_output
+    prompt = [{"role": "user", "content": [
+        {"text": PROMPT},
+        {"image": {"format": FORMATS[mime_type], "source": {"bytes": image}}},
+    ]}]
+
+    async def ask() -> Candidate | None:
+        result = None
+        async for event in model.structured_output(Candidate, prompt):
+            result = event.get("output", result)
+        return result
+
+    return asyncio.run(ask())

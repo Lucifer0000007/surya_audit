@@ -495,3 +495,63 @@ def test_failed_photo_reading_is_logged_without_photo_text_key_or_image(client, 
     assert "code=400 status=INVALID_ARGUMENT" in logged and "<redacted>" in logged
     for secret in (marker, "SN-0042", fake_key, img, "secret-image-bytes"):
         assert secret not in logged
+
+
+def test_photo_reading_is_one_native_structured_call(monkeypatch):
+    from strands.models.gemini import GeminiModel
+
+    from app import extract as extract_module
+
+    calls = []
+
+    class FakeModels:
+        async def generate_content(self, **request):
+            calls.append(request)
+            return type("Response", (), {"parsed": {"date": "2026-10-07", "kwh": 12.4, "kind": "daily",
+                                                    "cumulative_meter_kwh": None, "what_was_read": "Today's Yield"}})()
+
+    class FakeClient:
+        aio = type("Aio", (), {"models": FakeModels()})()
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-only-not-a-key")
+    monkeypatch.setattr(GeminiModel, "_get_client", lambda self: FakeClient())
+    seen_args = {}
+    original_init = GeminiModel.__init__
+
+    def spy_init(self, **kwargs):
+        seen_args.update(kwargs)
+        original_init(self, **kwargs)
+
+    monkeypatch.setattr(GeminiModel, "__init__", spy_init)
+    candidate = extract_module.extract(b"\x89PNG fake", "image/png")
+    assert candidate.kwh == 12.4 and candidate.date == "2026-10-07" and candidate.kind == "daily"
+    assert len(calls) == 1  # one model call, no agent loop
+    config = calls[0]["config"]
+    assert config["response_mime_type"] == "application/json"
+    assert config["thinking_config"]["thinking_level"] == "LOW"
+    assert seen_args["client_args"]["http_options"] == {"timeout": extract_module.GEMINI_TIMEOUT_MS}
+    assert seen_args["model_id"] == extract_module.MODEL_ID
+
+
+def test_busy_gemini_asks_the_owner_to_retry(client, monkeypatch):
+    from google.genai.errors import ServerError
+
+    from app import extract as extract_module
+
+    def overloaded(image, mime_type):
+        raise ServerError(503, {"error": {"code": 503, "status": "UNAVAILABLE", "message": "high demand"}})
+
+    monkeypatch.setattr(extract_module, "extract", overloaded)
+    sid = new_site(client)["id"]
+    img = base64.b64encode(b"fake").decode()
+    resp = client.post(f"/api/sites/{sid}/extract", json={"image_base64": img, "mime_type": "image/png"})
+    assert resp.status_code == 503 and "Try again in a minute" in resp.json()["detail"]
+
+
+def test_failure_chains_that_loop_still_answer():
+    from app.main import describe_failure, gemini_busy
+
+    looped = RuntimeError("x")
+    looped.__cause__ = looped
+    assert gemini_busy(looped) is False
+    assert describe_failure(looped) == "builtins.RuntimeError"
