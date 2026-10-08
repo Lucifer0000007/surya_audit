@@ -1,0 +1,67 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "FunctionLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": [
+        "arn:aws:logs:ap-south-1:ACCOUNT_ID:log-group:/aws/lambda/surya-audit-*",
+        "arn:aws:logs:ap-south-1:ACCOUNT_ID:log-group:/aws/lambda/surya-audit-*:*"
+      ]
+    },
+    {
+      "Sid": "SitesTableItems",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:BatchGetItem",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:DescribeTable",
+        "dynamodb:ConditionCheckItem"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:ap-south-1:ACCOUNT_ID:table/surya-audit-*",
+        "arn:aws:dynamodb:ap-south-1:ACCOUNT_ID:table/surya-audit-*/index/*"
+      ]
+    },
+    {
+      "Sid": "GeminiKey",
+      "Effect": "Allow",
+      "Action": "ssm:GetParameter",
+      "Resource": "arn:aws:ssm:ap-south-1:ACCOUNT_ID:parameter/surya-audit/*"
+    },
+    {
+      "Sid": "DecryptTheKeyThroughParameterStore",
+      "Effect": "Allow",
+      "Action": "kms:Decrypt",
+      "Resource": "arn:aws:kms:ap-south-1:ACCOUNT_ID:key/*",
+      "Condition": {
+        "StringEquals": {
+          "kms:ViaService": "ssm.ap-south-1.amazonaws.com"
+        },
+        "StringLike": {
+          "kms:EncryptionContext:PARAMETER_ARN": "arn:aws:ssm:ap-south-1:ACCOUNT_ID:parameter/surya-audit/*"
+        }
+      }
+    },
+    {
+      "Sid": "SchedulerInvokesRefresh",
+      "Effect": "Allow",
+      "Action": "lambda:InvokeFunction",
+      "Resource": [
+        "arn:aws:lambda:ap-south-1:ACCOUNT_ID:function:surya-audit-*",
+        "arn:aws:lambda:ap-south-1:ACCOUNT_ID:function:surya-audit-*:*"
+      ]
+    }
+  ]
+}

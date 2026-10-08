@@ -1,0 +1,100 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Surya Audit: rooftop-solar output audit for one PM Surya Ghar household.
+  One Lambda behind an HTTP API serves the page and the API; DynamoDB keeps the site;
+  a daily EventBridge Scheduler run fills in weather NASA POWER has published since.
+
+Parameters:
+  GeminiKeyParam:
+    Type: String
+    Default: /surya-audit/gemini-api-key
+    AllowedPattern: "^/surya-audit/[A-Za-z0-9_.-]+$"
+    Description: >
+      SSM Parameter Store SecureString (default aws/ssm key) holding the Gemini API key.
+      Create it yourself; without it, photo reading is off and readings are typed by hand.
+
+# Both functions deploy .lambda-build/, made by scripts/build_lambda.sh (Linux wheels plus the
+# app/ package; no tests, fixtures or node_modules). There is no `sam build` step.
+# Every role SAM creates carries the surya-audit-boundary permissions boundary (infra/boundary-policy.json),
+# so the deploying identity cannot use these roles to grant itself more than the app needs.
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures: [x86_64]
+    CodeUri: .lambda-build/
+    PermissionsBoundary: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/surya-audit-boundary"
+    Environment:
+      Variables:
+        SITES_TABLE: !Ref SitesTable
+
+Resources:
+  SitesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Surya Audit page and API (FastAPI via Mangum)
+      Handler: app.main.handler
+      MemorySize: 1024
+      # HTTP API: "Maximum integration timeout | 30 seconds" (https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-quotas.html);
+      # SAM TimeoutInMillis: "between 50 and 29,000 milliseconds" (sam-property-function-httpapi.html). Retrieved 2026-10-08.
+      Timeout: 29
+      Environment:
+        Variables:
+          GEMINI_KEY_PARAM: !Ref GeminiKeyParam
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SitesTable
+        - Statement:  # only this one parameter: read it, and decrypt it through Parameter Store
+            - Effect: Allow
+              Action: ssm:GetParameter
+              Resource: !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${GeminiKeyParam}"
+            # "To decrypt either type of SecureString parameter value, the user needs kms:Decrypt permission";
+            # Parameter Store's encryption context is PARAMETER_ARN (https://docs.aws.amazon.com/systems-manager/latest/userguide/secure-string-parameter-kms-encryption.html, retrieved 2026-10-08).
+            - Effect: Allow
+              Action: kms:Decrypt
+              Resource: !Sub "arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/*"
+              Condition:
+                StringEquals:
+                  kms:ViaService: !Sub "ssm.${AWS::Region}.amazonaws.com"
+                  kms:EncryptionContext:PARAMETER_ARN: !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${GeminiKeyParam}"
+      Events:
+        Http:
+          Type: HttpApi  # no Path or Method: every request goes to this function
+          Properties:
+            TimeoutInMillis: 29000
+
+  RefreshFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Daily refresh of weather NASA POWER has published since a reading was saved
+      Handler: app.refresh.handler
+      MemorySize: 512
+      Timeout: 120
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SitesTable
+      Events:
+        Daily:
+          Type: ScheduleV2
+          Properties:
+            Name: surya-audit-weather-refresh
+            Description: Fill in published weather for Surya Audit readings
+            ScheduleExpression: "cron(0 9 * * ? *)"
+            ScheduleExpressionTimezone: Asia/Kolkata
+            PermissionsBoundary: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/surya-audit-boundary"
+
+Outputs:
+  AppUrl:
+    Description: The Surya Audit page
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/"
