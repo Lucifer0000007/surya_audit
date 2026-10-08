@@ -15,7 +15,7 @@ last_line() { tail -n 1 "$1" 2>/dev/null | tr -d '\r'; }
 
 # Offline: recorded fixtures only, never a Gemini key.
 export PVGIS_MODE=fixture IRRADIANCE_MODE=fixture
-unset GEMINI_API_KEY
+unset GEMINI_API_KEY GEMINI_KEY_PARAM SITES_TABLE  # never the deployed key, parameter or table
 
 { [ -f pyproject.toml ] && [ -f app/main.py ]; } || fail "no app yet"
 command -v uv >/dev/null || fail "uv is not on PATH"

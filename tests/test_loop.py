@@ -341,3 +341,118 @@ def test_audit_carries_what_the_page_needs(client, rows):
     assert audit["propose_min_confidence"] == heuristics.PROPOSE_MIN_CONFIDENCE
     assert audit["baseline"]["points_needed"] == heuristics.MIN_CALIBRATION_POINTS
     assert audit["baseline"]["points_max"] == heuristics.CALIBRATION_POINTS
+
+
+def test_daily_refresh_fills_in_published_weather(client, monkeypatch):
+    from app import main, refresh
+
+    monkeypatch.setattr(refresh, "store", main.store)
+    sid = new_site(client)["id"]
+    post_rows(client, sid, [{"date": "2026-10-05", "kwh": "10.0"}])
+
+    def published(lat, lon, start, end):
+        days = {(start + timedelta(days=i)).isoformat(): 4.7 for i in range((end - start).days + 1)}
+        return days, {"url": "test://power", "retrieved": "2026-10-09", "fixture": True}
+
+    monkeypatch.setattr(expected, "power_daily", published)
+    assert refresh.handler({}, None)["refreshed"] >= 1
+    point = client.get(f"/api/sites/{sid}/audit").json()["timeline"][0]
+    assert point["weather_known"] is True and point["weather_source"]["retrieved"] == "2026-10-09"
+    assert refresh.refresh_site(main.store.get(sid)) is False  # nothing left to refresh
+
+
+def test_concurrent_save_is_refused_not_lost(client, monkeypatch):
+    from app import main
+    from app.store import MemoryStore, StoreConflict
+
+    memory = MemoryStore()
+    memory.put({"id": "s", "readings": []})
+    first, second = memory.get("s"), memory.get("s")
+    memory.put(first)
+    with pytest.raises(StoreConflict):
+        memory.put(second)
+
+    sid = new_site(client)["id"]
+
+    def conflict(site):
+        raise StoreConflict(site["id"])
+
+    monkeypatch.setattr(main.store, "put", conflict)
+    resp = client.post(f"/api/sites/{sid}/readings", json={"date": "2026-09-01", "kwh": 10})
+    assert resp.status_code == 409 and "try again" in resp.json()["detail"]
+
+
+def test_dynamo_store_round_trip_and_conflict():
+    from botocore.exceptions import ClientError
+
+    from app.store import DynamoStore, StoreConflict
+
+    class FakeTable:
+        def __init__(self):
+            self.items = {}
+
+        def get_item(self, Key, ConsistentRead):
+            item = self.items.get(Key["id"])
+            return {"Item": dict(item)} if item else {}
+
+        def put_item(self, Item, ConditionExpression, ExpressionAttributeNames, ExpressionAttributeValues):
+            current = self.items.get(Item["id"])
+            if current is not None and current["version"] != ExpressionAttributeValues[":v"]:
+                raise ClientError({"Error": {"Code": "ConditionalCheckFailedException"}}, "PutItem")
+            self.items[Item["id"]] = dict(Item)
+
+        def scan(self, **kwargs):
+            return {"Items": [{"id": k} for k in self.items]}
+
+    store = DynamoStore.__new__(DynamoStore)
+    store._table = FakeTable()
+    site = {"id": "s1", "readings": [{"date": "2026-09-01", "kwh": 9.5}]}
+    store.put(site)
+    loaded = store.get("s1")
+    assert loaded == {**site, "version": 1} and "version" not in json.loads(store._table.items["s1"]["doc"])
+    stale = store.get("s1")
+    store.put(loaded)
+    with pytest.raises(StoreConflict):
+        store.put(stale)
+    assert store.ids() == ["s1"] and store.get("missing") is None
+
+
+def test_gemini_key_from_env_or_ssm(monkeypatch):
+    import boto3
+
+    from app import config
+
+    calls = []
+
+    class FakeSSM:
+        def get_parameter(self, Name, WithDecryption):
+            calls.append((Name, WithDecryption))
+            return {"Parameter": {"Value": "from-ssm"}}
+
+    monkeypatch.setattr(config, "_cached", None)
+    monkeypatch.setattr(boto3, "client", lambda service: FakeSSM())
+    assert config.gemini_key() is None  # neither set: manual entry only
+    monkeypatch.setenv("GEMINI_KEY_PARAM", "/surya-audit/gemini-api-key")
+    assert config.gemini_key() == "from-ssm" and config.gemini_key() == "from-ssm"
+    assert calls == [("/surya-audit/gemini-api-key", True)]  # read once, decrypted
+    monkeypatch.setenv("GEMINI_API_KEY", "local")
+    assert config.gemini_key() == "local"
+
+
+def test_unreadable_key_parameter_means_typing_by_hand(client, monkeypatch):
+    import boto3
+    from botocore.exceptions import ClientError
+
+    from app import config
+
+    class MissingSSM:
+        def get_parameter(self, Name, WithDecryption):
+            raise ClientError({"Error": {"Code": "ParameterNotFound"}}, "GetParameter")
+
+    monkeypatch.setattr(config, "_cached", None)
+    monkeypatch.setattr(boto3, "client", lambda service: MissingSSM())
+    monkeypatch.setenv("GEMINI_KEY_PARAM", "/surya-audit/gemini-api-key")
+    sid = new_site(client)["id"]
+    img = base64.b64encode(b"\x89PNG fake").decode()
+    resp = client.post(f"/api/sites/{sid}/extract", json={"image_base64": img, "mime_type": "image/png"})
+    assert resp.status_code == 503 and "by hand" in resp.json()["detail"]

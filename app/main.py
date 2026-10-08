@@ -13,14 +13,16 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from mangum import Mangum
 from pydantic import BaseModel, Field
 
-from app import audit, complaint, expected, extract
-from app.store import MemoryStore
+from app import audit, clock, complaint, expected, extract
+from app.store import StoreConflict, make_store
 
 # Only the frozen routes: no /docs, /redoc or /openapi.json.
 app = FastAPI(title="Surya Audit", docs_url=None, redoc_url=None, openapi_url=None)
-store = MemoryStore()
+store = make_store()
 
-MAX_IMAGE_BYTES = 5 * 1024 * 1024
+# Base64 grows an image by a third, and Lambda takes "6 MB each for request and response (synchronous)":
+# https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html, retrieved 2026-10-08.
+MAX_IMAGE_BYTES = 4 * 1024 * 1024
 INDEX_HTML = Path(__file__).resolve().parent / "index.html"
 # The page is one self-contained file: everything inline, API calls to this origin only.
 PAGE_HEADERS = {
@@ -62,6 +64,11 @@ def invalid_request(request: Request, exc: RequestValidationError) -> JSONRespon
     # Never echo submitted values back: they can be image data, or floats JSON cannot encode.
     detail = [{"loc": e["loc"], "msg": e["msg"], "type": e["type"]} for e in exc.errors()]
     return JSONResponse(status_code=422, content={"detail": detail})
+
+
+@app.exception_handler(StoreConflict)
+def store_conflict(request: Request, exc: StoreConflict) -> JSONResponse:
+    return JSONResponse(status_code=409, content={"detail": "This plant changed while you were saving. Please try again."})
 
 
 def _site(site_id: str) -> dict:
@@ -138,7 +145,7 @@ def extract_reading(site_id: str, body: ExtractIn) -> dict:
 @app.post("/api/sites/{site_id}/readings")
 def add_reading(site_id: str, body: ReadingIn) -> dict:
     site = _site(site_id)
-    if body.date > date.today():
+    if body.date > clock.today():
         raise HTTPException(422, "reading date is in the future")
     days = expected.DAYS[body.kind]
     if body.kwh > site["kw"] * 24 * days:
@@ -147,12 +154,7 @@ def add_reading(site_id: str, body: ReadingIn) -> dict:
     iso = body.date.isoformat()
     site["readings"] = [r for r in site["readings"] if r["date"] != iso]
     # One weather call covers the new reading and any earlier ones whose weather was not published yet.
-    stale = [r for r in site["readings"] if not r["weather_known"]]
-    periods = [(body.date, days)] + [(date.fromisoformat(r["date"]), expected.DAYS[r["kind"]]) for r in stale]
-    ghi, source = expected.daily_irradiance(site, periods)
-    if source is not None:
-        for r in stale:
-            r.update(expected.expected_for_period(site, date.fromisoformat(r["date"]), expected.DAYS[r["kind"]], ghi, source))
+    ghi, source = expected.refresh_weather(site, [(body.date, days)])
     site["readings"].append({"date": iso, "kwh": body.kwh, "kind": body.kind,
                              **expected.expected_for_period(site, body.date, days, ghi, source)})
     audit.update_actions(site, audit.compute(site))
@@ -169,7 +171,7 @@ def approve_action(site_id: str, action_id: str, body: ApproveIn | None = None) 
     if action["status"] != "proposed":
         raise HTTPException(409, f"action is already {action['status']}")
     on = body.approved_on.isoformat() if body and body.approved_on else max(r["date"] for r in site["readings"])
-    if not action["proposed_on"] <= on <= date.today().isoformat():
+    if not action["proposed_on"] <= on <= clock.today().isoformat():
         raise HTTPException(422, f"approved_on must be between {action['proposed_on']} and today")
     action["status"] = "approved"
     action["approved_on"] = on

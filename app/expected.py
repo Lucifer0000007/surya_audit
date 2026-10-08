@@ -28,6 +28,8 @@ import urllib.request
 from datetime import date, timedelta
 from pathlib import Path
 
+from app import clock
+
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures"
 PVGIS_URL = "https://re.jrc.ec.europa.eu/api/v5_3/PVcalc"
 POWER_DAILY_URL = "https://power.larc.nasa.gov/api/temporal/daily/point"
@@ -53,11 +55,12 @@ def _fixture(name: str) -> tuple[dict, dict]:
 def _get_json(url: str, params: dict) -> tuple[dict, dict]:
     full = f"{url}?{urllib.parse.urlencode(params)}"
     try:
-        with urllib.request.urlopen(full, timeout=30) as resp:
+        # Short enough that two calls in a row fit in the 29 s the deployed function has.
+        with urllib.request.urlopen(full, timeout=10) as resp:
             data = json.load(resp)
     except (OSError, ValueError) as e:
         raise UpstreamError(f"{url} failed: {e.__class__.__name__}") from e
-    return data, {"url": full, "retrieved": date.today().isoformat(), "fixture": False}
+    return data, {"url": full, "retrieved": clock.today().isoformat(), "fixture": False}
 
 
 def pvgis_monthly(lat: float, lon: float, kw: float, tilt: float, azimuth: float, loss_pct: float) -> dict:
@@ -124,6 +127,21 @@ def daily_irradiance(site: dict, periods: list[tuple[date, int]]) -> tuple[dict[
         return power_daily(site["lat"], site["lon"], start, end)
     except UpstreamError:
         return {}, None
+
+
+def refresh_weather(site: dict, periods: list[tuple[date, int]] = ()) -> tuple[dict, dict | None]:
+    """Refresh stored readings whose weather was not available yet, in one POWER call that also
+    covers `periods` (e.g. a reading about to be added). Returns the irradiance and source for reuse;
+    if POWER failed the source is None and the stored readings keep their old values."""
+    stale = [r for r in site["readings"] if not r["weather_known"]]
+    wanted = list(periods) + [(date.fromisoformat(r["date"]), DAYS[r["kind"]]) for r in stale]
+    if not wanted:
+        return {}, None
+    ghi, source = daily_irradiance(site, wanted)
+    if source is not None:
+        for r in stale:
+            r.update(expected_for_period(site, date.fromisoformat(r["date"]), DAYS[r["kind"]], ghi, source))
+    return ghi, source
 
 
 def expected_for_period(site: dict, end: date, days: int, ghi_by_day: dict, source: dict | None) -> dict:

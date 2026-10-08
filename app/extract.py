@@ -1,14 +1,15 @@
 """Read an inverter-app screenshot or meter photo into candidate values. Nothing is saved.
 
 The owner confirms or edits the candidate before it becomes a reading. The image is
-never logged or stored. Without GEMINI_API_KEY this raises VisionUnavailable and the
-owner types the reading by hand.
+never logged or stored. Without a Gemini key (see app/config.py) this raises VisionUnavailable and
+the owner types the reading by hand.
 """
 
-import os
 from typing import Literal
 
 from pydantic import BaseModel, Field
+
+from app.config import gemini_key
 
 MODEL_ID = "gemini-3.8-flash"  # https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash, retrieved 2026-10-08
 # Strands maps the format to a MIME type via mimetypes.types_map, which lacks .webp on Python 3.12.
@@ -36,7 +37,7 @@ class Candidate(BaseModel):
 
 
 def extract(image: bytes, mime_type: str) -> Candidate:
-    key = os.environ.get("GEMINI_API_KEY")
+    key = gemini_key()
     if not key:
         raise VisionUnavailable()
     # Imported here so the app boots and tests run without the Gemini client being used.

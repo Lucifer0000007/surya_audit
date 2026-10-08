@@ -8,6 +8,7 @@ dependencies = [
     "mangum",
     "pydantic",
     "strands-agents[gemini]",
+    "boto3",
 ]
 
 [dependency-groups]

@@ -406,7 +406,11 @@ async function api(method, path, body) {
   try { data = await res.json(); } catch { /* no body */ }
   if (!res.ok) {
     const detail = data && data.detail;
-    const err = new Error(typeof detail === 'string' ? detail : 'Please check the values you entered.');
+    // API Gateway's own timeouts and errors carry no "detail": say what happened, not "check the values".
+    const fallback = res.status === 429 || res.status >= 500
+      ? 'Surya Audit could not finish that just now. Please try again in a moment.'
+      : 'Please check the values you entered.';
+    const err = new Error(typeof detail === 'string' ? detail : fallback);
     err.status = res.status;
     throw err;
   }
