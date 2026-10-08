@@ -1,0 +1,11 @@
+{
+  "name": "surya-audit-screen-check",
+  "private": true,
+  "description": "Playwright screen check for the Surya Audit page (run by scripts/verify.sh with BASE_URL).",
+  "scripts": {
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0"
+  }
+}
