@@ -2,6 +2,8 @@
 
 import base64
 import binascii
+import logging
+import re
 import uuid
 from datetime import date
 from pathlib import Path
@@ -19,6 +21,32 @@ from app.store import StoreConflict, make_store
 # Only the frozen routes: no /docs, /redoc or /openapi.json.
 app = FastAPI(title="Surya Audit", docs_url=None, redoc_url=None, openapi_url=None)
 store = make_store()
+log = logging.getLogger(__name__)
+# Anything shaped like a Google API key is cut out of logged error text.
+GOOGLE_KEY = re.compile(r"AIza[0-9A-Za-z_-]{20,}")
+
+
+def describe_failure(e: BaseException, depth: int = 4) -> str:
+    """Why photo reading failed, without anything read from the photo: class names along the
+    cause chain; for Gemini API errors Google's own code, status and message (redacted, capped);
+    for output validation errors only field locations and error types, never the values."""
+    from google.genai.errors import APIError
+    from pydantic import ValidationError
+
+    parts, seen = [], set()
+    while e is not None and id(e) not in seen and len(parts) < depth:
+        seen.add(id(e))
+        part = f"{type(e).__module__}.{type(e).__qualname__}"
+        if isinstance(e, APIError):
+            message = GOOGLE_KEY.sub("<redacted>", str(e.message or ""))[:200]
+            part += f" code={e.code} status={e.status} message={message!r}"
+        elif isinstance(e, ValidationError):
+            fields = [(err["loc"], err["type"])
+                      for err in e.errors(include_input=False, include_url=False, include_context=False)]
+            part += f" fields={fields[:5]}"
+        parts.append(part)
+        e = e.__cause__ or e.__context__
+    return " <- ".join(parts)
 
 # Base64 grows an image by a third, and Lambda takes "6 MB each for request and response (synchronous)":
 # https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html, retrieved 2026-10-08.
@@ -130,7 +158,9 @@ def extract_reading(site_id: str, body: ExtractIn) -> dict:
         candidate = extract.extract(image, body.mime_type)
     except extract.VisionUnavailable:
         raise HTTPException(503, "Photo reading is not available. Please type the reading by hand.")
-    except Exception:
+    except Exception as e:
+        # What failed, so a broken photo path is visible in the logs; never the image, its text or the key.
+        log.warning("photo reading failed: %s", describe_failure(e))
         raise HTTPException(502, "Could not read the photo. Please type the reading by hand.")
     return {
         "candidate": candidate.model_dump() if candidate else None,

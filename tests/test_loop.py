@@ -456,3 +456,42 @@ def test_unreadable_key_parameter_means_typing_by_hand(client, monkeypatch):
     img = base64.b64encode(b"\x89PNG fake").decode()
     resp = client.post(f"/api/sites/{sid}/extract", json={"image_base64": img, "mime_type": "image/png"})
     assert resp.status_code == 503 and "by hand" in resp.json()["detail"]
+
+
+def test_failed_photo_reading_is_logged_without_photo_text_key_or_image(client, monkeypatch, caplog):
+    from google.genai.errors import ClientError
+    from pydantic import BaseModel, ValidationError
+
+    from app import extract as extract_module
+
+    fake_key = "AI" + "za" + "x" * 35  # built at runtime so no key-shaped literal sits in the source
+    marker = "TRANSCRIBED-SCREEN-TEXT serial SN-0042"
+
+    class Out(BaseModel):
+        kwh: float
+
+    try:
+        Out(kwh=marker)
+    except ValidationError as invalid:
+        validation_error = invalid
+
+    api_error = ClientError(400, {"error": {"code": 400, "status": "INVALID_ARGUMENT",
+                                            "message": f"API key not valid: {fake_key}"}})
+    failures = [validation_error, RuntimeError(marker), api_error]
+
+    def broken(image, mime_type):
+        raise failures.pop(0)
+
+    monkeypatch.setattr(extract_module, "extract", broken)
+    sid = new_site(client)["id"]
+    img = base64.b64encode(b"secret-image-bytes").decode()
+    with caplog.at_level("WARNING"):
+        for _ in range(3):
+            resp = client.post(f"/api/sites/{sid}/extract", json={"image_base64": img, "mime_type": "image/png"})
+            assert resp.status_code == 502
+    logged = caplog.text
+    assert "pydantic_core._pydantic_core.ValidationError fields=[(('kwh',), 'float_parsing')]" in logged
+    assert "builtins.RuntimeError" in logged
+    assert "code=400 status=INVALID_ARGUMENT" in logged and "<redacted>" in logged
+    for secret in (marker, "SN-0042", fake_key, img, "secret-image-bytes"):
+        assert secret not in logged
