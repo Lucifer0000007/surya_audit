@@ -68,10 +68,11 @@ MAX_IMAGE_BYTES = 4 * 1024 * 1024
 INDEX_HTML = Path(__file__).resolve().parent / "index.html"
 # The page is one self-contained file: everything inline, API calls to this origin only.
 PAGE_HEADERS = {
-    # manifest-src data: lets the page carry its own web-app manifest inline (CSP3: non-HTTP schemes must be
-    # listed explicitly). It is a non-executable JSON resource; no remote origin is allowed anywhere.
+    # manifest-src data: lets the page carry its own web-app manifest inline, and font-src data: its own
+    # subset Indic fonts (CSP3: non-HTTP schemes must be listed explicitly). Both are non-executable
+    # resources carried by the page itself; no remote origin is allowed anywhere.
     "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
-                               "img-src 'self' data: blob:; connect-src 'self'; manifest-src data:; "
+                               "img-src 'self' data: blob:; connect-src 'self'; manifest-src data:; font-src data:; "
                                "base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
