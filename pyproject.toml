@@ -1,0 +1,24 @@
+[project]
+name = "surya-audit"
+version = "0.1.0"
+description = "Rooftop-solar output audit for one PM Surya Ghar household"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi",
+    "mangum",
+    "pydantic",
+    "strands-agents[gemini]",
+]
+
+[dependency-groups]
+dev = [
+    "uvicorn",
+    "pytest",
+    "httpx",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

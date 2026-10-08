@@ -1,0 +1,60 @@
+{
+ "_source": {
+  "url": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=ALLSKY_SFC_SW_DWN&community=RE&longitude=80.95&latitude=26.85&format=JSON",
+  "retrieved": "2026-10-08"
+ },
+ "type": "Feature",
+ "geometry": {
+  "type": "Point",
+  "coordinates": [
+   80.95,
+   26.85,
+   117.11
+  ]
+ },
+ "properties": {
+  "parameter": {
+   "ALLSKY_SFC_SW_DWN": {
+    "JAN": 3.1032,
+    "FEB": 4.5019,
+    "MAR": 5.8634,
+    "APR": 6.6386,
+    "MAY": 6.7291,
+    "JUN": 5.8896,
+    "JUL": 4.7558,
+    "AUG": 4.805,
+    "SEP": 4.8362,
+    "OCT": 4.7002,
+    "NOV": 3.707,
+    "DEC": 3.0091,
+    "ANN": 4.877
+   }
+  }
+ },
+ "header": {
+  "title": "NASA/POWER Source Native Resolution Climatology Climatologies",
+  "api": {
+   "version": "v2.10.0",
+   "name": "POWER Climatology API"
+  },
+  "sources": [
+   "SYN1DEG"
+  ],
+  "fill_value": -999.0,
+  "time_standard": "LST",
+  "range": "20-year Meteorological and Solar Monthly & Annual Climatologies (January 2001 - December 2020)"
+ },
+ "messages": [
+  "The requested parameters are retrieved from a pre-computed climatological period (January 2001 - December 2020)"
+ ],
+ "parameters": {
+  "ALLSKY_SFC_SW_DWN": {
+   "units": "kW-hr/m^2/day",
+   "longname": "All Sky Surface Shortwave Downward Irradiance"
+  }
+ },
+ "times": {
+  "data": 0.048,
+  "process": 0.03
+ }
+}
