@@ -334,8 +334,23 @@ def test_page_is_served_self_contained(client):
     assert links and all(href.startswith("data:") for href in links), links  # ...whose only <link> is the inline manifest
     csp = resp.headers["content-security-policy"]
     assert "default-src 'none'" in csp and "connect-src 'self'" in csp
-    assert "manifest-src data:" in csp  # the inline manifest; no remote origin anywhere
+    assert "manifest-src data:" in csp and "font-src data:" in csp  # the inline manifest and fonts; no remote origin anywhere
     assert "http" not in csp.replace("'self'", "")
+    assert len(resp.content) < 250 * 1024, len(resp.content)  # CLAUDE.md: under 250 KB, inlined fonts included
+
+
+def test_indic_font_subsets_cover_the_page():
+    # The Hindi and Punjabi fonts are subset to the characters the page uses (fixtures/fonts/*.txt record
+    # them). A character outside the lists would render in the device font, or as a box where there is
+    # none. `bash scripts/build_fonts.sh` rebuilds the subsets and the lists together.
+    page = (FIX.parent / "app" / "index.html").read_text(encoding="utf-8")
+    assert page.count("data:font/woff2;base64,") == 2
+    used = {c for c in page if "\u0900" <= c <= "\u097f" or "\u0a00" <= c <= "\u0a7f"}
+    covered = set()
+    for name in ("deva", "guru"):
+        covered |= set((FIX / "fonts" / f"{name}.txt").read_text(encoding="utf-8"))
+    missing = sorted(used - covered)
+    assert not missing, f"run `bash scripts/build_fonts.sh`: the inlined fonts lack {missing}"
 
 
 def test_audit_carries_what_the_page_needs(client, rows):

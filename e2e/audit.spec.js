@@ -41,6 +41,16 @@ async function openTab(page, name) {
   await expect(page.getByRole('tab', { name, exact: true })).toHaveAttribute('aria-selected', 'true');
 }
 
+// Walks the three-step setup wizard with the synthetic site's values (no loss given, so sample=true).
+async function setupPlant(page) {
+  await page.getByLabel('Latitude').fill('26.85');
+  await page.getByLabel('Longitude').fill('80.95');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByLabel('Plant size (kW)').fill('3');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Start auditing' }).click();
+}
+
 async function expectNoSideScroll(page) {
   const fits = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
   expect(fits).toBe(true);
@@ -134,10 +144,7 @@ test('owner sets up a plant and types a reading', async ({ page }, testInfo) => 
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Set up your plant' })).toBeVisible();
   await expect(page.getByRole('tablist')).toHaveCount(0);  // no tabs before there is a plant
-  await page.getByLabel('Latitude').fill('26.85');
-  await page.getByLabel('Longitude').fill('80.95');
-  await page.getByLabel('Plant size (kW)').fill('3');
-  await page.getByRole('button', { name: 'Start auditing' }).click();
+  await setupPlant(page);
 
   // No loss given: the SAMPLE value is called out. This plant is not synthetic.
   await expect(page.getByText('Sample values in use')).toBeVisible();
@@ -307,10 +314,7 @@ test('a mangled link hash, a leftover hash on setup, and Enter during the Approv
   await page.evaluate(() => localStorage.clear());
   await page.goto(`/?site=no-such-plant-either#why`);
   await expect(page.getByRole('heading', { name: 'Set up your plant' })).toBeVisible();
-  await page.getByLabel('Latitude').fill('26.85');
-  await page.getByLabel('Longitude').fill('80.95');
-  await page.getByLabel('Plant size (kW)').fill('3');
-  await page.getByRole('button', { name: 'Start auditing' }).click();
+  await setupPlant(page);
   await expect(page.getByRole('tab', { name: 'Today', exact: true })).toHaveAttribute('aria-selected', 'true');
   await expect(page).toHaveURL(/\/#today$/);
   expect(new URL(page.url()).search).toBe('');
@@ -431,7 +435,7 @@ test('offline: a reading waits in this browser and is saved when the connection 
   await page.getByLabel('Date').first().fill('2026-08-20');
   await page.getByLabel('Energy produced (kWh)').fill('9.9');
   await page.getByRole('button', { name: 'Save reading' }).click();
-  await expect(page.locator('#queue')).toContainText('Offline, will save when connected: 1 reading');
+  await expect(page.locator('#queue')).toContainText('Offline: 1 reading will be saved when you are connected');
   await expect(page.locator('#status')).toContainText('will be saved when you are connected');
   // Queued items keep the overwrite confirmation.
   page.once('dialog', (dialog) => { expect(dialog.message()).toContain('waiting to be saved'); dialog.accept(); });
@@ -445,10 +449,201 @@ test('offline: a reading waits in this browser and is saved when the connection 
   expect((await (await request.get(`/api/sites/${id}/audit`)).json()).timeline).toHaveLength(2);
   // Back online: the online event alone sends it, with the replacement value, and the chip goes away.
   await context.setOffline(false);
-  await expect(page.locator('#status')).toContainText('Saved 1 queued reading');
+  await expect(page.locator('#status')).toContainText('Saved the waiting reading.');
   await expect(page.locator('#queue')).toBeHidden();
   const saved = (await (await request.get(`/api/sites/${id}/audit`)).json()).timeline;
   expect(saved.map((p) => `${p.date}:${p.kwh}`)).toContain('2026-08-20:10.1');
   await openTab(page, 'Why');
   await expect(page.locator('#chart path.bar')).toHaveCount(3);
+});
+
+test('languages: Hindi and Punjabi interface, units not kWh, fonts inline, honesty text translated, no overflow', async ({ page, request, baseURL }) => {
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows());
+  await page.goto(`/?site=${id}`);
+  // The fonts are carried by the page: no request leaves for them.
+  const outside = [];
+  page.on('request', (req) => { if (!req.url().startsWith(baseURL)) outside.push(req.url()); });
+
+  await page.getByRole('button', { name: 'हिन्दी' }).click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'hi');
+  await expect(page.getByRole('tab', { name: 'आज', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('light')).toContainText('सुझाव देखें');  // the fault day: well below usual
+  await expect(page.getByTestId('light')).toContainText('निदान नहीं');
+  await expect(page.getByTestId('headline')).toContainText('यूनिट');
+  await expect(page.getByTestId('headline')).not.toContainText('kWh');
+  await expect(page.getByTestId('headline')).toContainText('अपेक्षित 15.1 यूनिट। गिरावट: सामान्य के 85% से नीचे।');  // Hindi word order and sentence stops
+  await expect(page.getByLabel('बनी बिजली (यूनिट)', { exact: true })).toHaveAttribute('name', 'kwh');  // the field's name is its label alone, not the mic's
+  const shared = decodeURIComponent(await page.locator('#share-verdict').getAttribute('href'));
+  expect(shared).toContain('सबसे संभावित कारण');
+  expect(shared).toContain('SYNTHETIC');
+  expect(shared).not.toContain('Top possible cause');
+  await expect(page.locator('footer')).toContainText('निदान नहीं');
+  await expect(page.locator('footer')).toContainText('अप्रमाणित');
+  // The honesty banners are translated but keep their labels; the SAMPLE word survives.
+  await expect(page.getByText('नकली (synthetic) डेटा')).toBeVisible();
+  await expect(page.locator('#banners')).toContainText('SAMPLE');
+  expect(await page.evaluate(() => document.fonts.check('16px "Surya Indic"', 'सूर्य'))).toBe(true);
+  await expectNoSideScroll(page);
+
+  await page.getByRole('button', { name: 'ਪੰਜਾਬੀ' }).click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'pa');
+  await expect(page.getByRole('tab', { name: 'ਅੱਜ', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('light')).toContainText('ਨਿਦਾਨ ਨਹੀਂ');
+  await expect(page.getByTestId('headline')).toContainText('ਯੂਨਿਟ');
+  expect(await page.evaluate(() => document.fonts.check('16px "Surya Indic"', 'ਸੂਰਜ'))).toBe(true);
+  for (const name of ['ਰੀਡਿੰਗ', 'ਹੱਲ', 'ਕਿਉਂ', 'ਸ਼ਿਕਾਇਤ']) {
+    await page.getByRole('tab', { name, exact: true }).focus();
+    await page.keyboard.press('Enter');
+    await expectNoSideScroll(page);
+  }
+  // Server-written detail stays English and the page says so; the suggestion names are translated.
+  await page.getByRole('tab', { name: 'ਹੱਲ', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('action-check_inverter')).toContainText('ਇਨਵਰਟਰ ਜਾਂਚੋ');
+  await expect(page.getByTestId('action-check_inverter')).toContainText('ਅੰਗਰੇਜ਼ੀ ਵਿੱਚ');
+  await expect(page.getByTestId('action-check_inverter').locator('p[lang="en"]')).toHaveCount(1);  // the English suggestion is marked for screen readers
+  await expect(page.getByTestId('action-check_inverter').getByRole('button', { name: 'ਮਨਜ਼ੂਰ' })).toBeVisible();
+  // The Report tab's own callouts and status are translated; the draft itself stays English.
+  await page.getByRole('tab', { name: 'ਸ਼ਿਕਾਇਤ', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await page.getByRole('button', { name: 'ਸ਼ਿਕਾਇਤ ਦਾ ਖਰੜਾ ਬਣਾਓ' }).click();
+  await expect(page.locator('#draft-out')).toContainText('ਕੁਝ ਭੇਜਿਆ ਨਹੀਂ ਗਿਆ।');
+  await expect(page.locator('#status')).toHaveText('ਖਰੜਾ ਤਿਆਰ। ਕੁਝ ਭੇਜਿਆ ਨਹੀਂ ਗਿਆ।');
+  await expect(page.locator('#draft-text')).toHaveValue(/OWNER TO FILL/);
+
+  // The choice is remembered, and English comes back.
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'pa');
+  await page.getByRole('button', { name: 'English' }).click();
+  await expect(page.getByRole('tab', { name: 'Today', exact: true })).toBeVisible();
+  expect(outside).toEqual([]);
+});
+
+test('traffic light: shape and sentence before numbers; learning, fine and bad states', async ({ page, request }) => {
+  const id = await createSite(request);
+  const rows = syntheticRows();
+  await postRows(request, id, rows.slice(0, 3));
+  await page.goto(`/?site=${id}`);
+  const light = page.getByTestId('light');
+  await expect(light).toContainText('Still learning');
+  await expect(light.locator('.light')).toHaveClass(/learning/);
+  // The light card comes before the headline numbers in the DOM.
+  const order = await page.evaluate(() => document.getElementById('light-card').compareDocumentPosition(document.getElementById('headline')));
+  expect(order & 4).toBeTruthy();  // DOCUMENT_POSITION_FOLLOWING
+
+  await postRows(request, id, rows.slice(3, 20));
+  await page.reload();
+  await expect(light).toContainText('looks fine');
+  await expect(light).not.toContainText('possible cause');  // the cause line belongs to the dip state
+  await expect(light.locator('.light')).toHaveClass(/\bok\b/);
+  expect(await light.locator('.light-icon circle').count()).toBeGreaterThan(0);
+
+  await postRows(request, id, rows.slice(20));
+  await page.reload();
+  await expect(light).toContainText('well below usual');
+  await expect(light).toContainText('A possible cause: Sudden fault (high confidence). A possible cause, not a diagnosis.');
+  await expect(light.locator('.light')).toHaveClass(/bad/);
+  expect(await light.locator('.light-icon path').count()).toBeGreaterThanOrEqual(2);  // cloud + exclamation: a different shape
+
+  // A 61st reading: the charts show the latest 60 and the subtitle says so (the table lists all).
+  await postRows(request, id, [{ date: '2026-10-04', kwh: '7', kind: 'daily' }]);
+  await page.reload();
+  await openTab(page, 'Why');
+  await expect(page.locator('#tl-sub')).toContainText('Showing the latest 60 of 61; the table lists all.');
+  await expect(page.locator('#chart path.bar')).toHaveCount(60);
+
+  // A very dim last day is shown but not judged: the light says so, never "fine" or a cause.
+  const full = (await (await request.get(`/api/sites/${id}/audit`)).json()).timeline;
+  const dim = full.filter((p) => p.low_sun).pop();
+  expect(dim).toBeTruthy();
+  const id2 = await createSite(request);
+  await postRows(request, id2, rows.filter((r) => r.date <= dim.date));
+  await page.evaluate(() => localStorage.clear());
+  await page.goto(`/?site=${id2}`);
+  await expect(light).toContainText('A very dim day');
+  await expect(light).not.toContainText('looks fine');
+  await expect(light).not.toContainText('possible cause');
+});
+
+test('setup wizard: three steps, big choices, tilt from latitude, same API call', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByText('Where is the plant?')).toBeVisible();
+  await expect(page.locator('#wiz-2')).toBeHidden();
+  // Required fields are checked before moving on.
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.locator('#wiz-1')).toBeVisible();
+  await page.getByLabel('Latitude').fill('26.85');
+  await page.getByLabel('Longitude').fill('80.95');
+  await page.getByLabel('Longitude').press('Enter');  // Enter in a field goes to the next step, never a hidden submit
+  await expect(page.getByText('Tell us about the panels')).toBeVisible();
+  await expect(page.getByLabel('Panel tilt (degrees)')).toHaveValue('27');  // pre-filled from the latitude
+  await expect(page.getByRole('radio', { name: 'South', exact: true })).toBeChecked();
+  await expect(page.getByRole('radio')).toHaveCount(8);  // every direction the API supports
+  // The pre-filled tilt follows a changed latitude; a tilt the owner typed stays.
+  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByLabel('Latitude').fill('12.97');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByLabel('Panel tilt (degrees)')).toHaveValue('13');
+  await page.getByLabel('Panel tilt (degrees)').fill('27');
+  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByLabel('Panel tilt (degrees)')).toHaveValue('27');
+  await page.getByLabel('Plant size (kW)').fill('3');
+  await page.getByRole('radio', { name: 'South-west' }).check();
+  await expect(page.locator('.big-choice label.checked')).toHaveText('South-west');  // visible without :has() too
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByText('Do you know the system loss?')).toBeVisible();
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.getByLabel('Plant size (kW)')).toHaveValue('3');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Start auditing' }).click();
+  await expect(page.getByTestId('light')).toContainText('No readings yet');
+  await expect(page.locator('#plant-summary')).toContainText('tilt 27° · facing south-west');
+  await expect(page.getByText('Sample values in use')).toBeVisible();
+});
+
+test('accessibility basics: 48px targets, bigger text, photo-first log, mic and read-aloud only when supported', async ({ page, request }) => {
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows());
+  await page.goto(`/?site=${id}#log`);
+  // The camera control is the largest control on the Log tab.
+  const cam = await page.locator('#photo-pick').boundingBox();
+  const save = await page.getByRole('button', { name: 'Save reading' }).boundingBox();
+  expect(cam.height).toBeGreaterThanOrEqual(96);
+  expect(cam.height).toBeGreaterThan(save.height);
+  // No capture attribute: the phone's picker offers the gallery too, so a saved inverter-app screenshot can be chosen.
+  expect(await page.locator('#photo').getAttribute('capture')).toBeNull();
+  expect(await page.locator('#photo').getAttribute('accept')).toContain('image');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Surya Audit');
+  // Every visible button, link-button, expander and tab on every tab is at least 48px tall (the README's claim).
+  for (const name of TAB_NAMES) {
+    await page.getByRole('tab', { name, exact: true }).focus();
+    await page.keyboard.press('Enter');
+    const small = await page.evaluate(() => Array.from(document.querySelectorAll('button, a.button, a.link, summary, [role=tab]'))
+      .filter((n) => n.offsetParent !== null && !n.closest('[hidden]'))
+      .map((n) => [n.textContent.trim().slice(0, 20), Math.round(n.getBoundingClientRect().height)])
+      .filter(([, h]) => h < 48));
+    expect(small, name).toEqual([]);
+  }
+  await page.getByRole('tab', { name: 'Log', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  // Bigger text is a toggle that persists.
+  const before = await page.evaluate(() => parseFloat(getComputedStyle(document.body).fontSize));
+  await page.getByRole('button', { name: 'Bigger text' }).click();
+  const after = await page.evaluate(() => parseFloat(getComputedStyle(document.body).fontSize));
+  expect(after).toBeGreaterThan(before);
+  await page.reload();
+  expect(await page.evaluate(() => parseFloat(getComputedStyle(document.body).fontSize))).toBe(after);
+  await page.getByRole('button', { name: 'Bigger text' }).click();
+  // Speech features appear only where the browser supports them, with the privacy note.
+  const hasRec = await page.evaluate(() => Boolean(window.SpeechRecognition || window.webkitSpeechRecognition));
+  await expect(page.locator('#mic')).toBeVisible({ visible: hasRec });
+  await expect(page.locator('#mic-note')).toBeVisible({ visible: hasRec });
+  if (hasRec) await expect(page.locator('#mic-note')).toContainText('goes to Google');
+  const hasVoice = await page.evaluate(() => 'speechSynthesis' in window && speechSynthesis.getVoices().some((v) => v.lang.toLowerCase().startsWith('en')));
+  await page.getByRole('tab', { name: 'Today', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('light').getByRole('button', { name: 'Read aloud' })).toBeVisible({ visible: hasVoice });
+  await expectNoSideScroll(page);
 });
