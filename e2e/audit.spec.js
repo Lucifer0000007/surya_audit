@@ -328,3 +328,127 @@ test('a mangled link hash, a leftover hash on setup, and Enter during the Approv
   await expect(page.getByTestId('action-check_inverter')).toContainText('Checking the next readings');
   await expect(page.getByRole('alert')).toBeHidden();
 });
+
+test('impact strip: sourced editable assumptions, payback only for dust, water, kWh chart, WhatsApp share', async ({ page, request }) => {
+  const id = await createSite(request);
+  const rows = syntheticRows();
+  // Mid-scenario, dust is the top cause: the cleaning payback line shows.
+  await postRows(request, id, rows.slice(0, 42));
+  await page.goto(`/?site=${id}`);
+  const impact = page.getByTestId('impact');
+  await expect(impact).toBeVisible();
+  await expect(impact).toContainText('What the dips cost');
+  await expect(impact.locator('.tag').first()).toHaveText('estimate');
+  await expect(impact).toContainText('Units lost in the dips');
+  await expect(impact).toContainText('flagged as dips');
+  await expect(impact).toContainText('at Rs 7 per unit');
+  await expect(impact).toContainText('at 0.675 kg per unit');
+  // Dust is suspected but no day has crossed the dip line yet: the clean's cost is shown, no payback invented.
+  await expect(impact).toContainText('0 flagged as dips');
+  await expect(impact).toContainText('A clean costs about');
+  await expect(impact).toContainText('no daily loss to set against it');
+  await expect(impact).toContainText('not a promise');
+  await expect(impact).not.toContainText('n/a');
+  await expect(impact).toContainText('less than that schedule');
+  // Every default is labelled an assumption and has a source link with a retrieval date.
+  await impact.getByText('How we calculated this').click();
+  await expect(impact.locator('label .tag')).toHaveCount(6);
+  await expect(impact).toContainText('retrieved 2026-10-08');
+  await expect(impact.locator('#assume-sources a')).toHaveCount(8);  // every quoted figure links to its document
+  await expect(impact).toContainText('CEA');
+  // After the fault: 5 flagged dips carry a real loss; dust is no longer supported, so no payback line.
+  await postRows(request, id, rows.slice(42));
+  await page.reload();
+  await expect(page.getByTestId('impact')).toBeVisible();
+  await expect(page.getByTestId('impact')).toContainText('5 flagged as dips');
+  await expect(page.getByTestId('impact')).not.toContainText('pays back');
+  await expect(page.getByTestId('impact')).toContainText('none suggested by the audit yet');
+  // Editing the tariff doubles the rupee figure; reset restores the default.
+  const money = () => page.getByTestId('impact').locator('.stat').nth(1).locator('.value').textContent();
+  const before = Number((await money()).replace(/[^0-9]/g, ''));
+  expect(before).toBeGreaterThan(0);
+  await page.getByTestId('impact').getByText('How we calculated this').click();
+  await page.getByTestId('impact').getByLabel(/Tariff, Rs per unit/).fill('14');
+  await page.getByRole('button', { name: 'Use these values' }).click();
+  await expect(page.getByTestId('impact')).toContainText('at Rs 14 per unit');
+  const after = Number((await money()).replace(/[^0-9]/g, ''));
+  expect(Math.abs(after - 2 * before)).toBeLessThanOrEqual(1);
+  await page.reload();
+  await expect(page.getByTestId('impact')).toContainText('at Rs 14 per unit');  // remembered on this device
+  await page.getByTestId('impact').getByText('How we calculated this').click();
+  await page.getByRole('button', { name: 'Reset to defaults' }).click();
+  await expect(page.getByTestId('impact')).toContainText('at Rs 7 per unit');
+
+  // Why: the kWh chart has both series and marks the 5 dips.
+  await openTab(page, 'Why');
+  await expect(page.locator('#kwh-chart polyline.expected')).toHaveCount(1);
+  await expect(page.locator('#kwh-chart polyline.actual')).toHaveCount(1);
+  await expect(page.locator('#kwh-chart .actual-dot')).toHaveCount(5);
+  await expect(page.locator('#kwh-legend')).toContainText('Expected (kWh)');
+
+  // WhatsApp share: a wa.me link carrying the verdict (and the synthetic label), nothing sent.
+  await openTab(page, 'Today');
+  const share = page.locator('#share-verdict');
+  await expect(share).toHaveAttribute('target', '_blank');
+  const href = decodeURIComponent(await share.getAttribute('href'));
+  expect(href.startsWith('https://wa.me/?text=')).toBe(true);
+  expect(href).toContain('SYNTHETIC DEMO DATA');
+  expect(href).toContain('Top possible cause: Sudden fault (high confidence). A possible cause, not a diagnosis.');
+  await openTab(page, 'Report');
+  await page.getByRole('button', { name: 'Draft a complaint' }).click();
+  const draftShare = page.locator('#share-draft');
+  await expect(draftShare).toBeVisible();
+  // The click sets the href from the (editable) draft; prevent navigation and read it.
+  await page.evaluate(() => document.getElementById('share-draft').addEventListener('click', (e) => e.preventDefault()));
+  await draftShare.click();
+  const draftHref = decodeURIComponent(await draftShare.getAttribute('href'));
+  expect(draftHref.startsWith('https://wa.me/?text=')).toBe(true);
+  expect(draftHref).toContain('<<OWNER TO FILL: ');
+  expect(draftHref).toContain('SYNTHETIC DATA');
+  await expect(page.locator('#status')).toContainText('Nothing has been sent by this page');
+});
+
+test('a plant with no dips shows zero loss, not a bill for ordinary variation', async ({ page, request }) => {
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows().slice(0, 20));
+  await page.goto(`/?site=${id}`);
+  const impact = page.getByTestId('impact');
+  await expect(impact).toBeVisible();
+  await expect(impact).toContainText('0 flagged as dips');
+  await expect(impact.locator('.stat').nth(0).locator('.value')).toHaveText('0 kWh');
+  await expect(impact.locator('.stat').nth(1).locator('.value')).toHaveText('₹0');
+  await expect(impact).not.toContainText('pays back');
+  // The shared verdict carries the SAMPLE label when a sample loss value is in use.
+  const href = decodeURIComponent(await page.locator('#share-verdict').getAttribute('href'));
+  expect(href).toContain('SAMPLE system-loss value');
+});
+
+test('offline: a reading waits in this browser and is saved when the connection returns', async ({ page, request, context }) => {
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows().slice(0, 2));
+  await page.goto(`/?site=${id}#log`);
+  await context.setOffline(true);
+  await page.getByLabel('Date').first().fill('2026-08-20');
+  await page.getByLabel('Energy produced (kWh)').fill('9.9');
+  await page.getByRole('button', { name: 'Save reading' }).click();
+  await expect(page.locator('#queue')).toContainText('Offline, will save when connected: 1 reading');
+  await expect(page.locator('#status')).toContainText('will be saved when you are connected');
+  // Queued items keep the overwrite confirmation.
+  page.once('dialog', (dialog) => { expect(dialog.message()).toContain('waiting to be saved'); dialog.accept(); });
+  await page.getByLabel('Date').first().fill('2026-08-20');
+  await page.getByLabel('Energy produced (kWh)').fill('10.1');
+  await page.getByRole('button', { name: 'Save reading' }).click();
+  await expect(page.locator('#queue')).toContainText('1 reading');
+  // The queue lives in this browser: it survives a reload even while offline.
+  expect(JSON.parse(await page.evaluate(() => localStorage.getItem('surya-audit-queued-readings')))).toHaveLength(1);
+  // Nothing reached the server yet.
+  expect((await (await request.get(`/api/sites/${id}/audit`)).json()).timeline).toHaveLength(2);
+  // Back online: the online event alone sends it, with the replacement value, and the chip goes away.
+  await context.setOffline(false);
+  await expect(page.locator('#status')).toContainText('Saved 1 queued reading');
+  await expect(page.locator('#queue')).toBeHidden();
+  const saved = (await (await request.get(`/api/sites/${id}/audit`)).json()).timeline;
+  expect(saved.map((p) => `${p.date}:${p.kwh}`)).toContain('2026-08-20:10.1');
+  await openTab(page, 'Why');
+  await expect(page.locator('#chart path.bar')).toHaveCount(3);
+});
