@@ -566,6 +566,37 @@ test('traffic light: shape and sentence before numbers; learning, fine and bad s
   await expect(light).not.toContainText('possible cause');
 });
 
+test('traffic light: a steady but low plant is never called fine; the light names the cause', async ({ page, request }) => {
+  const id = await createSite(request);
+  // The same synthetic weather at about 70% of the estimate from day one: steady, so nothing is ever flagged
+  // against the plant's own baseline, while the audit ranks "low since the start" high and suggests an inspection.
+  // 22 rows: the last one (26 Aug) is a judged day; the 21st (25 Aug) is too dim to judge and would show as such.
+  await postRows(request, id, syntheticRows().slice(0, 22).map((r) => ({ ...r, kwh: (Number(r.kwh) * 0.70 / 0.92).toFixed(1) })));
+  await page.goto(`/?site=${id}`);
+  const light = page.getByTestId('light');
+  await expect(light).toContainText('Near usual, but the audit points to a possible cause.');
+  await expect(light).toContainText('A possible cause: Low since the start (high confidence). A possible cause, not a diagnosis.');
+  await expect(light).not.toContainText('looks fine');
+  await expect(light.locator('.light')).toHaveClass(/cause/);
+  expect(await light.locator('.light-icon path').count()).toBe(1);  // the half-covered sun: a third shape
+  await expect(page.getByTestId('headline')).toContainText('Top possible cause: Low since the start');
+});
+
+test('voice input: a spoken number keeps Indian thousands grouping and the status reads back the stored value', async ({ page, request }) => {
+  const id = await createSite(request);
+  await page.addInitScript(() => {
+    // A stand-in recognizer: the real one in Chrome sends audio to Google and cannot run headless.
+    window.SpeechRecognition = window.webkitSpeechRecognition = class {
+      start() { setTimeout(() => this.onresult({ results: [[{ transcript: 'about 12,345.5 units' }]] }), 0); }
+      stop() {}
+    };
+  });
+  await page.goto(`/?site=${id}#log`);
+  await page.getByRole('button', { name: 'Say the number' }).click();
+  await expect(page.getByLabel('Energy produced (kWh)', { exact: true })).toHaveValue('12345.5');
+  await expect(page.locator('#status')).toHaveText('12345.5 kWh');
+});
+
 test('setup wizard: three steps, big choices, tilt from latitude, same API call', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByText('Where is the plant?')).toBeVisible();
