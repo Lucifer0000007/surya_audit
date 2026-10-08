@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#eda100">
+<link rel="manifest" id="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Surya%20Audit%22%2C%22short_name%22%3A%22Surya%22%2C%22start_url%22%3A%22/%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f6f5f1%22%2C%22theme_color%22%3A%22%23eda100%22%7D">
 <title>Surya Audit</title>
 <meta name="description" content="Check whether your rooftop solar plant produces what it should, and collect evidence before you contact the installer.">
 <style>
@@ -200,6 +202,15 @@
   .chart .usual { stroke: var(--axis); stroke-width: 1; }
   .chart .threshold { stroke: var(--critical); stroke-width: 1; stroke-dasharray: 4 3; transform-box: fill-box; transform-origin: 0 50%; }
   .chart .approved { stroke: var(--ink-2); stroke-width: 1; }
+  .kwh { position: relative; margin-top: var(--s1); }
+  .kwh svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .kwh .expected { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; opacity: 0.8; }
+  .kwh .actual { fill: none; stroke: var(--series); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .kwh .actual-dot { fill: var(--critical); stroke: var(--surface); stroke-width: 2; }
+  .kwh .grid { stroke: var(--grid); stroke-width: 1; }
+  .kwh text { fill: var(--ink-2); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .key-line.expected { border-top: 2px solid var(--ink); opacity: 0.8; }
+  .key-line.actual { border-top: 2px solid var(--series); }
   .chart text { fill: var(--ink-2); font-size: 11px; font-variant-numeric: tabular-nums; }
   .chart .hit { fill: transparent; }
   .chart svg.animate .threshold { animation: draw 320ms ease-out both; }
@@ -228,6 +239,22 @@
   .sk-card::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 45%; background: var(--surface-2); opacity: 0.7; transform: translateX(-110%); animation: shimmer 1.3s ease-in-out infinite; }
   .sk-line { height: 14px; border-radius: 7px; background: var(--surface-2); }
   .sk-ring { width: 104px; height: 104px; border-radius: 50%; border: 10px solid var(--surface-2); }
+
+  /* ---------- impact strip (Today) ---------- */
+  .impact { display: grid; gap: var(--s2); }
+  .impact-grid { display: grid; gap: var(--s2); grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .stat { display: grid; gap: 2px; padding: 12px var(--s2); border-radius: var(--r-md); background: var(--surface-2); min-width: 0; }
+  .stat .label { font-size: 0.8rem; color: var(--ink-2); }
+  .stat .value { font-size: 1.6rem; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
+  .stat .sub { font-size: 0.8rem; color: var(--ink-2); }
+  .tag { display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--accent-text); border: 1px solid currentColor; border-radius: 999px; padding: 1px 8px; vertical-align: middle; }
+  .assume { display: grid; gap: 12px; padding: 12px var(--s2); border-radius: var(--r-md); border: 1px solid var(--line); }
+  .assume summary { font-weight: 600; color: var(--ink); }
+  .assume ol, .assume ul { margin: 0; padding-left: 18px; font-size: 0.875rem; color: var(--ink-2); display: grid; gap: 6px; }
+  .share { background: #25d366; color: #0b2b16; border-color: transparent; }
+  .share svg { flex: none; }
+  #queue { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s2); align-items: center; }
+  .queued { background: color-mix(in srgb, var(--warning) 22%, var(--surface)); }
 
   /* ---------- status, footer ---------- */
   .status { min-height: 1.5em; color: var(--ink-2); font-size: 0.9rem; }
@@ -323,6 +350,30 @@
     <div id="panels">
       <section role="tabpanel" id="panel-today" aria-labelledby="tab-today" tabindex="0">
         <div class="card" id="headline" data-testid="headline"></div>
+        <div class="card impact" id="impact" data-testid="impact" hidden>
+          <header>
+            <h2>What the dips cost <span class="tag">estimate</span></h2>
+            <p class="muted small" id="impact-sub"></p>
+          </header>
+          <div class="impact-grid" id="impact-grid"></div>
+          <div id="roi"></div>
+          <div id="water"></div>
+          <details class="assume" id="assumptions">
+            <summary>How we calculated this (editable assumptions)</summary>
+            <form id="assume-form" class="fields">
+              <label>Tariff, Rs per unit (kWh) <span class="tag">assumption</span><input name="tariff" type="number" step="any" min="0" max="50" inputmode="decimal" required></label>
+              <label>Grid CO₂, kg per unit <span class="tag">assumption</span><input name="co2" type="number" step="any" min="0" max="2" inputmode="decimal" required></label>
+              <label>One cleaning, Rs per kW <span class="tag">assumption</span><input name="clean_cost_per_kw" type="number" step="any" min="0" max="5000" inputmode="decimal" required></label>
+              <label>Water per panel per clean, litres <span class="tag">assumption</span><input name="water_per_panel" type="number" step="any" min="0" max="50" inputmode="decimal" required></label>
+              <label>Panels on the roof <span class="tag">assumption</span><input name="panels" type="number" step="1" min="1" max="200" inputmode="numeric" required></label>
+              <label>Fixed cleaning schedule, cleans per month <span class="tag">assumption</span><input name="cleans_per_month" type="number" step="any" min="0" max="31" inputmode="decimal" required></label>
+              <div class="row"><button type="submit" class="secondary">Use these values</button><button type="button" class="link" id="assume-reset">Reset to defaults</button></div>
+            </form>
+            <ol id="method"></ol>
+            <p class="note">Defaults and their sources (retrieved 2026-10-08):</p>
+            <ul id="assume-sources"></ul>
+          </details>
+        </div>
         <div class="card" id="plant-card">
           <h2>This plant</h2>
           <p id="plant-summary" class="muted"></p>
@@ -347,6 +398,7 @@
             <img id="photo-thumb" alt="Your photo">
             <div><p id="photo-note"></p><button type="button" class="link" id="photo-clear">Discard photo</button></div>
           </div>
+          <div id="queue" hidden></div>
           <form id="reading-form">
             <div class="fields">
               <label>Date<input name="date" type="date" required></label>
@@ -382,6 +434,9 @@
           </div>
           <div class="chart" id="chart"></div>
           <ul class="legend" id="legend"></ul>
+          <h3 id="kwh-title" class="small muted">Units made against units expected, reading by reading</h3>
+          <div class="kwh" id="kwh-chart"></div>
+          <ul class="legend" id="kwh-legend"></ul>
           <details>
             <summary>Show readings as a table</summary>
             <div class="table-wrap"><table id="table"></table></div>
@@ -412,7 +467,9 @@
             <div class="row">
               <button type="button" class="secondary" id="copy-btn">Copy text</button>
               <button type="button" class="secondary" id="download-btn">Download evidence (JSON)</button>
+              <a class="button share" id="share-draft" href="#" target="_blank" rel="noopener noreferrer">Share on WhatsApp</a>
             </div>
+            <p class="note">WhatsApp opens with the draft in a new message for you to choose who gets it. Nothing is sent by this page.</p>
             <p class="note" id="categories"></p>
           </div>
         </div>
@@ -456,8 +513,23 @@ const CHART_MAX = 60;
 const STORE_KEY = 'surya-audit-site';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+// Editable assumptions behind the impact strip. Defaults are sourced (SOURCES.md, retrieved 2026-10-08) and
+// labelled as assumptions on the page; the owner's edits are kept in this browser only.
+const ASSUME_KEY = 'surya-audit-assumptions';
+const ASSUME_DEFAULTS = { tariff: 7, co2: 0.675, clean_cost_per_kw: 150, water_per_panel: 4, panels: 0, cleans_per_month: 2 };
+const PANELS_PER_KW = 2;  // a plain guess; the owner corrects the count
+const ASSUME_SOURCES = [
+  { text: 'Rs 7 per unit: CEA, Electricity Tariff & Duty & Average Rates of Electricity Supply in India, March 2026, Table 1(b): Rs 7.06/kWh all-in for an urban Uttar Pradesh home using 200 units a month (Rs 2.20 to 11.37 across India\u2019s utilities). Enter your own bill rate if you are elsewhere.', urls: [['CEA', 'https://cea.nic.in/api/dashboardReports/view-pdf/en/a6bd09cf-72e4-4a30-8a37-a648ca22eaa6']] },
+  { text: '0.675 kg CO\u2082 per unit: CEA, CO\u2082 Baseline Database for the Indian Power Sector, User Guide v22.0 (August 2026): weighted average grid emission factor for FY 2025-26, 0.675 tCO\u2082/MWh.', urls: [['CEA', 'https://cea.nic.in/api/cdm-report-version/view-pdf/en/82']] },
+  { text: 'Rs 150 per kW per clean: CEEW, Maximising Rooftop Solar Performance by Enabling a Robust O&M Ecosystem (June 2026): cleaning alone costs Rs 100 to 200 per kW per visit; CEEW assumes Rs 150. A vendor\u2019s own packages run about Rs 390 to 450 a visit for plants up to 3.25 kWp.', urls: [['CEEW', 'https://www.ceew.in/sites/default/files/ceew-oandm-ecosystem-for-rts-web-ready-file.pdf'], ['vendor page', 'https://www.solarsquare.in/blog/solar-panel-cleaning-pricing-in-india/']] },
+  { text: '4 litres per panel: a review of PV cleaning reports 0.31 to 4.95 L per m\u00b2 (average 2.1) as covered by pv magazine India, and Renewable Watch, citing CEEW, gives 3 to 5 L per panel in normal areas and 7 to 8 L in arid ones; a home panel is about 2 m\u00b2.', urls: [['pv magazine', 'https://www.pv-magazine-india.com/2025/02/05/pressurized-water-cleaning-can-improve-pv-generation-efficiency-by-10/'], ['Renewable Watch', 'https://renewablewatch.in/2020/12/03/waterless-way/']] },
+  { text: 'Panel count: a guess of about 2 panels per kW, not from a source. Count yours and correct it.', urls: [] },
+  { text: 'Fixed schedule of 2 cleans a month: BHEL\u2019s rooftop O&M specification says panels are "cleaned at least once every fifteen days", and a Roorkee field study found monthly soiling losses of 1 to 1.5% with weekly cleaning, 2.5% biweekly, 5% every four weeks.', urls: [['BHEL', 'https://tenders.bhel.com/sites/default/files/TS-2021-11-01-04%3A22%3A11.pdf'], ['Roorkee study', 'https://www.nature.com/articles/s41598-026-45485-2']] },
+];
+const QUEUE_KEY = 'surya-audit-queued-readings';
+
 const state = {
-  id: null, audit: null, photoUrl: null, draft: null, defaultDate: null, photoSeq: 0,
+  id: null, audit: null, photoUrl: null, draft: null, defaultDate: null, photoSeq: 0, flushing: null, saving: null,
   tab: 'today', seenTabs: new Set(), chartPlayed: false, chartWidth: 0,
   prevOutcomes: null, prevSteps: {}, heroValue: 0, heroFrac: 0, replay: null,
 };
@@ -501,6 +573,17 @@ function icon(kind) {
   return s;
 }
 function storeGet() { try { return localStorage.getItem(STORE_KEY); } catch { return null; } }
+function jsonGet(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
+function jsonSet(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* per-viewer convenience only */ } }
+const rupees = (v) => `\u20b9${Math.round(v).toLocaleString('en-IN')}`;
+
+// The level a point was judged against, in kWh: the expected output scaled by the baseline of the
+// segment the point belongs to (earlier segments end at their `until` date; the current one is last).
+function usualKwh(p, a) {
+  if (p.compared_with !== 'plant_usual') return p.expected_kwh;
+  const seg = (a.baseline.earlier || []).find((e) => e.until && p.date <= e.until && e.ratio_to_pvgis);
+  return p.expected_kwh * ((seg ? seg.ratio_to_pvgis : a.baseline.ratio_to_pvgis) || 1);
+}
 function storeSet(v) { try { localStorage.setItem(STORE_KEY, v); } catch { /* per-viewer convenience only */ } }
 function storeClear() { try { localStorage.removeItem(STORE_KEY); } catch { /* ignore */ } }
 
@@ -614,24 +697,25 @@ function tabFromHash() {
 function showTab(name, force) {
   const from = state.tab;
   if (from === name && !force) return;
-  const apply = () => {
-    for (const t of TABS) {
-      const on = t === name;
-      const b = tabButton(t);
-      b.setAttribute('aria-selected', String(on));
-      b.tabIndex = on ? 0 : -1;
-      $(`panel-${t}`).hidden = !on;
-    }
-    tablist.style.setProperty('--i', String(TABS.indexOf(name)));
-    state.tab = name;
-    if (name !== 'why') stopReplay(false);
-    onTabShown(name);
-  };
+  // The selected state is applied synchronously, so it never depends on the order in which
+  // hashchange events and view-transition callbacks arrive. The transition only animates.
+  for (const t of TABS) {
+    const on = t === name;
+    const b = tabButton(t);
+    b.setAttribute('aria-selected', String(on));
+    b.tabIndex = on ? 0 : -1;
+  }
+  tablist.style.setProperty('--i', String(TABS.indexOf(name)));
+  state.tab = name;
+  if (name !== 'why') stopReplay(false);
+  const swap = () => { for (const t of TABS) $(`panel-${t}`).hidden = t !== name; onTabShown(name); };
   const animate = !calm() && from !== name && !$('site').hidden;
   if (animate && document.startViewTransition) {
-    document.startViewTransition(apply);
+    const transition = document.startViewTransition(swap);
+    // If a newer tab change arrives before this one finishes, its own swap wins; nothing to undo.
+    transition.updateCallbackDone.catch(() => {});
   } else {
-    apply();
+    swap();
     if (animate) {
       const p = $(`panel-${name}`);
       p.classList.remove('fade-in');
@@ -646,8 +730,9 @@ function showTab(name, force) {
 
 function goTo(name, focusTab) {
   if (focusTab) tabButton(name).focus();
-  if (tabFromHash() !== name) location.hash = name;  // the hashchange handler switches panels
-  else showTab(name);
+  showTab(name);
+  // The hash records the tab for Back, reload and links; the hashchange handler finds it already shown.
+  if (tabFromHash() !== name) history.pushState(null, '', `#${name}`);
 }
 
 function onTabShown(name) {
@@ -668,6 +753,12 @@ tablist.addEventListener('keydown', (ev) => {
   if (target == null) return;
   ev.preventDefault();
   goTo(TABS[target], true);
+});
+// Back/Forward and links that change the fragment: show that tab (a no-op if it is already shown).
+window.addEventListener('popstate', () => {
+  if ($('site').hidden) return;
+  const name = tabFromHash();
+  if (name) showTab(name);
 });
 window.addEventListener('hashchange', () => {
   if ($('site').hidden) return;
@@ -744,20 +835,96 @@ $('switch').addEventListener('click', () => {
 });
 
 // ---------- readings ----------
+// ---------- offline queue: a reading that cannot reach the server waits in this browser ----------
+function queuedFor(site) { return (jsonGet(QUEUE_KEY) || []).filter((q) => q && q.site === site && q.body); }
+function queued() { return queuedFor(state.id); }
+function setQueue(site, items) {
+  const others = (jsonGet(QUEUE_KEY) || []).filter((q) => q && q.site !== site);
+  jsonSet(QUEUE_KEY, [...others, ...items]);
+  if (site === state.id) renderQueue();
+}
+function renderQueue() {
+  const box = $('queue');
+  box.replaceChildren();
+  const items = queued();
+  box.hidden = !items.length;
+  if (!items.length) return;
+  box.append(el('span', { class: 'chip queued', role: 'status' }, icon('clock'),
+    `Offline, will save when connected: ${items.length} reading${items.length > 1 ? 's' : ''} (${items.map((q) => fmtDate(q.body.date, true)).join(', ')})`),
+    el('button', { type: 'button', class: 'link', id: 'queue-now', text: 'Try now', onclick: () => flushQueue() }));
+}
+// Sends the queue for the plant that is open now. A reading the server refuses outright (a 4xx other than
+// 429) is dropped with its message; on no response, 429 or 5xx the rest stays queued for next time.
+function flushQueue() {
+  if (state.flushing) return state.flushing;
+  const site = state.id;
+  if (!site || !queuedFor(site).length) return Promise.resolve();
+  state.flushing = (async () => {
+    let audit = null;
+    let sent = 0;
+    const drop = (q) => setQueue(site, queuedFor(site).filter((x) => x.body.date !== q.body.date));
+    try {
+      if (state.saving) await state.saving.catch(() => {});
+      // One item at a time from the live queue, so readings queued meanwhile are neither lost nor reverted.
+      for (let q = queuedFor(site)[0]; q; q = queuedFor(site)[0]) {
+        try {
+          audit = await api('POST', `/api/sites/${encodeURIComponent(site)}/readings`, q.body);
+          sent += 1;
+          drop(q);
+        } catch (e) {
+          const refused = e.status && e.status < 500 && e.status !== 429;
+          if (!refused) break;  // no response, 429 or 5xx: leave the queue as it is for next time
+          drop(q);
+          if (state.id === site) showError(`${fmtDate(q.body.date)}: ${e.message}`);
+        }
+      }
+    } finally {
+      state.flushing = null;
+      if (state.id === site) renderQueue();
+      if (audit && state.id === site) { render(audit); markDraftStale(); say(`Saved ${sent} queued reading${sent === 1 ? '' : 's'}.`); }
+    }
+  })();
+  return state.flushing;
+}
+window.addEventListener('online', () => { if (state.id) flushQueue(); });
+
 $('reading-form').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const f = ev.target;
+  const site = state.id;
   const body = { date: f.date.value, kwh: Number(f.kwh.value), kind: f.kind.value };
   const saved = state.audit && state.audit.timeline.find((p) => p.date === body.date);
+  const waiting = queued().find((q) => q.body.date === body.date);
   if (saved && !confirm(`A reading for ${fmtDate(body.date)} is already saved (${kwh(saved.kwh)} kWh). Replace it?`)) return;
-  const audit = await busy(f.querySelector('button[type=submit]'),
-    () => api('POST', `/api/sites/${encodeURIComponent(state.id)}/readings`, body));
-  if (!audit) return;
-  f.kwh.value = '';
-  clearPhoto();
-  render(audit);
-  markDraftStale();
-  say(`Saved the reading for ${fmtDate(body.date)}.`);
+  if (!saved && waiting && !confirm(`A reading for ${fmtDate(body.date)} (${kwh(waiting.body.kwh)} kWh) is waiting to be saved. Replace it?`)) return;
+  const button = f.querySelector('button[type=submit]');
+  button.disabled = true; showError('');
+  try {
+    if (state.flushing) await state.flushing.catch(() => {});  // never race a queue flush
+    let audit;
+    try {
+      state.saving = api('POST', `/api/sites/${encodeURIComponent(site)}/readings`, body);
+      audit = await state.saving;
+    } catch (e) {
+      if (e.status) { showError(e.message); return; }  // the server answered: a real problem with the values
+      // No answer at all: keep the reading here and send it when the connection is back.
+      setQueue(site, [...queuedFor(site).filter((q) => q.body.date !== body.date), { site, body }]);
+      f.kwh.value = '';
+      clearPhoto();
+      say(`Offline: the reading for ${fmtDate(body.date)} will be saved when you are connected.`);
+      return;
+    } finally {
+      state.saving = null;
+    }
+    if (state.id !== site) return;  // the owner moved to another plant meanwhile
+    f.kwh.value = '';
+    clearPhoto();
+    render(audit);
+    markDraftStale();
+    say(`Saved the reading for ${fmtDate(body.date)}.`);
+  } finally {
+    button.disabled = false;
+  }
 });
 
 function clearPhoto() {
@@ -876,6 +1043,25 @@ $('copy-btn').addEventListener('click', async () => {
   catch { $('draft-text').select(); say('Select-all done: copy it with your keyboard or long-press.'); }
 });
 
+function whatsappHref(text) { return `https://wa.me/?text=${encodeURIComponent(text)}`; }
+function verdictText(a) {
+  const tl = a.timeline;
+  if (!tl.length) return 'Surya Audit: no readings yet.';
+  const last = tl[tl.length - 1];
+  const top = a.hypotheses[0];
+  const lines = [a.synthetic ? 'SYNTHETIC DEMO DATA, not a real plant.' : null,
+    `Surya Audit, ${fmtDate(last.date)}: ${last.relative == null ? 'no expectation' : `${pct(last.relative)} ${refText(last)}`} (${kwh(last.kwh)} kWh made, ${last.compared_with === 'plant_usual' ? 'usual' : 'estimate'} about ${kwh(usualKwh(last, a))}).`,
+    a.sample ? 'Expected output uses a SAMPLE system-loss value, not a measurement.' : null,
+    !a.baseline.learnt ? `Still learning this plant's usual output (${a.baseline.points_used} of ${a.baseline.points_needed} readings).`
+      : top && top.confidence !== 'low' ? `Top possible cause: ${CAUSES[top.cause] || top.cause} (${top.confidence} confidence). A possible cause, not a diagnosis.`
+      : 'Nothing stands out: every possible cause is at low confidence.'];
+  return lines.filter(Boolean).join('\n');
+}
+$('share-draft').addEventListener('click', (ev) => {
+  ev.currentTarget.href = whatsappHref($('draft-text').value || '');
+  say('WhatsApp opened with the draft. Nothing has been sent by this page.');
+});
+
 $('download-btn').addEventListener('click', () => {
   if (!state.draft) return;
   const payload = { ...state.draft, draft_text: $('draft-text').value };
@@ -906,6 +1092,8 @@ function render(audit) {
   renderCauses(audit);
   renderEscalation(audit);
   renderSources(audit);
+  renderImpact(audit);
+  renderQueue();
   syncDate();
   if (newlyRecovered.length) {
     const card = document.querySelector(`[data-action-id="${CSS.escape(newlyRecovered[0].id)}"]`);
@@ -1031,8 +1219,104 @@ function renderHeadline(a) {
   }
   box.append(el('div', { class: 'row' },
     el('a', { class: 'button', href: '#log', text: 'Log a reading' }),
-    el('a', { class: 'button secondary', href: '#why', text: 'See why' })));
+    el('a', { class: 'button secondary', href: '#why', text: 'See why' }),
+    el('a', { class: 'button share', id: 'share-verdict', href: whatsappHref(verdictText(a)), target: '_blank', rel: 'noopener noreferrer', text: 'Share on WhatsApp' })));
 }
+
+// ---------- impact strip: rupees, CO2, cleaning payback and water, from editable assumptions ----------
+function assumptions() {
+  const saved = jsonGet(ASSUME_KEY) || {};
+  const out = { ...ASSUME_DEFAULTS };
+  for (const k of Object.keys(ASSUME_DEFAULTS)) {
+    if (k === 'panels') continue;  // per plant, below
+    const v = Number(saved[k]);
+    if (Number.isFinite(v) && v >= 0) out[k] = v;
+  }
+  const perSite = Number((saved.panels_by_site || {})[state.id]);
+  out.panels = Number.isFinite(perSite) && perSite >= 1 ? perSite
+    : Math.max(1, Math.round(((state.audit && state.audit.site.kw) || 1) * PANELS_PER_KW));
+  return out;
+}
+// The last 30 days of logged readings; a weekly reading counts for its 7 days. Unlogged days count for nothing.
+function lossWindow(a) {
+  const tl = a.timeline;
+  if (!tl.length) return null;
+  const end = new Date(`${tl[tl.length - 1].date}T00:00:00`);
+  const start = new Date(end); start.setDate(start.getDate() - 29);
+  const inWindow = tl.filter((p) => new Date(`${p.date}T00:00:00`) >= start);
+  let lost = 0, days = 0, dips = 0, actual = 0, expected = 0;
+  for (const p of inWindow) {
+    days += p.kind === 'weekly' ? 7 : 1;
+    actual += p.kwh; expected += usualKwh(p, a);
+    // Only the days the audit flags as dips count as loss: ordinary days scatter around the usual level.
+    if (p.flagged) { dips += 1; lost += Math.max(0, usualKwh(p, a) - p.kwh); }
+  }
+  return { lost, days, dips, actual, expected, from: inWindow[0].date, to: tl[tl.length - 1].date, usualIsPvgis: !a.baseline.learnt };
+}
+function renderImpact(a) {
+  const card = $('impact');
+  const w = lossWindow(a);
+  card.hidden = !w;
+  if (!w) return;
+  const A = assumptions();
+  const f = $('assume-form');
+  for (const k of Object.keys(ASSUME_DEFAULTS)) f[k].value = A[k];
+  const dust = a.hypotheses.find((h) => h.cause === 'soiling');
+  const dustSupported = Boolean(dust && dust.confidence !== 'low');
+  const money = w.lost * A.tariff, co2 = w.lost * A.co2;
+  const perDay = w.days ? w.lost / w.days : 0;
+
+  $('impact-sub').textContent = `${fmtDate(w.from)} to ${fmtDate(w.to)} (${w.days} logged day${w.days === 1 ? '' : 's'}, ${w.dips} flagged as dips): the plant made ${kwh(w.actual)} kWh against about ${kwh(w.expected)} kWh ${w.usualIsPvgis ? 'from the weather-adjusted estimate (its own usual output is not learnt yet)' : 'at its usual level'}. Rough figures from the assumptions below, not a bill.`;
+  $('impact-grid').replaceChildren(
+    el('div', { class: 'stat' }, el('span', { class: 'label', text: 'Units lost in the dips' }), el('span', { class: 'value', text: `${kwh(w.lost)} kWh` }), el('span', { class: 'sub', text: `about ${kwh(perDay)} a day` })),
+    el('div', { class: 'stat' }, el('span', { class: 'label', text: 'Worth about' }), el('span', { class: 'value', text: rupees(money) }), el('span', { class: 'sub', text: `at Rs ${A.tariff} per unit` })),
+    el('div', { class: 'stat' }, el('span', { class: 'label', text: 'Grid CO\u2082 made instead' }), el('span', { class: 'value', text: `${co2.toLocaleString('en-IN', { maximumFractionDigits: 1 })} kg` }), el('span', { class: 'sub', text: `at ${A.co2} kg per unit` })));
+
+  // Cleaning payback, only while dust is a possible cause the audit still supports.
+  const roi = $('roi');
+  roi.replaceChildren();
+  const cleanCost = A.clean_cost_per_kw * a.site.kw;
+  if (dustSupported) {
+    const daily = perDay * A.tariff;
+    const lead = daily > 0
+      ? `A clean (about ${rupees(cleanCost)} for ${a.site.kw} kW) pays back in about ${daily >= cleanCost ? 'a day' : `${Math.ceil(cleanCost / daily)} days`}`
+      : `A clean costs about ${rupees(cleanCost)} for ${a.site.kw} kW; no day has crossed the dip line yet, so there is no daily loss to set against it`;
+    roi.append(el('div', { class: 'callout' }, icon('info'),
+      el('p', {}, el('strong', { text: lead }),
+        ` if the slide is dust and goes away after cleaning. ${dust.confidence} confidence that dust is the cause, so this is a possibility, not a promise.`)));
+  }
+
+  // Water: cleaning only when the audit points to dust, versus a fixed schedule.
+  const fixed = A.cleans_per_month * A.panels * A.water_per_panel;
+  const needed = (dustSupported ? 1 : 0) * A.panels * A.water_per_panel;
+  $('water').replaceChildren(el('p', { class: 'note', text: `Water: cleaning only when the audit points to dust would use about ${Math.round(needed).toLocaleString('en-IN')} L this month (${dustSupported ? 'one clean' : 'none suggested by the audit yet'}), against about ${Math.round(fixed).toLocaleString('en-IN')} L for a fixed schedule of ${A.cleans_per_month} cleans a month (${A.panels} panels, ${A.water_per_panel} L each): about ${Math.max(0, Math.round(fixed - needed)).toLocaleString('en-IN')} L less than that schedule.` }));
+
+  $('method').replaceChildren(
+    el('li', {}, 'Units lost = on each day in the last 30 that the audit flags as a dip, the shortfall below the plant\u2019s usual output (expected output from PVGIS and NASA POWER weather, scaled by the level this plant was learnt to run at), added up. Ordinary days, above or below usual, count for nothing.'),
+    el('li', {}, 'Rupees = units lost \u00d7 tariff. CO\u2082 = units lost \u00d7 the grid emission factor, because a unit the roof does not make is a unit the grid makes.'),
+    el('li', {}, 'Payback days = cost of one clean \u00f7 rupees lost per day. Shown only while dust is a possible cause at medium or high confidence.'),
+    el('li', {}, 'Water = panels \u00d7 litres per panel per clean, for one clean when needed versus the fixed schedule.'));
+  $('assume-sources').replaceChildren(...ASSUME_SOURCES.map((src) => el('li', {}, src.text,
+    ...src.urls.flatMap(([name, url]) => [' ', el('a', { href: url, rel: 'noreferrer', target: '_blank', text: `Source: ${name}` })]))));
+}
+$('assume-form').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const f = ev.target;
+  const saved = jsonGet(ASSUME_KEY) || {};
+  const next = { panels_by_site: { ...(saved.panels_by_site || {}) } };
+  for (const k of Object.keys(ASSUME_DEFAULTS)) {
+    if (k === 'panels') next.panels_by_site[state.id] = Number(f[k].value);
+    else next[k] = Number(f[k].value);
+  }
+  jsonSet(ASSUME_KEY, next);
+  if (state.audit) renderImpact(state.audit);
+  say('Impact figures updated with your assumptions.');
+});
+$('assume-reset').addEventListener('click', () => {
+  try { localStorage.removeItem(ASSUME_KEY); } catch { /* ignore */ }
+  if (state.audit) renderImpact(state.audit);
+  say('Assumptions reset to the sourced defaults.');
+});
 
 function outcomeChip(v) {
   const kind = { recovered: 'ok', not_recovered: 'cross', pending: 'clock', not_approved: 'clock' }[v.outcome] || 'info';
@@ -1121,6 +1405,40 @@ function drawTimelineChart() {
   const animate = !state.chartPlayed && !calm();
   if (a.timeline.length) state.chartPlayed = true;
   drawChart($('chart'), a.timeline.slice(-CHART_MAX), a.actions, a.flag_below, { animate });
+  drawKwhChart($('kwh-chart'), a.timeline.slice(-CHART_MAX), a);
+}
+
+// Expected versus actual in kWh on one shared axis: expected is the usual level each bar is judged against.
+function drawKwhChart(box, points, a) {
+  box.replaceChildren();
+  $('kwh-legend').replaceChildren();
+  $('kwh-title').hidden = points.length < 2;
+  if (points.length < 2) return;
+  const W = Math.max(280, Math.round(box.clientWidth || 600));
+  const H = 150;
+  const m = { t: 10, r: 8, b: 20, l: 40 };
+  const pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const usual = (p) => usualKwh(p, a);
+  const top = Math.max(1, ...points.map((p) => Math.max(p.kwh, usual(p))));
+  const step = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000].find((v) => top / v <= 6) || 1000;
+  const ymax = Math.ceil(top / step) * step;
+  const y = (v) => m.t + ph * (1 - Math.min(v, ymax) / ymax);
+  const x = (i) => m.l + (i + 0.5) * (pw / points.length);
+  const root = svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img',
+    'aria-label': `Line chart of units made against units expected for ${points.length} readings. The table above lists every value.` });
+  for (let t = 0; t <= ymax + 1e-9; t += step) {
+    root.append(svg('line', { class: 'grid', x1: m.l, x2: W - m.r, y1: y(t), y2: y(t) }),
+      svg('text', { x: m.l - 6, y: y(t) + 4, 'text-anchor': 'end' }, String(t)));
+  }
+  const line = (cls, pick) => svg('polyline', { class: cls, points: points.map((p, i) => `${x(i).toFixed(1)},${y(pick(p)).toFixed(1)}`).join(' ') });
+  root.append(line('expected', usual), line('actual', (p) => p.kwh));
+  points.forEach((p, i) => { if (p.flagged) root.append(svg('circle', { class: 'actual-dot', cx: x(i), cy: y(p.kwh), r: 3.5 })); });
+  root.append(svg('text', { x: x(0), y: H - 5, 'text-anchor': 'start' }, fmtDate(points[0].date, true)),
+    svg('text', { x: x(points.length - 1), y: H - 5, 'text-anchor': 'end' }, fmtDate(points[points.length - 1].date, true)));
+  box.append(root);
+  const item = (key, text) => el('li', {}, key, text);
+  $('kwh-legend').append(item(el('span', { class: 'key-line expected' }), 'Expected (kWh)'), item(el('span', { class: 'key-line actual' }), 'Made (kWh)'),
+    item(el('span', { class: 'swatch', style: 'background:var(--critical);border-radius:50%;width:10px;height:10px' }), 'Dip'));
 }
 
 function renderSources(a) {
@@ -1270,7 +1588,10 @@ function stopReplay(finished) {
     $('replay-caption').textContent = `Replay finished: ${shown.length} readings, ${shown.filter((p) => p.flagged).length} dips.`;
   } else {
     $('replay-caption').textContent = '';
-    if (state.tab === 'why') drawChart($('chart'), a.timeline.slice(-CHART_MAX), a.actions, a.flag_below, {});
+    if (state.tab === 'why') {
+      drawChart($('chart'), a.timeline.slice(-CHART_MAX), a.actions, a.flag_below, {});
+      drawKwhChart($('kwh-chart'), a.timeline.slice(-CHART_MAX), a);
+    }
   }
 }
 
@@ -1370,6 +1691,7 @@ new ResizeObserver(() => {
     if (!state.audit || state.replay || state.tab !== 'why' || $('site').hidden) return;
     if (Math.abs(Math.round(box.clientWidth) - state.chartWidth) < 2) return;
     drawChart(box, state.audit.timeline.slice(-CHART_MAX), state.audit.actions, state.audit.flag_below, {});
+    drawKwhChart($('kwh-chart'), state.audit.timeline.slice(-CHART_MAX), state.audit);
   });
 }).observe($('chart'));
 
@@ -1378,6 +1700,7 @@ async function load(id) {
   const audit = await api('GET', `/api/sites/${encodeURIComponent(id)}/audit`);
   state.id = id;
   render(audit);
+  if (navigator.onLine) flushQueue();  // readings queued while offline, if any
   const tab = tabFromHash();
   if (!tab) history.replaceState(null, '', `${location.pathname}${location.search}#today`);
   showTab(tab || 'today', true);
