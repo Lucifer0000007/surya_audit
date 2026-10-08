@@ -56,11 +56,35 @@ uv run python scripts/load_demo.py http://127.0.0.1:8000   # load the SYNTHETIC 
 
 The screen check (`e2e/`, Playwright 1.64.0) needs Node; `verify.sh` installs it and Chromium on first run and saves screenshots to the git-ignored `local_screens/`.
 
+## Deploy (AWS, ap-south-1)
+
+Stack `surya-audit` (`template.yaml`): one Lambda serves the page and the API behind an HTTP API; a DynamoDB table keeps one item per site; EventBridge Scheduler runs a second Lambda daily at 09:00 IST to fill in weather NASA POWER has published since a reading was saved. S3 is only SAM's managed artifact bucket: photos are never stored. Dates are judged in India time (`app/clock.py`), not Lambda's UTC.
+
+Before the first deploy (an account admin does steps 2 and 3 once):
+
+1. Install the AWS CLI v2 and the AWS SAM CLI. AWS's install page recommends, for the current user in PowerShell, `irm https://awscli.amazonaws.com/v2/install.ps1 | iex`, or the MSI `msiexec.exe /i https://awscli.amazonaws.com/AWSCLIV2.msi` (https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html, retrieved 2026-10-08). SAM CLI: https://github.com/aws/aws-sam-cli/releases/latest/download/AWS_SAM_CLI_64_PY3.msi. Docker is not needed (see the build note below).
+2. Create the managed policy `surya-audit-boundary` from `infra/boundary-policy.json`. Every role the stack creates carries it as a permissions boundary, so those roles can only write logs, use the sites table, read and decrypt (through Parameter Store) the `/surya-audit/` key, and invoke the refresh function.
+3. Give the deploying identity `infra/deployer-policy.json`, not admin rights. It can create and change roles only when they carry that boundary, and works on `surya-audit` resources in `ap-south-1`, with one exception: API Gateway access cannot be narrowed by name, so it covers every HTTP API in `ap-south-1`. Use an account whose `ap-south-1` has no other HTTP APIs. In both files, replace `ACCOUNT_ID`, and configure a CLI profile for `ap-south-1`. The first real deploy may show a permission this policy lacks; add exactly that one. A missing role action that creates a role or changes its policies goes in `RoleWritesOnlyWithTheBoundary`; a missing read, list or tag role action goes in `RoleReadsAndCleanup`. Never add `iam:PutRolePermissionsBoundary`, `iam:DeleteRolePermissionsBoundary` or policy-version actions.
+4. Store the Gemini key as the SSM Parameter Store SecureString `/surya-audit/gemini-api-key` (default `aws/ssm` key). Create it in the Systems Manager console so the key never sits in shell history.
+
+```bash
+bash scripts/build_lambda.sh
+sam deploy --template-file template.yaml --stack-name surya-audit --region ap-south-1 --resolve-s3 --capabilities CAPABILITY_IAM --profile <your-profile>
+```
+
+Build note: `sam build` is not used. On Windows its pip builder resolves dependencies for Windows, where `mcp` (via strands-agents) needs `pywin32`, which has no Linux wheel. `scripts/build_lambda.sh` uses uv to install Linux x86_64 wheels for Python 3.12 into `.lambda-build/` (AWS documents building functions outside SAM and deploying the result directly).
+
+The `AppUrl` output is the page. To show the synthetic demo there: `uv run python scripts/load_demo.py <AppUrl>`.
+
+`sam delete --stack-name surya-audit --region ap-south-1` removes the stack: both functions, the HTTP API, the schedule and the table with its readings. It leaves the Gemini key parameter, the Lambda log groups (`/aws/lambda/surya-audit-*`), the `surya-audit-boundary` policy and SAM's managed artifact stack and bucket; delete those in the console if you no longer need them.
+
+Limits behind two settings: Lambda takes "6 MB each for request and response (synchronous)" (https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html), so the image cap is 4 MB before base64; the HTTP API "Maximum integration timeout" is 30 seconds (https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-quotas.html), so the API function has 29 s and each PVGIS or NASA POWER call 10 s. Both retrieved 2026-10-08.
+
 ## The page
 
 `GET /` serves one self-contained `app/index.html`: no external scripts, styles or fonts, and a Content-Security-Policy that only allows calls back to the same server. On it the owner sets up the plant, logs a reading (typed, or filled from a photo and then confirmed), sees each reading as a share of the plant's usual output with dips flagged, reads the ranked possible causes, approves suggestions, and drafts the complaint. The site id is remembered in the browser (`localStorage`); `/?site=<id>` opens a specific site. That link is the only key to the plant: anyone who has it can see and change its readings, so keep it private and share evidence with Copy text or Download evidence instead.
 
-Photo reading uses Gemini (`gemini-3.8-flash`) through the Strands Agents SDK and needs `GEMINI_API_KEY` in the environment. Without it, `/extract` answers 503 and the owner types the reading by hand. The API takes PNG or JPEG up to 5 MB; the page re-encodes the photo on the device as a JPEG of at most 1600 px, which also drops photo metadata such as location. Images are not stored or logged.
+Photo reading uses Gemini (`gemini-3.8-flash`) through the Strands Agents SDK and needs `GEMINI_API_KEY` in the environment (deployed: an SSM SecureString, see Deploy). Without it, `/extract` answers 503 and the owner types the reading by hand. The API takes PNG or JPEG up to 4 MB (base64 grows it by a third, and Lambda takes at most 6 MB per request); the page re-encodes the photo on the device as a JPEG of at most 1600 px, which also drops photo metadata such as location. Images are not stored or logged.
 
 ## API
 
