@@ -44,6 +44,8 @@ from a source, it says so. Vendor pages are labelled as such.
   https://www.ceew.in/sites/default/files/ceew-oandm-ecosystem-for-rts-web-ready-file.pdf, retrieved 2026-10-08.
 - Vendor price page (labelled as such): SolarSquare "Assure" packages, about Rs 390-450 per visit for plants up to
   3.25 kWp (https://www.solarsquare.in/blog/solar-panel-cleaning-pricing-in-india/, updated 2026-07-24).
+- Panels on the roof (default about 2 per kW): our own guess, not from a source; the page says so and the owner counts
+  and corrects it.
 - Frequency: BHEL O&M specification for a rooftop plant: "cleaned at least once every fifteen days for rooftop"
   (https://tenders.bhel.com/sites/default/files/TS-2021-11-01-04%3A22%3A11.pdf, 2021). Roorkee field study (Shukla et al.,
   Scientific Reports, 14 April 2026, https://www.nature.com/articles/s41598-026-45485-2): monthly soiling loss 1-1.5 %
