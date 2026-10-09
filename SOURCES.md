@@ -48,8 +48,6 @@ from a source, it says so. Vendor pages are labelled as such.
   (https://tenders.bhel.com/sites/default/files/TS-2021-11-01-04%3A22%3A11.pdf, 2021). Roorkee field study (Shukla et al.,
   Scientific Reports, 14 April 2026, https://www.nature.com/articles/s41598-026-45485-2): monthly soiling loss 1-1.5 %
   with weekly cleaning, 2.5 % biweekly, 5 % every four weeks (about 0.17-0.21 % per day). Retrieved 2026-10-08.
-- PM Surya Ghar vendors must provide 5 years of O&M, but cleaning is often excluded in practice (Delhi portal; vendor
-  pages). The page tells the owner to check their own contract.
 
 ## Fonts (inlined, Phase 7)
 
