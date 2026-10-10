@@ -24,7 +24,7 @@ SIZE_LINE = re.compile(r"^(- `app/index.html` stays under )\d+( KB, inlined font
 def same_but_size_line(a, b):
     """True when two CLAUDE.md texts are equal once the page size limit is ignored."""
     norm = lambda text: [SIZE_LINE.sub(r"N", line) for line in text.splitlines()]
-    return norm(a) == norm(b)
+    return "- `app/index.html` stays under 700 KB, inlined fonts included." in a.splitlines() and norm(a) == norm(b)
 
 
 def git(*args):

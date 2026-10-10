@@ -599,7 +599,7 @@
      </header>
      <div class="replay" id="replay" hidden>
       <button type="button" class="secondary" id="replay-btn">Replay the days</button>
-      <p class="replay-caption" id="replay-caption" aria-live="polite"></p>
+      <p class="replay-caption" id="replay-caption"></p>
      </div>
      <div class="chart" id="chart"></div>
      <ul class="legend" id="legend"></ul>
@@ -1607,7 +1607,6 @@ $('switch').addEventListener('click', () => {
 $('forget').addEventListener('click', () => {
   if (!confirm(tf('forgetConfirm', { link: `${location.origin}/?site=${state.id}` }))) return;
   if (storeGet() === state.id) storeClear();  // another remembered plant is not this one's to forget
-  setQueue(state.id, []);
   try { localStorage.removeItem(ASSUME_KEY); } catch { /* ignore */ }
   if (location.search || location.hash) history.replaceState(null, '', location.pathname);
   showSetup(t('forgot'));
@@ -1632,6 +1631,7 @@ $('reading-form').addEventListener('submit', async (ev) => {
     try {
       state.saving = api('POST', `/api/sites/${encodeURIComponent(site)}/readings`, body);
       audit = await state.saving;
+      if (waiting) setQueue(site, queuedFor(site).filter((q) => q.body.date !== body.date));  // the value just saved replaces the waiting one
     } catch (e) {
       if (e.status) { showError(e.message); return; }  // the server answered: a real problem with the values
       // No answer at all: keep the reading here and send it when the connection is back.
@@ -2634,6 +2634,7 @@ function stopReplay(finished) {
   if (finished) {
     const shown = a.timeline.slice(-CHART_MAX);
     $('replay-caption').textContent = tf('replayDone', { n: shown.length, dips: shown.filter((p) => p.flagged).length });
+    say($('replay-caption').textContent);  // announced once, not on every day
   } else {
     $('replay-caption').textContent = '';
     if (state.tab === 'why') {
