@@ -1160,3 +1160,21 @@ for (const [lng, word] of [['hi', 'मान्यता'], ['pa', 'ਧਾਰਨ
     }
   });
 }
+
+test('Log on a phone: the photo drop zone and the energy field are on the first screen, clear of the tab bar', async ({ page, request }) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows().slice(0, 3));
+  await page.goto(`/?site=${id}#log`);
+  await expect(page.locator('#panel-log')).toBeVisible();
+  expect(await page.locator('.tabs').evaluate((n) => getComputedStyle(n).position)).toBe('fixed');
+  const barTop = (await page.locator('#tablist').boundingBox()).y;
+  const zone = await page.locator('#photo-pick').boundingBox();
+  const field = await page.locator('#kwh-input').boundingBox();
+  expect(zone.y + zone.height, 'the drop zone ends above the tab bar').toBeLessThanOrEqual(barTop);
+  expect(field.y + field.height, 'the energy field ends above the tab bar').toBeLessThanOrEqual(barTop);
+  expect(zone.y).toBeLessThan(field.y);  // the photo comes first
+  // The order of the form is the order on screen: energy, then the date, then the period, then Save.
+  const order = await page.locator('#reading-form').evaluate((f) => ['#kwh-input', '.datepick', '[name=kind]', '#save-btn'].map((s) => f.querySelector(s).getBoundingClientRect().top));
+  expect([...order].sort((a, b) => a - b)).toEqual(order);
+});

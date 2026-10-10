@@ -109,6 +109,7 @@
 
   /* ---------- sections, bands, cards ---------- */
   .section { display: grid; gap: 16px; padding: 48px 16px; border-bottom: 1px solid var(--hairline); min-width: 0; }
+  .section.tight { padding-top: 24px; padding-bottom: 32px; }
   .band { display: grid; gap: 24px; padding: 48px 16px; min-width: 0; background: var(--inverted); color: var(--text); border-block: 1px solid var(--dk-hairline);
     --text: var(--dk-text); --text-2: var(--dk-text-2); --text-3: var(--dk-text-3); --hairline: var(--dk-hairline); --control: var(--dk-control); --surface: var(--inverted); }
   .card { display: grid; gap: 16px; min-width: 0; padding: 24px 16px; border: 1px solid var(--hairline); border-radius: var(--r); background: var(--surface); }
@@ -485,7 +486,7 @@
       </section>
 
       <section role="tabpanel" id="panel-log" aria-labelledby="tab-log" tabindex="0" hidden>
-        <div class="card" id="log">
+        <section class="section tight" id="log" aria-labelledby="log-title">
           <header>
             <h2 id="log-title" data-i18n="logTitle"></h2>
             <p class="muted small" data-i18n="logIntro"></p>
@@ -501,6 +502,7 @@
             <div><p id="photo-note" role="status"></p><button type="button" class="link" id="photo-clear" data-i18n="discardPhoto"></button></div>
           </div>
           <form id="reading-form" autocomplete="off">
+            <div class="field"><label for="kwh-input" data-i18n="kwhField"></label><span class="with-mic"><input id="kwh-input" name="kwh" type="number" step="any" min="0" required inputmode="decimal" data-i18n-ph="kwhPlaceholder" placeholder="e.g. 12.4…"><span class="unit" aria-hidden="true" data-i18n="unitsWord"></span><button type="button" class="mic" id="mic" aria-pressed="false" data-i18n-label="speakValue" aria-label="Say the number" hidden><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></span></div>
             <fieldset class="datepick">
               <legend data-i18n="date"></legend>
               <div class="big-choice chips">
@@ -512,7 +514,6 @@
             </fieldset>
             <div class="fields">
               <label id="date-other" hidden><span data-i18n="date"></span><input name="date" type="date" required></label>
-              <div class="field"><label for="kwh-input" data-i18n="kwhField"></label><span class="with-mic"><input id="kwh-input" name="kwh" type="number" step="any" min="0" required inputmode="decimal" data-i18n-ph="kwhPlaceholder" placeholder="e.g. 12.4…"><span class="unit" aria-hidden="true" data-i18n="unitsWord"></span><button type="button" class="mic" id="mic" aria-pressed="false" data-i18n-label="speakValue" aria-label="Say the number" hidden><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></span></div>
               <label><span data-i18n="period"></span>
                 <select name="kind"><option value="daily" data-i18n="oneDay"></option><option value="weekly" data-i18n="oneWeek"></option></select>
               </label>
@@ -521,7 +522,7 @@
             <p class="note" id="save-hint" data-i18n="saveHint"></p>
           </form>
           <p class="note" id="mic-note" hidden data-i18n="micNote"></p>
-        </div>
+        </section>
       </section>
 
       <section role="tabpanel" id="panel-fix" aria-labelledby="tab-fix" tabindex="0" hidden>
