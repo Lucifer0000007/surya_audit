@@ -376,14 +376,14 @@
 </style>
 </head>
 <body>
-<a class="skip" href="#main" data-i18n="skip">Skip to main content</a>
+<a class="skip" href="#main" data-i18n="skip"></a>
 <header class="topbar">
   <div class="wrap">
     <h1 class="brand">
       <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="#eda100"/><g stroke="#eda100" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg>
       <span translate="no">Surya Audit</span>
     </h1>
-    <p class="tagline" data-i18n="tagline">Is your rooftop solar producing what it should?</p>
+    <p class="tagline" data-i18n="tagline"></p>
     <div class="prefs">
       <div class="lang" role="group" aria-label="Language" data-i18n-label="langGroup">
         <button type="button" data-lang="en" aria-pressed="true" lang="en" aria-label="English">EN</button>
@@ -398,7 +398,7 @@
 <main class="wrap" id="main" tabindex="-1">
   <div id="banners"></div>
   <p id="error" class="error" role="alert" hidden></p>
-  <div id="retry" class="row" hidden><button type="button" id="retry-btn" data-i18n="tryAgain">Try again</button></div>
+  <div id="retry" class="row" hidden><button type="button" id="retry-btn" data-i18n="tryAgain"></button></div>
 
   <div id="skeleton" class="skeleton" hidden aria-hidden="true">
     <div class="sk-card"><div class="sk-line" style="width:40%"></div><div class="row"><div class="sk-ring"></div><div style="flex:1;display:grid;gap:12px"><div class="sk-line" style="width:80%"></div><div class="sk-line" style="width:60%"></div></div></div></div>
@@ -407,44 +407,44 @@
 
   <section id="setup" class="card" hidden aria-labelledby="setup-title">
     <header>
-      <h2 id="setup-title" style="font-size:1.3rem" data-i18n="setupTitle">Set up your plant</h2>
-      <p class="muted" data-i18n="setupIntro">Three quick questions. Surya Audit compares your readings with what a plant like yours should make in the weather you actually had.</p>
+      <h2 id="setup-title" style="font-size:1.3rem" data-i18n="setupTitle"></h2>
+      <p class="muted" data-i18n="setupIntro"></p>
     </header>
     <div class="wizard-steps" id="wizard-steps" aria-hidden="true"><span aria-current="step">1</span><span>2</span><span>3</span></div>
     <form id="setup-form" autocomplete="off">
       <fieldset id="wiz-1" class="card" style="padding:0;border:0;background:none">
-        <legend class="wizard-q" data-i18n="qWhere">Where is the plant?</legend>
-        <button type="button" class="hero-btn" id="locate" data-i18n="useLocation">Use my location</button>
-        <p class="note" data-i18n="locationNote">Rounded to about 1 km. Or type the coordinates:</p>
+        <legend class="wizard-q" data-i18n="qWhere"></legend>
+        <button type="button" class="hero-btn" id="locate" data-i18n="useLocation"></button>
+        <p class="note" data-i18n="locationNote"></p>
         <div class="fields">
-          <label><span data-i18n="lat">Latitude</span><input name="lat" type="number" step="any" min="-90" max="90" required inputmode="decimal" placeholder="26.85"></label>
-          <label><span data-i18n="lon">Longitude</span><input name="lon" type="number" step="any" min="-180" max="180" required inputmode="decimal" placeholder="80.95"></label>
+          <label><span data-i18n="lat"></span><input name="lat" type="number" step="any" min="-90" max="90" required inputmode="decimal" placeholder="26.85"></label>
+          <label><span data-i18n="lon"></span><input name="lon" type="number" step="any" min="-180" max="180" required inputmode="decimal" placeholder="80.95"></label>
         </div>
-        <div class="row"><button type="button" class="hero-btn" data-next="2" data-i18n="next">Next</button></div>
+        <div class="row"><button type="button" class="hero-btn" data-next="2" data-i18n="next"></button></div>
       </fieldset>
       <fieldset id="wiz-2" class="card" style="padding:0;border:0;background:none" hidden>
-        <legend class="wizard-q" data-i18n="qPanels">Tell us about the panels</legend>
-        <label><span data-i18n="kw">Plant size (kW)</span><input name="kw" type="number" step="any" min="0.1" max="100" required inputmode="decimal" placeholder="3"></label>
-        <p class="note" data-i18n="facingQ">Which way do the panels face?</p>
+        <legend class="wizard-q" data-i18n="qPanels"></legend>
+        <label><span data-i18n="kw"></span><input name="kw" type="number" step="any" min="0.1" max="100" required inputmode="decimal" placeholder="3"></label>
+        <p class="note" data-i18n="facingQ"></p>
         <div class="big-choice" role="radiogroup" aria-label="Panels face" data-i18n-label="panelsFace">
-          <label><input type="radio" name="azimuth" value="180" checked><span data-i18n="south">South</span></label>
-          <label><input type="radio" name="azimuth" value="135"><span data-i18n="southEast">South-east</span></label>
-          <label><input type="radio" name="azimuth" value="225"><span data-i18n="southWest">South-west</span></label>
-          <label><input type="radio" name="azimuth" value="90"><span data-i18n="east">East</span></label>
-          <label><input type="radio" name="azimuth" value="270"><span data-i18n="west">West</span></label>
-          <label><input type="radio" name="azimuth" value="0"><span data-i18n="north">North</span></label>
-          <label><input type="radio" name="azimuth" value="45"><span data-i18n="northEast">North-east</span></label>
-          <label><input type="radio" name="azimuth" value="315"><span data-i18n="northWest">North-west</span></label>
+          <label><input type="radio" name="azimuth" value="180" checked><span data-i18n="south"></span></label>
+          <label><input type="radio" name="azimuth" value="135"><span data-i18n="southEast"></span></label>
+          <label><input type="radio" name="azimuth" value="225"><span data-i18n="southWest"></span></label>
+          <label><input type="radio" name="azimuth" value="90"><span data-i18n="east"></span></label>
+          <label><input type="radio" name="azimuth" value="270"><span data-i18n="west"></span></label>
+          <label><input type="radio" name="azimuth" value="0"><span data-i18n="north"></span></label>
+          <label><input type="radio" name="azimuth" value="45"><span data-i18n="northEast"></span></label>
+          <label><input type="radio" name="azimuth" value="315"><span data-i18n="northWest"></span></label>
         </div>
-        <label><span data-i18n="tilt">Panel tilt (degrees)</span><input name="tilt" type="number" step="any" min="0" max="90" required inputmode="numeric"></label>
-        <p class="note" id="tilt-hint" data-i18n="tiltHint">Pre-filled from your latitude as an assumption, not a measurement. Check it against your installation papers and correct it.</p>
-        <div class="row"><button type="button" class="secondary" data-next="1" data-i18n="back">Back</button><button type="button" class="hero-btn" style="width:auto;flex:1" data-next="3" data-i18n="next">Next</button></div>
+        <label><span data-i18n="tilt"></span><input name="tilt" type="number" step="any" min="0" max="90" required inputmode="numeric"></label>
+        <p class="note" id="tilt-hint" data-i18n="tiltHint"></p>
+        <div class="row"><button type="button" class="secondary" data-next="1" data-i18n="back"></button><button type="button" class="hero-btn" style="width:auto;flex:1" data-next="3" data-i18n="next"></button></div>
       </fieldset>
       <fieldset id="wiz-3" class="card" style="padding:0;border:0;background:none" hidden>
-        <legend class="wizard-q" data-i18n="qLoss">Do you know the system loss?</legend>
-        <p class="note" data-i18n="lossNote">Most people do not. Leave it empty and a SAMPLE value is assumed; every result is then marked as using sample values.</p>
-        <label><span data-i18n="lossPct">Total system loss (%)</span><input name="loss_pct" type="number" step="any" min="0" max="50" inputmode="decimal"></label>
-        <div class="row"><button type="button" class="secondary" data-next="2" data-i18n="back">Back</button><button type="submit" class="hero-btn" style="width:auto;flex:1" data-i18n="start">Start auditing</button></div>
+        <legend class="wizard-q" data-i18n="qLoss"></legend>
+        <p class="note" data-i18n="lossNote"></p>
+        <label><span data-i18n="lossPct"></span><input name="loss_pct" type="number" step="any" min="0" max="50" inputmode="decimal"></label>
+        <div class="row"><button type="button" class="secondary" data-next="2" data-i18n="back"></button><button type="submit" class="hero-btn" style="width:auto;flex:1" data-i18n="start"></button></div>
       </fieldset>
     </form>
   </section>
@@ -452,11 +452,11 @@
   <div id="site" hidden>
     <nav class="tabs" aria-label="Sections" data-i18n-label="sections">
       <div role="tablist" id="tablist" aria-label="Plant audit" data-i18n-label="plantAudit">
-        <button type="button" role="tab" id="tab-today" data-tab="today" aria-controls="panel-today" aria-selected="true" tabindex="0"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span data-i18n="tab_today">Today</span></button>
-        <button type="button" role="tab" id="tab-log" data-tab="log" aria-controls="panel-log" aria-selected="false" tabindex="-1"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span data-i18n="tab_log">Log</span></button>
-        <button type="button" role="tab" id="tab-fix" data-tab="fix" aria-controls="panel-fix" aria-selected="false" tabindex="-1"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6.5a4 4 0 0 0-5 5L3.5 17.5a1.4 1.4 0 0 0 0 2l1 1a1.4 1.4 0 0 0 2 0l6-6a4 4 0 0 0 5-5l-2.6 2.6-2.4-.6-.6-2.4z"/></svg><span data-i18n="tab_fix">Fix</span></button>
-        <button type="button" role="tab" id="tab-why" data-tab="why" aria-controls="panel-why" aria-selected="false" tabindex="-1"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21h18M6.5 17v-5M12 17V6M17.5 17V9.5"/></svg><span data-i18n="tab_why">Why</span></button>
-        <button type="button" role="tab" id="tab-report" data-tab="report" aria-controls="panel-report" aria-selected="false" tabindex="-1"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg><span data-i18n="tab_report">Report</span></button>
+        <button type="button" role="tab" id="tab-today" data-tab="today" aria-controls="panel-today" aria-selected="true" tabindex="0"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span data-i18n="tab_today"></span></button>
+        <button type="button" role="tab" id="tab-log" data-tab="log" aria-controls="panel-log" aria-selected="false" tabindex="-1"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span data-i18n="tab_log"></span></button>
+        <button type="button" role="tab" id="tab-fix" data-tab="fix" aria-controls="panel-fix" aria-selected="false" tabindex="-1"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6.5a4 4 0 0 0-5 5L3.5 17.5a1.4 1.4 0 0 0 0 2l1 1a1.4 1.4 0 0 0 2 0l6-6a4 4 0 0 0 5-5l-2.6 2.6-2.4-.6-.6-2.4z"/></svg><span data-i18n="tab_fix"></span></button>
+        <button type="button" role="tab" id="tab-why" data-tab="why" aria-controls="panel-why" aria-selected="false" tabindex="-1"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21h18M6.5 17v-5M12 17V6M17.5 17V9.5"/></svg><span data-i18n="tab_why"></span></button>
+        <button type="button" role="tab" id="tab-report" data-tab="report" aria-controls="panel-report" aria-selected="false" tabindex="-1"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg><span data-i18n="tab_report"></span></button>
       </div>
     </nav>
 
@@ -466,82 +466,82 @@
         <div class="card" id="headline" data-testid="headline"></div>
         <div class="card impact" id="impact" data-testid="impact" hidden>
           <header>
-            <h2><span data-i18n="impactTitle">What the dips cost</span> <span class="tag" data-i18n="estimate">estimate</span></h2>
+            <h2><span data-i18n="impactTitle"></span> <span class="tag" data-i18n="estimate"></span></h2>
             <p class="muted small" id="impact-sub"></p>
           </header>
           <div class="impact-grid" id="impact-grid"></div>
           <div id="roi"></div>
           <div id="water"></div>
           <details class="assume" id="assumptions">
-            <summary data-i18n="howCalc">How we calculated this (editable assumptions)</summary>
+            <summary data-i18n="howCalc"></summary>
             <form id="assume-form" class="fields" autocomplete="off">
-              <label><span data-i18n="aTariff">Tariff, Rs per unit (kWh)</span> <span class="tag" data-i18n="assumption">assumption</span><input name="tariff" type="number" step="any" min="0" max="50" inputmode="decimal" required></label>
-              <label><span data-i18n="aCo2">Grid CO₂, kg per unit</span> <span class="tag" data-i18n="assumption">assumption</span><input name="co2" type="number" step="any" min="0" max="2" inputmode="decimal" required></label>
-              <label><span data-i18n="aClean">One cleaning, Rs per kW</span> <span class="tag" data-i18n="assumption">assumption</span><input name="clean_cost_per_kw" type="number" step="any" min="0" max="5000" inputmode="decimal" required></label>
-              <label><span data-i18n="aWater">Water per panel per clean, litres</span> <span class="tag" data-i18n="assumption">assumption</span><input name="water_per_panel" type="number" step="any" min="0" max="50" inputmode="decimal" required></label>
-              <label><span data-i18n="aPanels">Panels on the roof</span> <span class="tag" data-i18n="assumption">assumption</span><input name="panels" type="number" step="1" min="1" max="200" inputmode="numeric" required></label>
-              <label><span data-i18n="aCleans">Fixed cleaning schedule, cleans per month</span> <span class="tag" data-i18n="assumption">assumption</span><input name="cleans_per_month" type="number" step="any" min="0" max="31" inputmode="decimal" required></label>
-              <div class="row"><button type="submit" class="secondary" data-i18n="useValues">Use these values</button><button type="button" class="link" id="assume-reset" data-i18n="resetDefaults">Reset to defaults</button></div>
+              <label><span data-i18n="aTariff"></span> <span class="tag" data-i18n="assumption"></span><input name="tariff" type="number" step="any" min="0" max="50" inputmode="decimal" required></label>
+              <label><span data-i18n="aCo2"></span> <span class="tag" data-i18n="assumption"></span><input name="co2" type="number" step="any" min="0" max="2" inputmode="decimal" required></label>
+              <label><span data-i18n="aClean"></span> <span class="tag" data-i18n="assumption"></span><input name="clean_cost_per_kw" type="number" step="any" min="0" max="5000" inputmode="decimal" required></label>
+              <label><span data-i18n="aWater"></span> <span class="tag" data-i18n="assumption"></span><input name="water_per_panel" type="number" step="any" min="0" max="50" inputmode="decimal" required></label>
+              <label><span data-i18n="aPanels"></span> <span class="tag" data-i18n="assumption"></span><input name="panels" type="number" step="1" min="1" max="200" inputmode="numeric" required></label>
+              <label><span data-i18n="aCleans"></span> <span class="tag" data-i18n="assumption"></span><input name="cleans_per_month" type="number" step="any" min="0" max="31" inputmode="decimal" required></label>
+              <div class="row"><button type="submit" class="secondary" data-i18n="useValues"></button><button type="button" class="link" id="assume-reset" data-i18n="resetDefaults"></button></div>
             </form>
             <p class="note" id="method-note" hidden></p>
             <ol id="method" lang="en"></ol>
-            <p class="note" data-i18n="defaultsNote">Defaults and their sources (retrieved 2026-10-08):</p>
+            <p class="note" data-i18n="defaultsNote"></p>
             <ul id="assume-sources" lang="en"></ul>
           </details>
         </div>
         <div class="card" id="plant-card">
-          <h2 data-i18n="thisPlant">This plant</h2>
+          <h2 data-i18n="thisPlant"></h2>
           <p id="plant-summary" class="muted"></p>
-          <div class="row"><a id="plant-link" class="link" href="#" data-i18n="plantLink">Link to this plant</a><button type="button" class="link" id="switch" data-i18n="setupAgain">Set up the plant again</button></div>
-          <p class="note" data-i18n="plantLinkNote">Bookmark the link to open this plant on another device. Keep it private: anyone who has it can see and change this plant’s readings. To share evidence, use Copy text or Download evidence.</p>
+          <div class="row"><a id="plant-link" class="link" href="#" data-i18n="plantLink"></a><button type="button" class="link" id="switch" data-i18n="setupAgain"></button></div>
+          <p class="note" data-i18n="plantLinkNote"></p>
         </div>
       </section>
 
       <section role="tabpanel" id="panel-log" aria-labelledby="tab-log" tabindex="0" hidden>
         <div class="card" id="log">
           <header>
-            <h2 id="log-title" data-i18n="logTitle">Log a reading</h2>
-            <p class="muted small" data-i18n="logIntro">Take a photo of your inverter app or meter and check the numbers it reads, or type them. Nothing is saved until you press Save.</p>
+            <h2 id="log-title" data-i18n="logTitle"></h2>
+            <p class="muted small" data-i18n="logIntro"></p>
           </header>
           <label class="dropzone" id="photo-pick">
             <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-            <span data-i18n="photoBtn">Take a photo, or pick a screenshot, of the inverter app or meter</span>
+            <span data-i18n="photoBtn"></span>
             <input id="photo" type="file" accept="image/png,image/jpeg,image/*">
           </label>
-          <p class="note" data-i18n="photoNote">Surya Audit does not keep your photo; Google Gemini reads it under Google’s own terms.</p>
+          <p class="note" data-i18n="photoNote"></p>
           <div id="photo-review" class="photo-review" hidden>
             <img id="photo-thumb" alt="Your photo" width="72" height="72">
-            <div><p id="photo-note" role="status"></p><button type="button" class="link" id="photo-clear" data-i18n="discardPhoto">Discard photo</button></div>
+            <div><p id="photo-note" role="status"></p><button type="button" class="link" id="photo-clear" data-i18n="discardPhoto"></button></div>
           </div>
           <form id="reading-form" autocomplete="off">
             <fieldset class="datepick">
-              <legend data-i18n="date">Date</legend>
+              <legend data-i18n="date"></legend>
               <div class="big-choice chips">
-                <label><input type="radio" name="datechip" value="today" checked><span data-i18n="dateToday">Today</span><small class="chip-date" data-day="0"></small></label>
-                <label><input type="radio" name="datechip" value="yesterday"><span data-i18n="dateYesterday">Yesterday</span><small class="chip-date" data-day="1"></small></label>
-                <label><input type="radio" name="datechip" value="other"><span data-i18n="dateOther">Other date</span></label>
+                <label><input type="radio" name="datechip" value="today" checked><span data-i18n="dateToday"></span><small class="chip-date" data-day="0"></small></label>
+                <label><input type="radio" name="datechip" value="yesterday"><span data-i18n="dateYesterday"></span><small class="chip-date" data-day="1"></small></label>
+                <label><input type="radio" name="datechip" value="other"><span data-i18n="dateOther"></span></label>
               </div>
               <p class="note" id="date-shown"></p>
             </fieldset>
             <div class="fields">
-              <label id="date-other" hidden><span data-i18n="date">Date</span><input name="date" type="date" required></label>
-              <div class="field"><label for="kwh-input" data-i18n="kwhField">Energy produced (kWh)</label><span class="with-mic"><input id="kwh-input" name="kwh" type="number" step="any" min="0" required inputmode="decimal" data-i18n-ph="kwhPlaceholder" placeholder="e.g. 12.4…"><span class="unit" aria-hidden="true" data-i18n="unitsWord">units</span><button type="button" class="mic" id="mic" aria-pressed="false" data-i18n-label="speakValue" aria-label="Say the number" hidden><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></span></div>
-              <label><span data-i18n="period">Period</span>
-                <select name="kind"><option value="daily" data-i18n="oneDay">One day</option><option value="weekly" data-i18n="oneWeek">One week, ending on that date</option></select>
+              <label id="date-other" hidden><span data-i18n="date"></span><input name="date" type="date" required></label>
+              <div class="field"><label for="kwh-input" data-i18n="kwhField"></label><span class="with-mic"><input id="kwh-input" name="kwh" type="number" step="any" min="0" required inputmode="decimal" data-i18n-ph="kwhPlaceholder" placeholder="e.g. 12.4…"><span class="unit" aria-hidden="true" data-i18n="unitsWord"></span><button type="button" class="mic" id="mic" aria-pressed="false" data-i18n-label="speakValue" aria-label="Say the number" hidden><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></span></div>
+              <label><span data-i18n="period"></span>
+                <select name="kind"><option value="daily" data-i18n="oneDay"></option><option value="weekly" data-i18n="oneWeek"></option></select>
               </label>
             </div>
-            <div class="row"><button type="submit" class="hero-btn" id="save-btn" aria-disabled="true" aria-describedby="save-hint" data-i18n="save">Save reading</button></div>
-            <p class="note" id="save-hint" data-i18n="saveHint">Enter the energy produced to save this reading.</p>
+            <div class="row"><button type="submit" class="hero-btn" id="save-btn" aria-disabled="true" aria-describedby="save-hint" data-i18n="save"></button></div>
+            <p class="note" id="save-hint" data-i18n="saveHint"></p>
           </form>
-          <p class="note" id="mic-note" hidden data-i18n="micNote">Voice input uses your browser’s speech service; in Chrome the audio goes to Google to be turned into text.</p>
+          <p class="note" id="mic-note" hidden data-i18n="micNote"></p>
         </div>
       </section>
 
       <section role="tabpanel" id="panel-fix" aria-labelledby="tab-fix" tabindex="0" hidden>
         <div class="card" id="suggestions">
           <header>
-            <h2 id="sugg-title" data-i18n="fixTitle">Suggestions</h2>
-            <p class="muted small" data-i18n="fixIntro">Suggestions, not orders. Approving one records your decision; nothing happens automatically.</p>
+            <h2 id="sugg-title" data-i18n="fixTitle"></h2>
+            <p class="muted small" data-i18n="fixIntro"></p>
           </header>
           <ul class="actions-list" id="action-list"></ul>
         </div>
@@ -550,7 +550,7 @@
       <section role="tabpanel" id="panel-why" aria-labelledby="tab-why" tabindex="0" hidden>
         <div class="card" id="timeline" data-testid="timeline">
           <header>
-            <h2 id="tl-title" data-i18n="readings">Readings</h2>
+            <h2 id="tl-title" data-i18n="readings"></h2>
             <p class="muted small" id="tl-sub"></p>
           </header>
           <div class="chart" id="chart"></div>
@@ -559,14 +559,14 @@
           <div class="kwh" id="kwh-chart"></div>
           <ul class="legend" id="kwh-legend"></ul>
           <details>
-            <summary data-i18n="showTable">Show readings as a table</summary>
+            <summary data-i18n="showTable"></summary>
             <div class="table-wrap"><table id="table"></table></div>
           </details>
         </div>
         <div class="card" id="causes">
           <header>
-            <h2 id="causes-title" data-i18n="causesTitle">Possible causes</h2>
-            <p class="muted small" data-i18n="causesIntro">Ranked with a confidence level. These are possibilities, not a diagnosis.</p>
+            <h2 id="causes-title" data-i18n="causesTitle"></h2>
+            <p class="muted small" data-i18n="causesIntro"></p>
           </header>
           <ol class="causes" id="cause-list"></ol>
         </div>
@@ -575,22 +575,22 @@
       <section role="tabpanel" id="panel-report" aria-labelledby="tab-report" tabindex="0" hidden>
         <div class="card" id="complaint">
           <header>
-            <h2 id="complaint-title" data-i18n="reportTitle">Complaint draft</h2>
-            <p class="muted small" data-i18n="reportIntro">A draft with your evidence, for you to check, complete and file yourself. It is never sent. The draft itself is written in English.</p>
+            <h2 id="complaint-title" data-i18n="reportTitle"></h2>
+            <p class="muted small" data-i18n="reportIntro"></p>
           </header>
           <div id="escalation"></div>
-          <div class="row"><button type="button" id="draft-btn" class="secondary" data-i18n="draftBtn">Draft a complaint</button></div>
+          <div class="row"><button type="button" id="draft-btn" class="secondary" data-i18n="draftBtn"></button></div>
           <div id="draft-out" hidden>
-            <div class="callout" id="draft-stale" hidden><p data-i18n="draftStale">The readings or approvals changed since this draft. Draft it again to update it.</p></div>
-            <div class="callout"><p><strong data-i18n="nothingSent">Nothing has been sent.</strong> <span data-i18n="fillNote">Replace every &lt;&lt;OWNER TO FILL&gt;&gt; before you file it.</span></p></div>
-            <label for="draft-text" data-i18n="draftLabel">Draft complaint</label>
+            <div class="callout" id="draft-stale" hidden><p data-i18n="draftStale"></p></div>
+            <div class="callout"><p><strong data-i18n="nothingSent"></strong> <span data-i18n="fillNote"></span></p></div>
+            <label for="draft-text" data-i18n="draftLabel"></label>
             <textarea id="draft-text" lang="en" translate="no" spellcheck="true"></textarea>
             <div class="row">
-              <button type="button" class="secondary" id="copy-btn" data-i18n="copy">Copy text</button>
-              <button type="button" class="secondary" id="download-btn" data-i18n="download">Download evidence (JSON)</button>
-              <a class="button share" id="share-draft" href="#" target="_blank" rel="noopener noreferrer" data-i18n="whatsapp">Share on WhatsApp</a>
+              <button type="button" class="secondary" id="copy-btn" data-i18n="copy"></button>
+              <button type="button" class="secondary" id="download-btn" data-i18n="download"></button>
+              <a class="button share" id="share-draft" href="#" target="_blank" rel="noopener noreferrer" data-i18n="whatsapp"></a>
             </div>
-            <p class="note" data-i18n="waNote">WhatsApp opens with the draft in a new message for you to choose who gets it. Nothing is sent by this page.</p>
+            <p class="note" data-i18n="waNote"></p>
             <p class="note" id="categories"></p>
           </div>
         </div>
@@ -602,9 +602,9 @@
 </main>
 
 <footer class="wrap" id="honesty">
-  <p><strong data-i18n="footerClaim">Possible causes with confidence levels, not a diagnosis.</strong> <span data-i18n="footerHeuristic">Every threshold is an unvalidated heuristic.</span></p>
+  <p><strong data-i18n="footerClaim"></strong> <span data-i18n="footerHeuristic"></span></p>
   <p id="sources">Expected output: PVGIS (EU JRC), adjusted for actual weather from NASA POWER.</p>
-  <p><span data-i18n="sourcesWord">Sources:</span> <a href="https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis_en" rel="noreferrer" translate="no">PVGIS</a> · <a href="https://power.larc.nasa.gov/" rel="noreferrer" translate="no">NASA POWER</a></p>
+  <p><span data-i18n="sourcesWord"></span> <a href="https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis_en" rel="noreferrer" translate="no">PVGIS</a> · <a href="https://power.larc.nasa.gov/" rel="noreferrer" translate="no">NASA POWER</a></p>
 </footer>
 
 <script>
