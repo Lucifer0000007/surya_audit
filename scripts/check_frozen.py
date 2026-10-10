@@ -64,10 +64,10 @@ def main(argv):
         sys.exit("docs/PROTECTED_PATHS lists no paths")
 
     changed = set(git("diff", "--name-only", sha, "--", *paths).split())  # working tree against the frozen commit
-    if "CLAUDE.md" in changed and same_but_size_line((ROOT / "CLAUDE.md").read_text(encoding="utf-8"), git("show", f"{sha}:CLAUDE.md")):
-        changed.discard("CLAUDE.md")  # only the size line moved, as the user authorised
     changed |= set(git("diff", "--cached", "--name-only", sha, "--", *paths).split())  # staged, even if the file was put back
     changed |= set(git("ls-files", "--others", "--exclude-standard", "--", *paths).split())  # new and untracked
+    if "CLAUDE.md" in changed and same_but_size_line((ROOT / "CLAUDE.md").read_text(encoding="utf-8"), git("show", f"{sha}:CLAUDE.md")):
+        changed.discard("CLAUDE.md")  # only the size line moved, as the user authorised
     unmatched = [p for p in paths if not git("ls-files", "--", p).split()]  # a pattern that matches nothing protects nothing
     if unmatched:
         print("docs/PROTECTED_PATHS has patterns that match no tracked file (mistyped, or the last file was removed): " + ", ".join(unmatched))
