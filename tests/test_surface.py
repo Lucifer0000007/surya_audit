@@ -1,11 +1,15 @@
-"""Lints of the page against the user's surface rules.
+"""Checks of what the page says and does, against the user's surface rules and against the code.
 
-Text checks over `app/index.html`: a rule of the surface upgrade is kept by a test, not by memory. They read the page; they
-never change it.
+The page checks are text lints over `app/index.html`: a rule of the surface upgrade is kept by a test, not by memory. The
+coordinate check calls the engine's own fetch functions with the network replaced. They read the page and the engine; they
+never change them.
 """
 
 import re
+from datetime import date
 from pathlib import Path
+
+from app import expected
 
 PAGE = (Path(__file__).resolve().parent.parent / "app" / "index.html").read_text(encoding="utf-8")
 STYLE = re.search(r"<style>(.*?)</style>", PAGE, re.S).group(1)
@@ -53,3 +57,58 @@ def test_the_page_uses_the_user_wording_for_co2_and_never_shows_litres():
     for banned in ("emissions saved", "co₂ lost", "co2 lost", "lost co", "litre", "liter", "लीटर", "ਲੀਟਰ"):
         assert banned not in lowered, banned
     assert "avoided grid CO₂" in PAGE and "Cleanings avoided" in PAGE
+
+
+def test_the_plants_coordinates_reach_pvgis_and_nasa_power_exactly_as_stored(monkeypatch):
+    """The privacy band says the location goes to NASA POWER, and to PVGIS with the plant's size, tilt, direction and
+    loss, "as typed" (rounded to about 1 km only when "Use my location" produced it, in the page). So the server must pass
+    the stored coordinates on unchanged, and nothing but those parameters may be sent."""
+    monkeypatch.delenv("PVGIS_MODE", raising=False)
+    monkeypatch.delenv("IRRADIANCE_MODE", raising=False)
+    calls = []
+
+    def fake_get_json(url, params):
+        calls.append((url, dict(params)))
+        if url == expected.PVGIS_URL:
+            data = {"outputs": {"monthly": {"fixed": [{"month": m, "E_d": 5.0} for m in range(1, 13)]}}}
+        elif url == expected.POWER_CLIMATOLOGY_URL:
+            data = {"properties": {"parameter": {expected.POWER_PARAM: {m: 5.0 for m in expected.MONTHS}}}}
+        else:
+            data = {"properties": {"parameter": {expected.POWER_PARAM: {"20261001": 5.0, "20261002": 5.0}}}}
+        return data, {"url": url, "retrieved": "2026-10-10", "fixture": False}
+
+    monkeypatch.setattr(expected, "_get_json", fake_get_json)
+    lat, lon = 26.84671, 80.94623  # as typed, with more than two decimals
+    expected.pvgis_monthly(lat, lon, 3.0, 27.0, 180.0, 14.0)
+    expected.power_climatology(lat, lon)
+    expected.power_daily(lat, lon, date(2026, 10, 1), date(2026, 10, 2))
+
+    sent = dict(calls)
+    assert set(sent) == {expected.PVGIS_URL, expected.POWER_CLIMATOLOGY_URL, expected.POWER_DAILY_URL}
+    pvgis = sent[expected.PVGIS_URL]
+    assert (pvgis["lat"], pvgis["lon"]) == (lat, lon)
+    assert set(pvgis) == {"lat", "lon", "peakpower", "loss", "angle", "aspect", "outputformat"}
+    for url in (expected.POWER_CLIMATOLOGY_URL, expected.POWER_DAILY_URL):
+        power = sent[url]
+        assert (power["latitude"], power["longitude"]) == (lat, lon)
+        assert set(power) <= {"parameters", "community", "longitude", "latitude", "start", "end", "format"}
+
+
+# What the page must never say. Detection of shading, an inverter integration and complaint categories that match a real
+# portal are all things the product does not have (the audit only lists shading as one possible cause of a low start;
+# readings come from a photo or by hand; the complaint categories are SAMPLE names, unverified).
+CLAIMS_NOT_MADE = {
+    "shading is detected": r"shading\s+(is|was|can be|gets)\s+(detected|found|identified)|detects?\s+(the\s+)?shading|shading\s+detection",
+    "an inverter is integrated": r"integrat\w*[^.\n]{0,30}inverter|inverter[^.\n]{0,30}integrat|connects?\s+to\s+(your\s+|the\s+)?inverter|inverter\s+(api|sync)",
+    "complaint categories match a real portal": r"portal\s+categor|(match(es|ing)?|same\s+as)[^.\n]{0,30}portal|official\s+(mnre\s+)?categor",
+}
+
+
+def test_the_page_never_claims_shading_detection_inverter_integration_or_portal_categories():
+    found = {claim: re.findall(pattern, PAGE, flags=re.I) for claim, pattern in CLAIMS_NOT_MADE.items()}
+    assert {claim: hits for claim, hits in found.items() if hits} == {}
+
+
+def test_the_complaint_categories_stay_labelled_sample_in_the_page():
+    # The categories are the server's SAMPLE names; the page must keep telling the owner to check the procedure itself.
+    assert "SAMPLE: category names are unverified" in PAGE

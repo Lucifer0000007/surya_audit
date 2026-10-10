@@ -48,3 +48,17 @@ Routes and response shapes are frozen during the UI phases (5-8), so these wait 
   complaint draft (English by design), the errors `image_base64 is not valid base64`, `image must be between 1 byte
   and N bytes`, `site not found`, `action not found`, `action is already ...` and `approved_on must be between ... and
   today`, and any sentence the backend gains. The screen check counts these.
+
+- **Delete my data** (Step 4 of the surface upgrade). The page can only forget a plant in this browser ("Forget this
+  plant on this device"); the plant's location, readings and suggestions stay in DynamoDB until someone deletes the
+  item, and the frozen routes have no delete. Proposed: `DELETE /api/sites/{id}` (the id is the only key, as for every
+  other route). It removes the one DynamoDB item `{id}` (`app/store.py` keeps one item per site), answers 204, and the
+  daily refresh (`app/refresh.py`) skips a plant that is gone. No IAM change is needed: the table policy already
+  grants delete (`DynamoDBCrudPolicy` "grants create, read, update, and delete permissions to an Amazon DynamoDB table
+  and its indexes", https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-policy-template-list.html,
+  retrieved 2026-10-10) and the permissions boundary allows `dynamodb:DeleteItem` on `surya-audit-*` tables
+  (`infra/boundary-policy.json`, statement `SitesTableItems`). Nothing else holds owner data (`docs/PRIVACY_EVIDENCE.md`):
+  photos are never stored, `template.yaml` defines no access log, and Lambda logs carry no readings, coordinates or
+  images. The page would then add "Delete this plant's data from the server" beside "Forget this plant on this device",
+  with a confirmation that says the plant's link stops working. Not built: it needs a route and a test, and the routes
+  are frozen.
