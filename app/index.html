@@ -315,6 +315,7 @@
   footer { padding: 16px 16px 32px; color: var(--text-2); font-size: 0.875rem; display: grid; gap: 6px; }
   footer strong { color: var(--text); }
   .busy { opacity: 0.6; }
+  .saved-note { margin: 0 0 16px; padding: 8px 12px; border: 1px solid var(--hairline); border-radius: var(--r); background: var(--surface); color: var(--text-2); font-size: 0.875rem; }
   .reveal { animation: rise 420ms ease-out both; animation-delay: calc(var(--k, 0) * 70ms); }
   .confetti { position: fixed; z-index: 30; width: 0; height: 0; pointer-events: none; }
   .confetti i { position: absolute; width: 6px; height: 10px; border-radius: var(--r); animation: burst 1.1s cubic-bezier(0.2, 0.7, 0.3, 1) forwards; }
@@ -387,6 +388,7 @@
 
 <main class="wrap" id="main" tabindex="-1">
  <div id="banners"></div>
+ <p id="saved-note" class="saved-note" role="status" hidden></p>
  <p id="error" class="error" role="alert" hidden></p>
  <div id="retry" class="row" hidden><button type="button" id="retry-btn" data-i18n="tryAgain"></button></div>
 
@@ -506,6 +508,7 @@
       <li data-i18n="privPhoto"></li>
       <li id="priv-data"></li>
       <li data-i18n="privNothing"></li>
+      <li data-i18n="privSaved"></li>
      </ul>
      <div class="row"><button type="button" class="secondary" id="forget" data-i18n="forget"></button></div>
      <p class="note" data-i18n="forgetNote"></p>
@@ -922,6 +925,13 @@ const L = {
   busyFail: ['Surya Audit could not finish that just now. Please try again in a moment.', 'सूर्य ऑडिट अभी यह पूरा नहीं कर सका। थोड़ी देर में फिर कोशिश करें।', 'ਸੂਰਜ ਆਡਿਟ ਹੁਣੇ ਇਹ ਪੂਰਾ ਨਹੀਂ ਕਰ ਸਕਿਆ। ਥੋੜ੍ਹੀ ਦੇਰ ਵਿੱਚ ਫਿਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ।'],
   checkValues: ['Please check the values you entered.', 'भरे हुए मान जाँचें।', 'ਭਰੇ ਹੋਏ ਮੁੱਲ ਜਾਂਚੋ।'],
   tryAgain: ['Try again', 'फिर कोशिश करें', 'ਫਿਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ'],
+  notSaved: ['The server did not answer in time and the reading was not saved. Your numbers are still here: press Save to try again.', 'सर्वर ने समय पर जवाब नहीं दिया और रीडिंग सेव नहीं हुई। आपके अंक यहीं हैं: फिर कोशिश करने के लिए सेव दबाएँ।', 'ਸਰਵਰ ਨੇ ਸਮੇਂ ਸਿਰ ਜਵਾਬ ਨਹੀਂ ਦਿੱਤਾ ਅਤੇ ਰੀਡਿੰਗ ਸੇਵ ਨਹੀਂ ਹੋਈ। ਤੁਹਾਡੇ ਅੰਕ ਇੱਥੇ ਹੀ ਹਨ: ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਲਈ ਸੇਵ ਦਬਾਓ।'],
+  savedFrom: ['Saved result from {time}, refreshing...', 'सहेजा हुआ नतीजा ({time} का), ताज़ा हो रहा है...', 'ਸੰਭਾਲਿਆ ਨਤੀਜਾ ({time} ਦਾ), ਤਾਜ਼ਾ ਹੋ ਰਿਹਾ ਹੈ...'],
+  refreshFail: ['Could not refresh. This is the saved result from {time}.', 'ताज़ा नहीं हो सका। यह {time} का सहेजा हुआ नतीजा है।', 'ਤਾਜ਼ਾ ਨਹੀਂ ਹੋ ਸਕਿਆ। ਇਹ {time} ਦਾ ਸੰਭਾਲਿਆ ਨਤੀਜਾ ਹੈ।'],
+  privSaved: ['The last result is saved on this device.', 'आख़िरी नतीजा इसी डिवाइस पर सहेजा जाता है।', 'ਆਖ਼ਰੀ ਨਤੀਜਾ ਇਸੇ ਡਿਵਾਈਸ ਉੱਤੇ ਸੰਭਾਲਿਆ ਜਾਂਦਾ ਹੈ।'],
+  saving: ['Saving…', 'सेव हो रहा है…', 'ਸੇਵ ਹੋ ਰਿਹਾ ਹੈ…'],
+  approving: ['Approving…', 'मंज़ूर हो रहा है…', 'ਮਨਜ਼ੂਰ ਹੋ ਰਿਹਾ ਹੈ…'],
+  drafting: ['Drafting…', 'मसौदा बन रहा है…', 'ਖਰੜਾ ਬਣ ਰਿਹਾ ਹੈ…'],
   approvedSay: ['Approved: {action}. The next readings will show whether output comes back.', 'मंज़ूर: {action}। अगली रीडिंग बताएँगी कि उत्पादन वापस आया या नहीं।', 'ਮਨਜ਼ੂਰ: {action}। ਅਗਲੀਆਂ ਰੀਡਿੰਗਾਂ ਦੱਸਣਗੀਆਂ ਕਿ ਉਤਪਾਦਨ ਵਾਪਸ ਆਇਆ ਜਾਂ ਨਹੀਂ।'],
   progressLabel: ['Progress of this suggestion', 'इस सुझाव की प्रगति', 'ਇਸ ਸੁਝਾਅ ਦੀ ਪ੍ਰਗਤੀ'],
   draftReady: ['Draft ready. Nothing has been sent.', 'मसौदा तैयार। कुछ भेजा नहीं गया।', 'ਖਰੜਾ ਤਿਆਰ। ਕੁਝ ਭੇਜਿਆ ਨਹੀਂ ਗਿਆ।'],
@@ -1121,7 +1131,7 @@ const ASSUME_SOURCES = [
 ];
 const QUEUE_KEY = 'surya-audit-queued-readings';
 const state = {
-  id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, photoFill: null, flushing: null, saving: null, replay: null,
+  id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, photoFill: null, flushing: null, saving: null, replay: null, cached: null,
   tab: 'today', seenTabs: new Set(), chartPlayed: false, chartWidth: 0, tiltAuto: null,
   prevOutcomes: null, prevSteps: {}, heroValue: 0, heroFrac: 0,
 };
@@ -1320,16 +1330,27 @@ function showError(msg) {
   if (msg && lang !== 'en' && !isIndic(msg)) e.setAttribute('lang', 'en'); else e.removeAttribute('lang');
 }
 
-async function api(method, path, body) {
+// Network policy: assumptions of master prompt v4 for 2-5 Mbps, not measured. A read (the audit) gives up after 12 s and is tried
+// 2 more times, 1 s and 3 s later plus up to 0.4 s of jitter. A photo read waits 30 s, any other write 20 s. A write is never tried
+// again by the page; the owner decides (the offline queue below is the one owner-confirmed exception).
+const NET = { getMs: 12000, getRetries: 2, backoffMs: [1000, 3000], jitterMs: 400, photoMs: 30000, postMs: 20000 };
+async function request(method, path, body, ms) {
+  const stop = new AbortController();
+  const timer = setTimeout(() => stop.abort(), ms);
   let res;
   try {
     res = await fetch(path, {
       method,
       headers: body ? { 'Content-Type': 'application/json' } : {},
       body: body ? JSON.stringify(body) : undefined,
+      signal: stop.signal,
     });
   } catch {
-    throw new Error(t('netFail'));
+    const err = new Error(t('netFail'));
+    err.timedOut = stop.signal.aborted;
+    throw err;
+  } finally {
+    clearTimeout(timer);
   }
   let data = null;
   try { data = await res.json(); } catch { /* no body */ }
@@ -1343,15 +1364,28 @@ async function api(method, path, body) {
   }
   return data;
 }
+async function api(method, path, body, opts) {
+  const reading = method === 'GET';
+  const ms = (opts && opts.timeoutMs) || (reading ? NET.getMs : NET.postMs);
+  for (let attempt = 0; ; attempt += 1) {
+    try { return await request(method, path, body, ms); }
+    catch (e) {
+      const again = reading && attempt < NET.getRetries && (!e.status || e.status === 429 || e.status >= 500);
+      if (!again) throw e;
+      await wait(NET.backoffMs[attempt] + Math.random() * NET.jitterMs);
+    }
+  }
+}
 
-async function busy(button, fn) {
+async function busy(button, fn, pending) {
   const site = $('site');
-  if (button) button.disabled = true;
+  const was = button ? button.textContent : '';
+  if (button) { button.disabled = true; if (pending) button.textContent = t(pending); }
   site.classList.add('busy');
   showError('');
   try { return await fn(); }
   catch (e) { showError(e.message); return null; }
-  finally { if (button) button.disabled = false; site.classList.remove('busy'); }
+  finally { if (button) { button.disabled = false; if (pending && button.isConnected) button.textContent = was; } site.classList.remove('busy'); }
 }
 
 // tabs: ARIA tablist, roving tabindex, URL hash, Back button
@@ -1427,7 +1461,7 @@ function showTab(name, force) {
   if (animate && document.startViewTransition) {
     const transition = document.startViewTransition(swap);
     // If a newer tab change arrives before this one finishes, its own swap wins; nothing to undo.
-    transition.updateCallbackDone.catch(() => {});
+    for (const promise of [transition.updateCallbackDone, transition.ready, transition.finished]) promise.catch(() => {});
   } else {
     swap();
     if (animate) {
@@ -1490,7 +1524,8 @@ function resetDraft() {
 function markDraftStale() { if (state.draft) $('draft-stale').hidden = false; }
 
 function showSetup(message) {
-  state.id = null; state.audit = null;
+  state.id = null; state.audit = null; state.cached = null;
+  $('saved-note').hidden = true;
   clearImport();
   state.prevOutcomes = null; state.prevSteps = {}; state.heroValue = 0; state.heroFrac = 0;
   state.seenTabs = new Set(); state.chartPlayed = false; state.tiltAuto = null;
@@ -1607,6 +1642,7 @@ $('switch').addEventListener('click', () => {
 $('forget').addEventListener('click', () => {
   if (!confirm(tf('forgetConfirm', { link: `${location.origin}/?site=${state.id}` }))) return;
   if (storeGet() === state.id) storeClear();  // another remembered plant is not this one's to forget
+  lastClear(state.id);
   try { localStorage.removeItem(ASSUME_KEY); } catch { /* ignore */ }
   if (location.search || location.hash) history.replaceState(null, '', location.pathname);
   showSetup(t('forgot'));
@@ -1624,7 +1660,7 @@ $('reading-form').addEventListener('submit', async (ev) => {
   if (saved && !confirm(tf('replaceSaved', { date: fmtDate(body.date), kwh: kwh(saved.kwh), u: units() }))) return;
   if (!saved && waiting && !confirm(tf('replaceWaiting', { date: fmtDate(body.date), kwh: kwh(waiting.body.kwh), u: units() }))) return;
   const button = f.querySelector('button[type=submit]');
-  button.disabled = true; showError('');
+  button.disabled = true; button.textContent = t('saving'); showError('');
   try {
     let audit;
     if (state.flushing) await state.flushing.catch(() => {});  // never race a queue flush
@@ -1634,12 +1670,25 @@ $('reading-form').addEventListener('submit', async (ev) => {
       if (waiting) setQueue(site, queuedFor(site).filter((q) => q.body.date !== body.date));  // the value just saved replaces the waiting one
     } catch (e) {
       if (e.status) { showError(e.message); return; }  // the server answered: a real problem with the values
-      // No answer at all: keep the reading here and send it when the connection is back.
-      setQueue(site, [...queuedFor(site).filter((q) => q.body.date !== body.date), { site, body }]);
-      setKwh('');
-      clearPhoto();
-      say(tf('offlineKept', { date: fmtDate(body.date) }));
-      return;
+      // A timeout may still have saved it: look at the audit before saying anything or sending again.
+      let landed = null;
+      if (e.timedOut) {
+        const check = await api('GET', `/api/sites/${encodeURIComponent(site)}/audit`).catch(() => null);
+        if (check && state.id === site) {
+          if (check.timeline.some((p) => p.date === body.date && Math.abs(p.kwh - body.kwh) < 0.0005)) landed = check;
+          else { showError(t('notSaved')); return; }  // the server is reachable and has no such reading: the owner presses Save again
+        }
+      }
+      if (landed) {
+        audit = landed;
+      } else {
+        // No answer at all: keep the reading here and send it when the connection is back.
+        setQueue(site, [...queuedFor(site).filter((q) => q.body.date !== body.date), { site, body }]);
+        setKwh('');
+        clearPhoto();
+        say(tf('offlineKept', { date: fmtDate(body.date) }));
+        return;
+      }
     } finally {
       state.saving = null;
     }
@@ -1652,6 +1701,7 @@ $('reading-form').addEventListener('submit', async (ev) => {
     say(tf('savedReading', { date: fmtDate(body.date) }));
   } finally {
     button.disabled = false;
+    button.textContent = t('save');
   }
 });
 
@@ -1892,7 +1942,7 @@ async function readPhoto(file) {
   $('photo-review').hidden = false;
   $('photo-note').textContent = t('photoReading');
   try {
-    const res = await api('POST', `/api/sites/${encodeURIComponent(state.id)}/extract`, { image_base64: image, mime_type: 'image/jpeg' });
+    const res = await api('POST', `/api/sites/${encodeURIComponent(state.id)}/extract`, { image_base64: image, mime_type: 'image/jpeg' }, { timeoutMs: NET.photoMs });
     if (seq !== state.photoSeq) return;
     const c = res.candidate || {};
     const f = $('reading-form');
@@ -1919,7 +1969,7 @@ async function readPhoto(file) {
 async function approve(action, dateValue, button) {
   const audit = await busy(button, () => api('POST',
     `/api/sites/${encodeURIComponent(state.id)}/actions/${encodeURIComponent(action.id)}/approve`,
-    dateValue ? { approved_on: dateValue } : {}));
+    dateValue ? { approved_on: dateValue } : {}), 'approving');
   if (!audit) return;
   if (!calm()) {
     button.classList.add('done');
@@ -1941,7 +1991,7 @@ function renderCategories(draft) {
 }
 if (!CSS.supports('field-sizing', 'content')) addEventListener('beforeprint', () => { const d = $('draft-text'); d.style.height = 'auto'; d.style.height = `${d.scrollHeight}px`; });  // a long draft prints in full
 $('draft-btn').addEventListener('click', async (ev) => {
-  const draft = await busy(ev.currentTarget, () => api('POST', `/api/sites/${encodeURIComponent(state.id)}/complaint`));
+  const draft = await busy(ev.currentTarget, () => api('POST', `/api/sites/${encodeURIComponent(state.id)}/complaint`), 'drafting');
   if (!draft) return;
   state.draft = draft;
   $('draft-stale').hidden = true;
@@ -1993,13 +2043,37 @@ $('download-btn').addEventListener('click', () => {
 });
 
 // rendering
-function render(audit) {
+// ---------- the last result is kept on this device, so the page can draw it before the network answers ----------
+const LAST_PREFIX = 'surya-audit-last:';
+function lastGet(id) {  // untrusted: only an object of the right shape is used, and it goes through the same textContent path as any audit
+  const v = jsonGet(LAST_PREFIX + id);
+  const a = v && v.audit;
+  return v && typeof v.savedAt === 'number' && a && typeof a === 'object' && Array.isArray(a.timeline) && Array.isArray(a.actions)
+    && Array.isArray(a.hypotheses) && a.site && a.baseline && a.escalation && a.sources ? v : null;
+}
+function lastSet(id, audit) { if (id) jsonSet(LAST_PREFIX + id, { savedAt: Date.now(), audit }); }
+function lastClear(id) { try { localStorage.removeItem(LAST_PREFIX + id); } catch { /* ignore */ } }
+function savedTime(ms) { return new Date(ms).toLocaleString(LOCALES[lang], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
+const LOCALES = { en: 'en-IN', hi: 'hi-IN', pa: 'pa-IN' };
+// state.cached: null, or { at, failed }: the page is showing a saved result, never as if it were current
+function renderSavedNote() {
+  const note = $('saved-note');
+  const c = state.cached;
+  note.hidden = !c;
+  note.textContent = c ? tf(c.failed ? 'refreshFail' : 'savedFrom', { time: savedTime(c.at) }) : '';
+  $('site').classList.toggle('cached', Boolean(c));
+}
+
+function render(audit, opts) {
   // Celebrate only a suggestion that flips to "came back" while the owner is here, never old data.
   const before = state.prevOutcomes;
   const newlyRecovered = before ? audit.actions.filter((x) => x.verification.outcome === 'recovered'
     && !x.verification.provisional && before[x.id] && before[x.id] !== 'recovered') : [];
   state.prevOutcomes = Object.fromEntries(audit.actions.map((x) => [x.id, x.verification.outcome]));
+  const fresh = !(opts && opts.cached) && audit !== state.audit;  // a redraw of the same audit (a language switch) is not a new result
   state.audit = audit;
+  if (fresh) { state.cached = null; lastSet(state.id, audit); }
+  renderSavedNote();
   $('setup').hidden = true;
   $('skeleton').hidden = true;
   $('site').hidden = false;
@@ -2767,7 +2841,19 @@ async function load(id) {
   async function attempt(id) {
     current = id;
     $('retry').hidden = true;
-    $('skeleton').hidden = false;
+    const kept = lastGet(id);
+    let drawn = false;
+    if (kept) {
+      try {
+        state.id = id;
+        state.cached = { at: kept.savedAt, failed: false };
+        render(kept.audit, { cached: true });
+        const tab = tabFromHash();
+        showTab(tab || 'today', true);
+        drawn = true;
+      } catch { lastClear(id); state.cached = null; state.id = null; state.audit = null; }
+    }
+    $('skeleton').hidden = drawn;  // the shimmer shows only when nothing is saved
     $('main').setAttribute('aria-busy', 'true');
     try {
       await load(id);
@@ -2777,7 +2863,11 @@ async function load(id) {
       }
     } catch (e) {
       $('skeleton').hidden = true;
-      if (e.status !== 404) { showError(e.message); $('retry').hidden = false; return; }
+      if (e.status !== 404) {
+        if (drawn && state.cached) { state.cached.failed = true; renderSavedNote(); }  // keep what is saved, and say it is not current
+        showError(e.message); $('retry').hidden = false; return;
+      }
+      lastClear(id);
       if (id === fromUrl) {
         history.replaceState(null, '', `${location.pathname}${location.hash}`);
         if (stored && stored !== id) {

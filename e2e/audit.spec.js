@@ -1068,7 +1068,7 @@ test('a photo note and an error do not linger in the old language after a switch
   await page.unroute('**/api/sites/*/readings');
   await page.route('**/api/sites/*/audit', (route) => route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }));
   await page.goto(`/?site=${id}&failing=1#today`);
-  await expect(page.locator('#retry')).toBeVisible();
+  await expect(page.locator('#retry')).toBeVisible({ timeout: 15000 });  // the read is tried 3 times, 1 s and 3 s apart
   await expect(page.locator('#error')).toBeVisible();
   await page.getByRole('button', { name: 'English' }).click();
   await expect(page.locator('#retry')).toBeVisible();

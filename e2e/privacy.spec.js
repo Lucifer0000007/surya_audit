@@ -78,7 +78,7 @@ test('Forget this plant on this device clears this browser only: the readings st
   await page.getByTestId('impact').getByLabel(/Tariff, Rs per unit/).fill('9');
   await page.getByRole('button', { name: 'Use these values' }).click();
   const keys = () => page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('surya-audit-')).sort());
-  expect(await keys()).toEqual(['surya-audit-assumptions', 'surya-audit-site']);
+  expect(await keys()).toEqual(['surya-audit-assumptions', `surya-audit-last:${id}`, 'surya-audit-site']);  // the saved result is one of the things this browser keeps
 
   // Dismissing the question changes nothing.
   const asked = [];
@@ -86,7 +86,7 @@ test('Forget this plant on this device clears this browser only: the readings st
   await page.getByRole('button', { name: 'Forget this plant on this device' }).click();
   expect(asked[0]).toContain('This clears this browser only: readings stay saved on the server');
   expect(asked[0]).toContain(`/?site=${id}`);
-  expect(await keys()).toEqual(['surya-audit-assumptions', 'surya-audit-site']);
+  expect(await keys()).toEqual(['surya-audit-assumptions', `surya-audit-last:${id}`, 'surya-audit-site']);  // the saved result is one of the things this browser keeps
   await expect(page.getByTestId('headline')).toBeVisible();
 
   // Accepting forgets the plant and the assumptions in this browser, and says what stayed. It sends no request at all.
