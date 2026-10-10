@@ -228,3 +228,36 @@ def test_how_it_runs_says_the_same_in_hindi_and_punjabi():
         for key in ["awsLine", *[f"run{n}" for n in range(1, 7)]]:
             extra = set(re.findall(r"[A-Za-z]{2,}", cells(key)[index])) - names
             assert not extra, (lang, key, extra)
+
+
+# ---- the design rules of the surface upgrade, as lints over the stylesheet
+SPACING_SCALE = {0, 4, 6, 8, 12, 16, 20, 24, 32, 40, 44, 48, 64, 80}
+SPACING_PROPS = r"(?<![-\w])(padding(?:-[a-z]+)*|margin(?:-[a-z]+)*|gap|row-gap|column-gap)\s*:\s*([^;]+)"
+
+
+def test_spacing_is_on_the_scale_radii_are_two_and_there_are_no_shadows_or_amber_text():
+    """Spacing only 4, 6, 8, 12, 16, 20, 24, 32, 40, 44, 48, 64 and 80 px; radii 6 px or a pill (a circle for dots); hairlines, not
+    shadows; amber for backgrounds, borders and strokes, never as the colour of text. The visually hidden helper is exempt from the
+    spacing rule: its -1px margin is the standard clip."""
+    off_scale, radii, shadows, amber_text = [], set(), [], []
+    for selector, body in rules(STYLE):
+        if selector != ".sr-only":
+            for prop, value in re.findall(SPACING_PROPS, body):
+                off_scale += [f"{selector}: {prop} {n}px" for n in re.findall(r"-?[0-9.]+(?=px)", value) if abs(float(n)) not in SPACING_SCALE]
+        radii |= {v.strip() for v in re.findall(r"border-radius\s*:\s*([^;]+)", body)}
+        shadows += [f"{selector}: {v.strip()}" for v in re.findall(r"box-shadow\s*:\s*([^;]+)", body)]
+        amber_text += [f"{selector}: {v}" for v in re.findall(r"(?<![-\w])color\s*:\s*(var\(--accent\)[^;]*)", body)]
+    assert off_scale == []
+    assert radii <= {"var(--r)", "var(--pill)", "50%", "0", "0 var(--r) var(--r) 0"}, radii
+    assert shadows == [] and amber_text == []
+
+
+def test_the_mono_face_is_for_latin_metadata_and_is_switched_off_in_hindi_and_punjabi():
+    """Every selector that sets the mono face (except the root token, the English-only draft box and the import box) is reset to the
+    page face under :lang(hi) and :lang(pa)."""
+    mono = [sel for sel, body in rules(STYLE) if re.search(r"font-family:[^;]*--mono", body) and sel not in (":root", "textarea")]
+    assert mono, "no mono rule found: the lint is not looking at the stylesheet"
+    reset = " ".join(sel for sel, body in rules(STYLE) if ":lang(hi)" in sel and "font-family: inherit" in body)
+    for group in mono:
+        for part in (s.strip() for s in group.split(",")):
+            assert part in reset, f"{part} keeps the mono face in Hindi and Punjabi"

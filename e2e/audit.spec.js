@@ -1248,3 +1248,41 @@ test('Report: a document; Draft is the one primary only when escalation is sugge
   expect(draft.lang).toBe('en');
   expect(draft.lh).toBeGreaterThanOrEqual(1.5);
 });
+
+test('function guards at 375 x 667: each tab has its main action above the tab bar, and a focused field is never covered by it', async ({ page, request }) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows());
+  const above = async (sel, why) => {  // polled: the layout may still be settling just after the page shows
+    await expect.poll(async () => {
+      const bar = (await page.locator('#tablist').boundingBox()).y;
+      const box = await page.locator(sel).first().boundingBox();
+      return box && box.y >= 0 && box.y + box.height <= bar;
+    }, { message: why }).toBe(true);
+  };
+  await page.goto(`/?site=${id}`);
+  await expect(page.getByTestId('headline')).toBeVisible();
+  await above('#hero .button:not(.share)', 'Today: "Log a reading" is on the first screen');
+  await page.goto(`/?site=${id}#log`);
+  await above('#photo-pick', 'Log: the photo drop zone');
+  await above('#kwh-input', 'Log: the energy field');
+  await page.goto(`/?site=${id}#fix`);
+  await above('#action-list .approve-btn:not(.secondary)', 'Fix: the first Approve');
+  await page.goto(`/?site=${id}#report`);
+  await above('#draft-btn', 'Report: Draft a complaint');
+  // A focused field is scrolled clear of the bar (scroll-padding-bottom), wherever it sits on the page.
+  const clear = async (sel) => {
+    await page.locator(sel).focus();
+    await page.waitForTimeout(150);
+    const bar = (await page.locator('#tablist').boundingBox()).y;
+    const box = await page.locator(sel).boundingBox();
+    expect(box.y + box.height, `${sel} is not under the tab bar`).toBeLessThanOrEqual(bar);
+  };
+  await page.locator('#draft-btn').click();
+  await expect(page.locator('#draft-out')).toBeVisible();
+  await clear('#draft-text');
+  await page.goto(`/?site=${id}&g=2#log`);
+  await clear('#kwh-input');
+  await page.getByText('Other date').click();
+  await clear('input[name=date]');
+});
