@@ -98,9 +98,15 @@ def test_the_plants_coordinates_reach_pvgis_and_nasa_power_exactly_as_stored(mon
 # portal are all things the product does not have (the audit only lists shading as one possible cause of a low start;
 # readings come from a photo or by hand; the complaint categories are SAMPLE names, unverified).
 CLAIMS_NOT_MADE = {
-    "shading is detected": r"shading\s+(is|was|can be|gets)\s+(detected|found|identified)|detects?\s+(the\s+)?shading|shading\s+detection",
-    "an inverter is integrated": r"integrat\w*[^.\n]{0,30}inverter|inverter[^.\n]{0,30}integrat|connects?\s+to\s+(your\s+|the\s+)?inverter|inverter\s+(api|sync)",
-    "complaint categories match a real portal": r"portal\s+categor|(match(es|ing)?|same\s+as)[^.\n]{0,30}portal|official\s+(mnre\s+)?categor",
+    "shading is detected": r"shad(e|ing)\s+(is\s+|was\s+|can be\s+|gets\s+)?(detect|found|identif|spott|analys)|(detects?|spots?|identifies|finds|analyses)\s+(the\s+|any\s+)?shad(e|ing)|shad(e|ing)\s+(detection|analysis)"
+    r"|(छाया|छाँव)[^।.\n]{0,40}(पता लग|पहचान|पकड़|डिटेक्ट)|(पता लग|पहचान|पकड़|डिटेक्ट)[^।.\n]{0,40}(छाया|छाँव)"
+    r"|(ਛਾਂ|ਛਾਇਆ)[^।.\n]{0,40}(ਪਤਾ ਲੱਗ|ਪਛਾਣ|ਫੜ|ਡਿਟੈਕਟ)|(ਪਤਾ ਲੱਗ|ਪਛਾਣ|ਫੜ|ਡਿਟੈਕਟ)[^।.\n]{0,40}(ਛਾਂ|ਛਾਇਆ)",
+    "an inverter is integrated": r"integrat\w*[^.\n]{0,30}inverter|inverter[^.\n]{0,30}integrat|connects?\s+to\s+(your\s+|the\s+)?inverter|linked\s+to\s+(your\s+|the\s+)?inverter|inverter\s+(api|sync|data\s+(is|are)\s+(read|pulled|fetched))|reads?\s+(your\s+|the\s+)?inverter\s+(data\s+)?automatically|works\s+with\s+(your\s+)?\w+\s+inverters"
+    r"|इन्वर्टर[^।.\n]{0,40}(इंटीग्रेट|इंटीग्रेशन|से जुड़|कनेक्ट)|(इंटीग्रेट|इंटीग्रेशन)[^।.\n]{0,40}इन्वर्टर"
+    r"|ਇਨਵਰਟਰ[^।.\n]{0,40}(ਇੰਟੀਗ੍ਰੇਟ|ਇੰਟੀਗ੍ਰੇਸ਼ਨ|ਨਾਲ ਜੁੜ|ਕਨੈਕਟ)|(ਇੰਟੀਗ੍ਰੇਟ|ਇੰਟੀਗ੍ਰੇਸ਼ਨ)[^।.\n]{0,40}ਇਨਵਰਟਰ",
+    "complaint categories match a real portal": r"portal\s+categor|categories\s+(of|on|from|in)\s+the\s+(mnre\s+)?portal|(match(es|ing)?|same\s+as)[^.\n]{0,30}portal|official\s+(mnre\s+)?categor"
+    r"|पोर्टल[^।.\n]{0,40}(श्रेणी|मेल खा|समान)|(श्रेणी|श्रेणियाँ)[^।.\n]{0,40}पोर्टल"
+    r"|ਪੋਰਟਲ[^।.\n]{0,40}(ਸ਼੍ਰੇਣੀ|ਮੇਲ ਖਾ|ਇੱਕੋ ਜਿਹ)|(ਸ਼੍ਰੇਣੀ|ਸ਼੍ਰੇਣੀਆਂ)[^।.\n]{0,40}ਪੋਰਟਲ",
 }
 
 
@@ -148,5 +154,74 @@ def test_how_it_runs_names_only_what_the_infrastructure_code_defines():
     assert all(action in boundary for action in ("dynamodb:PutItem", "logs:PutLogEvents", "ssm:GetParameter"))
     # no other service is named in these lines
     lines = " ".join(english(key) for key in ["awsLine", *[f"run{n}" for n in range(1, 7)]])
-    for other in ("S3", "SQS", "SNS", "SES", "Bedrock", "CloudFront", "Cognito", "Kinesis", "Fargate", "EC2", "RDS", "Amplify", "AppSync", "Step Functions"):
+    for other in ("S3", "SQS", "SNS", "SES", "Bedrock", "CloudFront", "Cognito", "Kinesis", "Fargate", "EC2", "RDS", "Amplify", "AppSync", "Step Functions",
+                  "Secrets Manager", "KMS", "X-Ray", "Route 53", "ECS", "Textract", "Rekognition", "SageMaker", "WAF", "Glue", "Athena"):
         assert not re.search(r"\b" + re.escape(other) + r"\b", lines), other
+
+
+def test_the_claims_lint_catches_the_phrasings_it_exists_for():
+    """The patterns are only worth something if they fire on real sentences, in all three languages."""
+    sentences = {
+        "shading is detected": ["Shading detected on your roof.", "It detects shade in the afternoon.", "छाया का पता लगाया जाता है", "ਛਾਂ ਦਾ ਪਤਾ ਲੱਗ ਜਾਂਦਾ ਹੈ"],
+        "an inverter is integrated": ["Linked to your inverter.", "Reads your inverter data automatically.", "Works with Growatt inverters.", "इन्वर्टर से जुड़ा है", "ਇਨਵਰਟਰ ਨਾਲ ਜੁੜਿਆ ਹੈ"],
+        "complaint categories match a real portal": ["These are the categories of the MNRE portal.", "पोर्टल की श्रेणी से मेल खाती हैं", "ਪੋਰਟਲ ਦੀ ਸ਼੍ਰੇਣੀ ਨਾਲ ਮੇਲ ਖਾਂਦੀ ਹੈ"],
+    }
+    for claim, texts in sentences.items():
+        for sentence in texts:
+            assert re.search(CLAIMS_NOT_MADE[claim], sentence, flags=re.I), (claim, sentence)
+
+
+def test_the_stored_coordinates_are_what_the_create_route_and_the_daily_refresh_send(monkeypatch):
+    """The same claim, through the paths that use it: POST /api/sites and the daily refresh of a plant with a stale reading."""
+    import json
+
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    client = TestClient(app)
+    monkeypatch.delenv("PVGIS_MODE", raising=False)
+    monkeypatch.delenv("IRRADIANCE_MODE", raising=False)
+    calls = []
+
+    def fake_get_json(url, params):
+        calls.append((url, dict(params)))
+        if url == expected.PVGIS_URL:
+            data = {"outputs": {"monthly": {"fixed": [{"month": m, "E_d": 5.0} for m in range(1, 13)]}}}
+        elif url == expected.POWER_CLIMATOLOGY_URL:
+            data = {"properties": {"parameter": {expected.POWER_PARAM: {m: 5.0 for m in expected.MONTHS}}}}
+        else:
+            data = {"properties": {"parameter": {expected.POWER_PARAM: {}}}}
+        return data, {"url": url, "retrieved": "2026-10-10", "fixture": False}
+
+    monkeypatch.setattr(expected, "_get_json", fake_get_json)
+    lat, lon = 26.84671, 80.94623
+    body = json.loads((ROOT / "fixtures" / "synthetic_site.json").read_text(encoding="utf-8")) | {"lat": lat, "lon": lon}
+    created = client.post("/api/sites", json=body)
+    assert created.status_code == 200, created.text
+    site = created.json()
+    assert {(p.get("lat", p.get("latitude")), p.get("lon", p.get("longitude"))) for _, p in calls} == {(lat, lon)}
+    posted = client.post(f"/api/sites/{site['id']}/readings", json={"date": "2026-10-01", "kwh": 5.0, "kind": "daily"})
+    assert posted.status_code == 200, posted.text
+    assert {(p.get("latitude"), p.get("longitude")) for u, p in calls if u == expected.POWER_DAILY_URL} == {(lat, lon)}
+    calls.clear()
+    from app import main
+
+    expected.refresh_weather(main.store.get(site["id"]))  # what the daily refresh calls for a plant with a reading still waiting for weather
+    assert calls and {(p.get("latitude"), p.get("longitude")) for _, p in calls} == {(lat, lon)}
+
+
+def test_how_it_runs_says_the_same_in_hindi_and_punjabi():
+    """The translated lines carry the same hour and no Latin word except the service and source names."""
+    names = {"Lambda", "FastAPI", "API", "Gateway", "HTTP", "DynamoDB", "EventBridge", "Scheduler", "Parameter", "Store", "SecureString",
+             "IAM", "CloudWatch", "Logs", "Gemini", "Google", "NASA", "POWER", "PVGIS", "AWS", "Region"}
+    for lang in ("hi", "pa"):
+        table = re.search(r"\n  " + lang + r": \{\n(.*?)\n  \},?(?=\n)", PAGE, re.S).group(1)
+
+        def row(key):
+            return re.search(r"(?<![A-Za-z])" + key + r": '((?:[^'\\]|\\.)*)'", table).group(1)
+
+        assert "09:00" in row("run3"), lang
+        for key in ["awsLine", *[f"run{n}" for n in range(1, 7)]]:
+            extra = set(re.findall(r"[A-Za-z]{2,}", row(key))) - names
+            assert not extra, (lang, key, extra)

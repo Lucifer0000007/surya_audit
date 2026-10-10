@@ -1,6 +1,6 @@
 # Sources for the numbers the page shows
 
-Every default the page uses as an **editable assumption** is listed here with its source URL, what the source
+Every default the page uses as an **editable assumption** (a section marked REMOVED is no longer used by the page) is listed here with its source URL, what the source
 says, and the date it was retrieved. The author re-fetched each source and checked the quoted figures on
 2026-10-08 (two automated re-fetch passes per finding, see `LOOP_LOG.md`). Where a value is our own arithmetic
 from a source, it says so. Vendor pages are labelled as such.
@@ -34,15 +34,15 @@ from a source, it says so. Vendor pages are labelled as such.
   FY 2025-26. The same Results sheet also has simple operating margin, build margin and combined margin rows; they are
   different measures from the weighted average and are not used here.
 
-## Water per panel cleaning (default 4 litres per panel)
+## Water per panel cleaning (REMOVED from the page on 2026-10-10: no sourced litre figure is shown any more; kept as the record of what was read)
 
 - Review of aqueous PV cleaning as reported by pv magazine India (2025-02-05): "The minimum water consumption for
   aqueous cleaning is 0.31 L/m2, the maximum is 4.95 L/m2, and the average water consumption is 2.1 L/m2"
   (https://www.pv-magazine-india.com/2025/02/05/pressurized-water-cleaning-can-improve-pv-generation-efficiency-by-10/).
   Renewable Watch (2020-12-03), citing CEEW: "3-5 litres" per panel per cleaning in normal areas, 7-8 L in arid areas
   (https://renewablewatch.in/2020/12/03/waterless-way/). Retrieved 2026-10-08.
-- How we use it: a residential panel is about 2 m², so 4 L per panel sits in the middle of the sourced range.
-  The owner can edit it; the page labels it an assumption.
+- How it was used: a residential panel is about 2 m², so 4 L per panel sat in the middle of the sourced range. The page no
+  longer shows litres, or asks for the number of panels, because that figure was an estimate of ours, not a sourced one.
 
 ## Cleaning cost and frequency (default Rs 150 per kW per visit; fortnightly)
 

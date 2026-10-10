@@ -53,7 +53,11 @@ Routes and response shapes are frozen during the UI phases (5-8), so these wait 
   plant on this device"); the plant's location, readings and suggestions stay in DynamoDB until someone deletes the
   item, and the frozen routes have no delete. Proposed: `DELETE /api/sites/{id}` (the id is the only key, as for every
   other route). It removes the one DynamoDB item `{id}` (`app/store.py` keeps one item per site), answers 204, and the
-  daily refresh (`app/refresh.py`) skips a plant that is gone. No IAM change is needed: the table policy already
+  daily refresh (`app/refresh.py`) skips a plant that is gone. Two things it needs: neither `MemoryStore` nor `DynamoStore`
+  has a delete method yet, and a delete must be safe against a concurrent save: `DynamoStore.put` is conditional on
+  `attribute_not_exists(#id) OR #v = :v` (`app/store.py:65`), which is true for a deleted item, so a refresh that read the plant
+  just before the delete would put it back. Either write only while the item exists (`attribute_exists(id) AND version = :v`) or
+  leave a tombstone, and add a test where the refresh races a delete. No IAM change is needed: the table policy already
   grants delete (`DynamoDBCrudPolicy` "grants create, read, update, and delete permissions to an Amazon DynamoDB table
   and its indexes", https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-policy-template-list.html,
   retrieved 2026-10-10) and the permissions boundary allows `dynamodb:DeleteItem` on `surya-audit-*` tables

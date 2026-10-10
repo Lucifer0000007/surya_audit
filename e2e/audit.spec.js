@@ -1099,3 +1099,62 @@ test('removed on purpose: with motion allowed, the headline number is final on i
   expect(await page.locator('#headline .gauge-arc').evaluate((n) => getComputedStyle(n).transitionDuration)).toBe('0s');
   expect(await page.evaluate(() => window.__ring), 'the number is never drawn at another value first').toHaveLength(1);
 });
+
+test('impact: the CO2 figure is the shortfall times the factor, follows an edited factor, and an edited factor drops the CEA labels', async ({ page, request }) => {
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows());
+  await page.goto(`/?site=${id}`);
+  const impact = page.getByTestId('impact');
+  await expect(impact).toBeVisible();
+  const shortfall = async () => Number((await impact.locator('.stat').nth(0).locator('.value').innerText()).replace(/[^0-9.]/g, ''));
+  const y = async () => Number((await page.locator('#co2-line').innerText()).match(/about ([0-9.,]+) kg/)[1].replace(/,/g, ''));
+  const lost = await shortfall();
+  expect(lost).toBeGreaterThan(5);
+  expect(Math.abs((await y()) - lost * 0.675)).toBeLessThanOrEqual(0.2);
+  await impact.getByText('How we calculated this').click();
+  await impact.getByLabel(/Emission factor, kg CO₂ per unit/).fill('0.9');
+  await page.getByRole('button', { name: 'Use these values' }).click();
+  expect(Math.abs((await y()) - lost * 0.9)).toBeLessThanOrEqual(0.2);
+  // The factor is the owner's now: it no longer sits under the CEA version and type it was sourced with.
+  await expect(impact.getByLabel('CEA CO₂ Baseline Database version')).toHaveValue('');
+  await expect(impact.getByLabel('Factor type (margin type)')).toHaveValue('');
+  await page.getByRole('button', { name: 'Reset to defaults' }).click();
+  await expect(impact.getByLabel('CEA CO₂ Baseline Database version')).toHaveValue('22.0');
+  // A plant with no dips and an emptied factor: no CO2 figure, the kWh stat stays.
+  const calm = await createSite(request);
+  await postRows(request, calm, syntheticRows().slice(0, 20));
+  await page.goto(`/?site=${calm}&calm=1`);
+  await page.getByTestId('impact').getByText('How we calculated this').click();
+  await page.getByTestId('impact').getByLabel(/Emission factor, kg CO₂ per unit/).fill('');
+  await page.getByRole('button', { name: 'Use these values' }).click();
+  await expect(page.locator('#co2-line')).toContainText('No CO₂ figure');
+  await expect(page.getByTestId('impact').locator('.stat').nth(0).locator('.value')).toContainText('kWh');
+});
+
+test('impact: stored assumptions that are not usable fall back to the sourced defaults and never break the page', async ({ page, request }) => {
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows());
+  for (const bad of ['5', '"x"', 'true', '[1,2]', '{"tariff":"abc"}', '{"tariff":-3}', '{"tariff":null}', '{"tariff":""}', '{"co2":"abc"}']) {
+    await page.goto('/');
+    await page.evaluate((v) => localStorage.setItem('surya-audit-assumptions', v), bad);
+    await page.goto(`/?site=${id}&bad=${encodeURIComponent(bad)}`);
+    await expect(page.getByTestId('impact'), bad).toContainText('at Rs 7 per unit (assumption)');
+    await expect(page.locator('#co2-line'), bad).toContainText('at 0.675 kg per unit (assumption)');
+  }
+});
+
+for (const [lng, word] of [['hi', 'मान्यता'], ['pa', 'ਧਾਰਨਾ']]) {
+  test(`impact in ${lng}: the CO2 line and the cleanings line carry their numbers and the word for assumption, with no hole`, async ({ page, request }) => {
+    const id = await createSite(request);
+    await postRows(request, id, syntheticRows());
+    await page.goto('/');
+    await page.evaluate((l) => localStorage.setItem('surya-audit-lang', l), lng);
+    await page.goto(`/?site=${id}&l=${lng}`);
+    for (const sel of ['#co2-line', '#cleanings']) {
+      const text = await page.locator(sel).innerText();
+      expect(text, sel).toMatch(/[0-9]/);
+      expect(text, sel).toContain(word);
+      expect(text, sel).not.toMatch(/[{}]|undefined|NaN/);
+    }
+  });
+}

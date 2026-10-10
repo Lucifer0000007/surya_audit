@@ -480,7 +480,7 @@
             <form id="assume-form" class="fields" autocomplete="off">
               <label><span data-i18n="aTariff"></span> <span class="tag" data-i18n="assumption"></span><input name="tariff" type="number" step="any" min="0" max="50" inputmode="decimal" required></label>
               <label><span data-i18n="aCo2"></span> <span class="tag" data-i18n="assumption"></span><input name="co2" type="number" step="any" min="0" max="2" inputmode="decimal"></label>
-              <label><span data-i18n="aCeaVersion"></span> <span class="tag" data-i18n="assumption"></span><input name="cea_version" type="text" maxlength="20"></label>
+              <label><span data-i18n="aCeaVersion"></span> <span class="tag" data-i18n="assumption"></span><input name="cea_version" type="text" maxlength="80"></label>
               <label><span data-i18n="aMargin"></span> <span class="tag" data-i18n="assumption"></span><input name="factor_type" type="text" maxlength="80"></label>
               <label><span data-i18n="aClean"></span> <span class="tag" data-i18n="assumption"></span><input name="clean_cost_per_kw" type="number" step="any" min="0" max="5000" inputmode="decimal" required></label>
               <label><span data-i18n="aCleans"></span> <span class="tag" data-i18n="assumption"></span><input name="cleans_per_month" type="number" step="any" min="0" max="31" inputmode="decimal" required></label>
@@ -680,7 +680,7 @@ const T = {
     photoBtn: 'Take a photo, or pick a screenshot, of the inverter app or meter', photoNote: 'Surya Audit does not keep your photo; Google Gemini reads it under Google’s own terms.',
     date: 'Date', kwhField: 'Energy produced (kWh)', period: 'Period', oneDay: 'One day', oneWeek: 'One week, ending on that date', save: 'Save reading',
     speakValue: 'Say the number', micNote: 'Voice input uses your browser’s speech service; in Chrome the audio goes to Google to be turned into text.', listening: 'Listening… say the number',
-    fixTitle: 'Suggestions', fixIntro: 'Suggestions, not orders. Approving one records your decision; nothing happens automatically.',
+    fixTitle: 'Suggestions', fixIntro: 'Suggestions, not orders. Approving one records your decision; nothing is acted on without your approval.',
     readings: 'Readings', showTable: 'Show readings as a table', causesTitle: 'Possible causes', causesIntro: 'Ranked with a confidence level. These are possibilities, not a diagnosis.',
     reportTitle: 'Complaint draft', reportIntro: 'A draft with your evidence, for you to check, complete and file yourself. It is never sent. The draft itself is written in English.',
     draftBtn: 'Draft a complaint', copy: 'Copy text', download: 'Download evidence (JSON)', whatsapp: 'Share on WhatsApp',
@@ -853,7 +853,7 @@ const T = {
     photoBtn: 'इन्वर्टर ऐप या मीटर की फ़ोटो लें, या स्क्रीनशॉट चुनें', photoNote: 'सूर्य ऑडिट आपकी फ़ोटो नहीं रखता; Google Gemini उसे Google की अपनी शर्तों के तहत पढ़ता है।',
     date: 'तारीख़', kwhField: 'बनी बिजली (यूनिट)', period: 'अवधि', oneDay: 'एक दिन', oneWeek: 'एक हफ़्ता, इस तारीख़ तक', save: 'रीडिंग सेव करें',
     speakValue: 'अंक बोलें', micNote: 'आवाज़ से लिखना आपके ब्राउज़र की स्पीच सेवा से होता है; Chrome में आवाज़ टेक्स्ट बनाने के लिए Google को जाती है।', listening: 'सुन रहा है… अंक बोलें',
-    fixTitle: 'सुझाव', fixIntro: 'ये सुझाव हैं, आदेश नहीं। मंज़ूरी देने से सिर्फ़ आपका फ़ैसला दर्ज होता है; अपने आप कुछ नहीं होता।',
+    fixTitle: 'सुझाव', fixIntro: 'ये सुझाव हैं, आदेश नहीं। मंज़ूरी देने से सिर्फ़ आपका फ़ैसला दर्ज होता है; आपकी मंज़ूरी के बिना कुछ नहीं किया जाता।',
     readings: 'रीडिंग', showTable: 'रीडिंग तालिका में देखें', causesTitle: 'संभावित कारण', causesIntro: 'भरोसे के स्तर के साथ क्रम में। ये संभावनाएँ हैं, निदान नहीं।',
     reportTitle: 'शिकायत का मसौदा', reportIntro: 'आपके सबूत के साथ एक मसौदा, जिसे आप जाँचें, पूरा करें और खुद दर्ज करें। यह कभी अपने आप नहीं भेजा जाता। मसौदा अंग्रेज़ी में है।',
     draftBtn: 'शिकायत का मसौदा बनाएँ', copy: 'टेक्स्ट कॉपी करें', download: 'सबूत डाउनलोड करें (JSON)', whatsapp: 'WhatsApp पर भेजें',
@@ -1027,7 +1027,7 @@ const T = {
     photoBtn: 'ਇਨਵਰਟਰ ਐਪ ਜਾਂ ਮੀਟਰ ਦੀ ਫ਼ੋਟੋ ਲਓ, ਜਾਂ ਸਕ੍ਰੀਨਸ਼ਾਟ ਚੁਣੋ', photoNote: 'ਸੂਰਜ ਆਡਿਟ ਤੁਹਾਡੀ ਫ਼ੋਟੋ ਨਹੀਂ ਰੱਖਦਾ; Google Gemini ਇਸਨੂੰ Google ਦੀਆਂ ਆਪਣੀਆਂ ਸ਼ਰਤਾਂ ਹੇਠ ਪੜ੍ਹਦਾ ਹੈ।',
     date: 'ਤਾਰੀਖ਼', kwhField: 'ਬਣੀ ਬਿਜਲੀ (ਯੂਨਿਟ)', period: 'ਮਿਆਦ', oneDay: 'ਇੱਕ ਦਿਨ', oneWeek: 'ਇੱਕ ਹਫ਼ਤਾ, ਇਸ ਤਾਰੀਖ਼ ਤੱਕ', save: 'ਰੀਡਿੰਗ ਸੇਵ ਕਰੋ',
     speakValue: 'ਅੰਕ ਬੋਲੋ', micNote: 'ਆਵਾਜ਼ ਨਾਲ ਲਿਖਣਾ ਤੁਹਾਡੇ ਬ੍ਰਾਊਜ਼ਰ ਦੀ ਸਪੀਚ ਸੇਵਾ ਨਾਲ ਹੁੰਦਾ ਹੈ; Chrome ਵਿੱਚ ਆਵਾਜ਼ ਟੈਕਸਟ ਬਣਾਉਣ ਲਈ Google ਨੂੰ ਜਾਂਦੀ ਹੈ।', listening: 'ਸੁਣ ਰਿਹਾ ਹੈ… ਅੰਕ ਬੋਲੋ',
-    fixTitle: 'ਸੁਝਾਅ', fixIntro: 'ਇਹ ਸੁਝਾਅ ਹਨ, ਹੁਕਮ ਨਹੀਂ। ਮਨਜ਼ੂਰੀ ਦੇਣ ਨਾਲ ਸਿਰਫ਼ ਤੁਹਾਡਾ ਫ਼ੈਸਲਾ ਦਰਜ ਹੁੰਦਾ ਹੈ; ਆਪਣੇ ਆਪ ਕੁਝ ਨਹੀਂ ਹੁੰਦਾ।',
+    fixTitle: 'ਸੁਝਾਅ', fixIntro: 'ਇਹ ਸੁਝਾਅ ਹਨ, ਹੁਕਮ ਨਹੀਂ। ਮਨਜ਼ੂਰੀ ਦੇਣ ਨਾਲ ਸਿਰਫ਼ ਤੁਹਾਡਾ ਫ਼ੈਸਲਾ ਦਰਜ ਹੁੰਦਾ ਹੈ; ਤੁਹਾਡੀ ਮਨਜ਼ੂਰੀ ਤੋਂ ਬਿਨਾਂ ਕੁਝ ਨਹੀਂ ਕੀਤਾ ਜਾਂਦਾ।',
     readings: 'ਰੀਡਿੰਗਾਂ', showTable: 'ਰੀਡਿੰਗਾਂ ਸਾਰਣੀ ਵਿੱਚ ਵੇਖੋ', causesTitle: 'ਸੰਭਾਵੀ ਕਾਰਨ', causesIntro: 'ਭਰੋਸੇ ਦੇ ਪੱਧਰ ਨਾਲ ਕ੍ਰਮ ਵਿੱਚ। ਇਹ ਸੰਭਾਵਨਾਵਾਂ ਹਨ, ਨਿਦਾਨ ਨਹੀਂ।',
     reportTitle: 'ਸ਼ਿਕਾਇਤ ਦਾ ਖਰੜਾ', reportIntro: 'ਤੁਹਾਡੇ ਸਬੂਤ ਨਾਲ ਇੱਕ ਖਰੜਾ, ਜਿਸਨੂੰ ਤੁਸੀਂ ਜਾਂਚੋ, ਪੂਰਾ ਕਰੋ ਅਤੇ ਆਪ ਦਰਜ ਕਰੋ। ਇਹ ਕਦੇ ਆਪਣੇ ਆਪ ਨਹੀਂ ਭੇਜਿਆ ਜਾਂਦਾ। ਖਰੜਾ ਅੰਗਰੇਜ਼ੀ ਵਿੱਚ ਹੈ।',
     draftBtn: 'ਸ਼ਿਕਾਇਤ ਦਾ ਖਰੜਾ ਬਣਾਓ', copy: 'ਟੈਕਸਟ ਕਾਪੀ ਕਰੋ', download: 'ਸਬੂਤ ਡਾਊਨਲੋਡ ਕਰੋ (JSON)', whatsapp: 'WhatsApp ਉੱਤੇ ਭੇਜੋ',
@@ -1301,7 +1301,7 @@ const ASSUME_DEFAULTS = { tariff: 7, co2: 0.675, cea_version: '22.0', factor_typ
 const ASSUME_TEXT = ['cea_version', 'factor_type'];
 const ASSUME_SOURCES = [
   { text: 'Rs 7 per unit: CEA, Electricity Tariff & Duty & Average Rates of Electricity Supply in India, March 2026, Table 1(b): Rs 7.06/kWh all-in for an urban Uttar Pradesh home using 200 units a month (Rs 2.20 to 11.37 across India\u2019s utilities). Enter your own bill rate if you are elsewhere. Retrieved 2026-10-08.', urls: [['CEA', 'https://cea.nic.in/api/dashboardReports/view-pdf/en/a6bd09cf-72e4-4a30-8a37-a648ca22eaa6']] },
-  { text: '0.675 kg CO\u2082 per unit: CEA, CO\u2082 Baseline Database for the Indian Power Sector, version 22.0 (workbook dated 2026-08-01), Results sheet: weighted average grid emission rate (including renewables and captive plants), including imports, FY 2025-26, 0.675 tCO\u2082/MWh (0.678 excluding imports). The same version and year, including imports: combined margin 0.705, simple operating margin 0.963 and build margin 0.446 tCO\u2082/MWh; the factor type above says which one is in use. Retrieved 2026-10-10.', urls: [['CEA database workbook', 'https://cea.nic.in/api/cdm-report-version/view-pdf/en/83'], ['CEA user guide', 'https://cea.nic.in/api/cdm-report-version/view-pdf/en/82']] },
+  { text: '0.675 kg CO\u2082 per unit: CEA, CO\u2082 Baseline Database for the Indian Power Sector, version 22.0 (workbook dated 2026-08-01), Results sheet: weighted average grid emission rate (including renewables and captive plants), including imports, FY 2025-26, 0.675 tCO\u2082/MWh (0.678 excluding imports). The same version and year, including imports: combined margin 0.705, simple operating margin 0.963 and build margin 0.446 tCO\u2082/MWh; the factor type above says which one is in use. Retrieved 2026-10-10. The CEA baseline page needs a login and could not be opened, so a version newer than 22.0 is not ruled out.', urls: [['CEA database workbook', 'https://cea.nic.in/api/cdm-report-version/view-pdf/en/83'], ['CEA user guide', 'https://cea.nic.in/api/cdm-report-version/view-pdf/en/82']] },
   { text: 'Rs 150 per kW per clean: CEEW, Maximising Rooftop Solar Performance by Enabling a Robust O&M Ecosystem (June 2026): cleaning alone costs Rs 100 to 200 per kW per visit; CEEW assumes Rs 150. A vendor\u2019s own packages run about Rs 390 to 450 a visit for plants up to 3.25 kWp. Retrieved 2026-10-08.', urls: [['CEEW', 'https://www.ceew.in/sites/default/files/ceew-oandm-ecosystem-for-rts-web-ready-file.pdf'], ['vendor page', 'https://www.solarsquare.in/blog/solar-panel-cleaning-pricing-in-india/']] },
   { text: 'Fixed schedule of 2 cleans a month: BHEL\u2019s rooftop O&M specification says panels are "cleaned at least once every fifteen days", and a Roorkee field study found monthly soiling losses of 1 to 1.5% with weekly cleaning, 2.5% biweekly, 5% every four weeks. Retrieved 2026-10-08.', urls: [['BHEL', 'https://tenders.bhel.com/sites/default/files/TS-2021-11-01-04%3A22%3A11.pdf'], ['Roorkee study', 'https://www.nature.com/articles/s41598-026-45485-2']] },
 ];
@@ -1740,7 +1740,7 @@ $('switch').addEventListener('click', () => {
 // Forget the plant on this device: this browser's memory of it (the plant, the assumptions) goes; the server keeps the readings.
 $('forget').addEventListener('click', () => {
   if (!confirm(tf('forgetConfirm', { link: `${location.origin}/?site=${state.id}` }))) return;
-  storeClear();
+  if (storeGet() === state.id) storeClear();  // another remembered plant is not this one's to forget
   try { localStorage.removeItem(ASSUME_KEY); } catch { /* ignore */ }
   if (location.search || location.hash) history.replaceState(null, '', location.pathname);
   showSetup(t('forgot'));
@@ -2188,12 +2188,14 @@ function renderHeadline(a) {
 
 // ---------- impact strip: the output shortfall, rupees, avoided grid CO2 and cleanings avoided, from editable assumptions ----------
 function assumptions() {
-  const saved = jsonGet(ASSUME_KEY) || {};
+  const raw = jsonGet(ASSUME_KEY);
+  const saved = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};  // anything else in storage is ignored
   const out = { ...ASSUME_DEFAULTS };
   for (const k of Object.keys(ASSUME_DEFAULTS)) {
     if (!(k in saved)) continue;
     if (ASSUME_TEXT.includes(k)) { if (typeof saved[k] === 'string') out[k] = saved[k].slice(0, 80); continue; }
     if (k === 'co2' && saved[k] === null) { out[k] = null; continue; }  // cleared on purpose: no CO2 figure at all
+    if (saved[k] === null || saved[k] === '' || typeof saved[k] === 'boolean') continue;
     const v = Number(saved[k]);
     if (Number.isFinite(v) && v >= 0) out[k] = v;
   }
@@ -2230,7 +2232,7 @@ function renderImpact(a) {
 
   $('impact-sub').textContent = tf('impactSub', { from: fmtDate(w.from), to: fmtDate(w.to), days: w.days, dips: w.dips, actual: kwh(w.actual), expected: kwh(w.expected), u: units(), ref: w.usualIsPvgis ? t('refEstimate') : t('refUsual') });
   $('impact-grid').replaceChildren(
-    el('div', { class: 'stat' }, el('span', { class: 'label', text: t('unitsLost') }), el('span', { class: 'value', text: `${kwh(w.lost)} ${units()}` }), el('span', { class: 'sub', text: tf('perDay', { n: kwh(perDay) }) })),
+    el('div', { class: 'stat' }, el('span', { class: 'label', text: t('unitsLost') }), el('span', { class: 'value', text: `${kwh(w.lost)} ${units()}` }), el('span', { class: 'sub', text: tf('perDay', { n: `${kwh(perDay)} ${units()}` }) })),
     el('div', { class: 'stat' }, el('span', { class: 'label', text: t('worth') }), el('span', { class: 'value', text: rupees(money) }), el('span', { class: 'sub', text: tf('atTariff', { n: A.tariff }) })));
   // Avoided grid CO2: only with an emission factor, and always worded as what the shortfall would have displaced.
   $('co2-line').textContent = A.co2 == null ? t('noFactor')
@@ -2273,6 +2275,7 @@ $('assume-form').addEventListener('submit', (ev) => {
     else if (k === 'co2' && f[k].value.trim() === '') next[k] = null;  // an empty factor means no CO2 figure
     else next[k] = Number(f[k].value);
   }
+  if (next.co2 !== ASSUME_DEFAULTS.co2 && next.cea_version === ASSUME_DEFAULTS.cea_version && next.factor_type === ASSUME_DEFAULTS.factor_type) next.cea_version = next.factor_type = '';  // not the sourced factor any more
   jsonSet(ASSUME_KEY, next);
   if (state.audit) renderImpact(state.audit);
   say(t('assumeUpdated'));

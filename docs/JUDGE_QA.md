@@ -1,7 +1,7 @@
 # Questions a judge may ask, answered against the code
 
 Written read-only on 2026-10-10 for the Surya Audit hackathon entry. Every answer is tagged and carries file:line evidence
-from this repository. The audit engine, the API and the infrastructure are frozen at the deployed commit `f54a173`, so
+from this repository. The audit engine, the API and the infrastructure are frozen at commit `f54a173`, which is assumed to be what is deployed (not re-confirmed against the stack), so
 their line numbers are stable; the page is cited by function name.
 
 - **Built**: implemented, and exercised by a test.
@@ -14,7 +14,7 @@ scenario; nothing has been validated against real plants or by real users.
 
 ## The nine topics
 
-### Seasonality: **Built** (as a monthly expectation), with a stated limit
+### Seasonality: **Built**, as a monthly expectation (the limit is stated below)
 
 The expected output of a day is PVGIS's long-term mean daily yield **for that month**, scaled by the weather of that day
 (`app/expected.py:3-4`, `:66-81` for the PVGIS monthly `E_d`, `:147-165` for the day's expectation). A plant's "usual" is
@@ -52,9 +52,9 @@ Grid outages and export limits are not modelled; the audit has no input about gr
 a low reading and is treated like any other (it may rank "sudden fault" if it starts a run of dips, or "weather or normal
 variation" if the deficit is small, `app/audit.py:133-161`, `:205-217`).
 
-### Panel degradation: **Partial**
+### Panel degradation: **Roadmap**
 
-There is no age or degradation-rate model. What exists: a steady decline of at least 0.2% a day over the last 14 readings,
+There is no age or degradation-rate model, so this is not built; it is not claimed. What does exist, as context only: a steady decline of at least 0.2% a day over the last 14 readings,
 with output at least 5% below usual, ranks "soiling" (`app/audit.py:163-177`, `app/heuristics.py:36-38`), which is a
 possible cause, not a degradation finding. The plant's usual is **re-learnt only after an approved inspection that brought
 output back** (`app/audit.py:84-93`), never because years have passed.
@@ -71,19 +71,21 @@ The usual level needs at least 7 usable readings and uses up to the first 14 (`a
 
 What limits them: a dip is a reading more than 15% below the plant's *own* usual, after the weather adjustment
 (`app/heuristics.py:22`); a "sudden fault" needs a run of at least 2 dips after 7 steady readings
-(`:26,:30,:33`); dim days are not judged (`:15`); a deficit under 10% ranks "weather or normal variation" (`:46`); readings
+(`:26,:30,:33`); dim days are not judged (`:15`); a smaller deficit scores "weather or normal variation" higher (`app/audit.py:207-208`), though a gradual slide with 5% or more below usual can still outrank it (`app/audit.py:165-169`); readings
 whose weather is not yet published cap every other cause at "medium" (`:54`); a suggestion appears only at "medium" or
 above and is never carried out for the owner (`:57`, `app/audit.py:284-299`). What is **not known**: the false-positive rate
 on real plants. The thresholds were tuned only on the synthetic scenarios and are marked `HEURISTIC_UNVALIDATED`.
 
-### Privacy and what is stored: **Built**, with one gap
+### Privacy and what is stored: **Partial**
 
 The sentence-by-sentence evidence is in `docs/PRIVACY_EVIDENCE.md`. In short: one DynamoDB item per plant (location, size,
 tilt, direction, loss, readings, suggestions; `app/store.py:42-64`); photos are never stored (`app/main.py:165-190`,
-`"saved": False`); the plant id is a random 122-bit token and the only key (`app/main.py:149`); the Gemini key is in SSM
-Parameter Store (`template.yaml:58-70`); Lambda logs carry no readings, coordinates or images (`app/main.py:45-63`,
-`tests/test_loop.py:479`). **Gap:** there is no way to delete a plant's data from the server (**Roadmap**,
-`NEXT_BACKEND.md`); the page can only forget it in the browser.
+`"saved": False`); the plant id is a random 122-bit token and the only key (`app/main.py:149`); the Gemini key is read from SSM
+Parameter Store by `app/config.py` (the owner creates the parameter, `template.yaml:9-16`; the function's read permission is
+`template.yaml:58-70`); the application's own log lines carry counts and error classes only, never readings, coordinates or
+images (`app/main.py:45-63`, `app/refresh.py:5-6,41`; `tests/test_loop.py:479` covers the failed-photo path only).
+**Gaps:** there is no way to delete a plant's data from the server (**Roadmap**, `NEXT_BACKEND.md`), and a plant is kept
+indefinitely: the table has no expiry (`template.yaml:32-41`). The page can only forget a plant in the browser.
 
 ## Where the pitch differs from the code
 
@@ -96,10 +98,10 @@ Use the right-hand column.
 | 2 | Ranks four possible causes, low/medium/high, never a diagnosis | Holds | (`app/audit.py:14`, `app/heuristics.py:51-52`, `app/audit.py:355`) |
 | 3 | The owner approves every suggestion; nothing is automatic | Overreach | "**Nothing is acted on without the owner's approval.**" Suggestions are proposed automatically, **also by the daily job** while the owner is away (`app/refresh.py:26`, `app/main.py:209`); approval is the owner's (`app/main.py:214-228`). |
 | 4 | After approval, the next 3 readings check whether output came back | Precision | "**The first 3 usable readings dated after the approval date**; the verdict is provisional while weather for any of them is unpublished." (`app/heuristics.py:58-59`, `app/audit.py:244-273`) |
-| 5 | If output does not recover, a complaint draft is produced and never sent | Overreach | "**The complaint draft is made only when the owner asks**, and the app suggests it after a failed, non-provisional verdict; it is never sent (`app/main.py:236-239`, `app/audit.py:314,342`, `app/complaint.py:19-45,109`). Category names are SAMPLE and unverified (`app/complaint.py:10-16`); they do not match any real portal." |
+| 5 | If output does not recover, a complaint draft is produced and never sent | Overreach | "**The complaint draft is made only when the owner asks**, and the app suggests it after a failed, non-provisional verdict; it is never sent (`app/main.py:236-239`, `app/audit.py:314,342`, `app/complaint.py:19-45,109`). Category names are SAMPLE and unverified (`app/complaint.py:10-16`); they are SAMPLE names, unverified and not checked against any portal (`app/complaint.py:10-16`)." |
 | 6 | Expected output = PVGIS adjusted by each day's NASA POWER sunshine; unpublished days use the monthly average and are refreshed | Precision | "Sunshine" is all-sky solar irradiance. A missing day uses the PVGIS monthly yield (index 1.0) and is refreshed later (`app/expected.py:10-12`, `app/refresh.py:19-26`). **The known limit, verbatim:** "Both come from NASA POWER, but not from the same product: the climatology is SYN1DEG 2001-2020, while recent daily values are near-real-time FLASHFLUX. A constant offset between them cancels out of the per-site baseline, but not out of the low-from-day-one comparison with PVGIS." (`app/expected.py:5-8`) |
 | 7 | The plant's normal is learned from its first readings; "Still learning" before 7; re-learned after an inspection that fixed it | Precision | The 7 and the 14 count **usable** readings. Re-learning follows only an **inspection** that brought output back, not a cleaning or an inverter check (`app/heuristics.py:18-19`, `app/audit.py:84-113`). |
-| 8 | Runs in AWS Mumbai: Lambda, HTTP API, DynamoDB, EventBridge daily refresh at 09:00 IST, Gemini key in SSM | Precision | Mumbai comes from the **deploy command**, not the code (`README.md:72`: `sam deploy ... --region ap-south-1`; `template.yaml` is region-neutral), and the page states a region only when served from an API Gateway host. The schedule is exactly `cron(0 9 * * ? *)` with `ScheduleExpressionTimezone: Asia/Kolkata` (`template.yaml:93-94`): every day at 09:00 India time. Photos go to Google and weather requests to NASA and the EU JRC, outside AWS. |
+| 8 | Runs in AWS Mumbai: Lambda, HTTP API, DynamoDB, EventBridge daily refresh at 09:00 IST, Gemini key in SSM | Precision | Mumbai comes from the **deploy command** (`README.md:72`: `sam deploy ... --region ap-south-1`; `template.yaml` is region-neutral), and the permissions boundary pins `ap-south-1` in its ARNs (`infra/boundary-policy.json:13-63`), so another region would need that file changed, and the page states a region only when served from an API Gateway host. The schedule is exactly `cron(0 9 * * ? *)` with `ScheduleExpressionTimezone: Asia/Kolkata` (`template.yaml:93-94`): every day at 09:00 India time. Photos go to Google and weather requests to NASA and the EU JRC, outside AWS. |
 | 9 | Photos are shrunk and location-stripped on the phone, read by Gemini, not kept by us | Holds | (`photoToJpegBase64`; `e2e/surface.spec.js` checks the bytes that leave; `app/extract.py:4`; `app/main.py:165-190`) |
 | 10 | English, Hindi and Punjabi | Precision | The **interface and the audit's own sentences** are in three languages; the **complaint draft, the method and source notes, Gemini's read-out note and a few server errors stay English**, marked as such (`NEXT_BACKEND.md`). |
 | 11 | When weather or normal variation ranks first, the app does not suggest cleaning | Precision | **No new cleaning is proposed** (`app/audit.py:16-30` has no action for "weather or normal variation"; `:286-289`). A cleaning suggested earlier stays on Fix, labelled earlier. |
@@ -115,3 +117,9 @@ reader could take for a claim, so they are named here:
 - "Inverter" appears in a suggestion ("look at the inverter display or app for an error code", `app/audit.py:24-25`) and as
   the source of a photo or screenshot the owner takes; no inverter is connected to anything.
 - `README.md:79` describes `sam delete` for the operator. It removes the stack; it is not a way for an owner to delete data.
+
+### Pitch wording also on the page
+
+The Fix tab's introduction used to say "nothing happens automatically"; it now says "nothing is acted on without your approval"
+(English, Hindi and Punjabi). `README.md:12` still says "Nothing happens until the owner approves": that file is the user's, so the
+same correction is left for them (suggestions are proposed automatically, also by the daily job).

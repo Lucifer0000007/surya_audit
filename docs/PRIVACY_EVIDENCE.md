@@ -18,7 +18,7 @@ the frozen engine, infrastructure and docs; the page is cited by function name b
 
 ## What Lambda logs
 
-The deployed code logs three things, none of them owner data:
+The application's own log calls write three things, none of them owner data (Lambda's runtime and an uncaught exception also write to the log; see below):
 
 - A failed photo read (`app/main.py:180`, `describe_failure` at `:45`): the class names along the cause chain; for a Gemini
   API error Google's own code, status and message, capped at 200 characters with anything shaped like a Google API key
@@ -27,7 +27,7 @@ The deployed code logs three things, none of them owner data:
 - A Gemini key parameter that cannot be read (`app/config.py:29-33`): the error code or class name only.
 - The daily refresh (`app/refresh.py:41`): two counts.
 
-`template.yaml` defines no API Gateway access log and no request logging. Lambda's Python runtime itself writes a START,
+`template.yaml` defines no API Gateway access log and no request logging. An uncaught exception is written to the log by the Lambda runtime as a traceback; the code reads no request body, key or image into a log line, and the one test above guards the photo path. Lambda's Python runtime itself writes a START,
 END and REPORT line per invocation (request id, duration, memory; AWS documentation, retrieved 2026-10-10,
 https://docs.aws.amazon.com/lambda/latest/dg/python-logging.html: "The Python runtime logs the `START`, `END`, and `REPORT`
 lines for each invocation.").

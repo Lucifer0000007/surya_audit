@@ -89,13 +89,18 @@ test('Forget this plant on this device clears this browser only: the readings st
   expect(await keys()).toEqual(['surya-audit-assumptions', 'surya-audit-site']);
   await expect(page.getByTestId('headline')).toBeVisible();
 
-  // Accepting forgets the plant and the assumptions in this browser, and says what stayed.
+  // Accepting forgets the plant and the assumptions in this browser, and says what stayed. It sends no request at all.
+  await page.evaluate(() => { localStorage.setItem('surya-audit-lang', 'en'); localStorage.setItem('surya-audit-bigger', '1'); });
+  const sent = [];
+  page.on('request', (req) => sent.push(`${req.method()} ${req.url()}`));
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Forget this plant on this device' }).click();
   await expect(page.getByRole('heading', { name: 'Set up your plant' })).toBeVisible();
   await expect(page.locator('#status')).toHaveText('Plant forgotten on this device. Its readings stay saved on the server, and its link still opens them.');
-  expect(await keys()).toEqual([]);
+  expect(sent, 'forgetting is local: no request leaves the page').toEqual([]);
+  expect(await keys()).toEqual(['surya-audit-bigger', 'surya-audit-lang']);  // the plant and the assumptions are gone; the owner's own choices stay
   expect(new URL(page.url()).search).toBe('');
+  page.removeAllListeners('request');
 
   // The server kept everything, and the link opens the plant again with nothing to confirm.
   const audit = await (await request.get(`/api/sites/${id}/audit`)).json();
@@ -136,4 +141,19 @@ test('Built on AWS and How it runs: one line, an expander of six lines, and the 
   await expect(page.locator('#aws')).toContainText('AWS पर बना: Lambda, API Gateway, DynamoDB, EventBridge Scheduler, Parameter Store।');
   await page.getByRole('button', { name: 'ਪੰਜਾਬੀ' }).click();
   await expect(page.locator('#run-region')).toHaveText('ਰੀਜਨ: ਮੁੰਬਈ (ap-south-1)');
+});
+
+test('Forget does not wipe a different plant that this browser remembers', async ({ page, request }) => {
+  const remembered = await syntheticPlant(request);
+  const other = await syntheticPlant(request);
+  await page.goto(`/?site=${remembered}`);  // remembered in this browser
+  await expect(page.getByTestId('headline')).toBeVisible();
+  page.once('dialog', (dialog) => dialog.dismiss());  // "open this plant instead?": no, keep what is remembered
+  await page.goto(`/?site=${other}&again=1`);
+  await expect(page.getByTestId('headline')).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('surya-audit-site'))).toBe(remembered);
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Forget this plant on this device' }).click();
+  await expect(page.getByRole('heading', { name: 'Set up your plant' })).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('surya-audit-site')), 'the other plant is still remembered').toBe(remembered);
 });
