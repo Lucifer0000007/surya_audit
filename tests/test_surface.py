@@ -112,3 +112,41 @@ def test_the_page_never_claims_shading_detection_inverter_integration_or_portal_
 def test_the_complaint_categories_stay_labelled_sample_in_the_page():
     # The categories are the server's SAMPLE names; the page must keep telling the owner to check the procedure itself.
     assert "SAMPLE: category names are unverified" in PAGE
+
+
+ROOT = Path(__file__).resolve().parent.parent
+EN_TABLE = re.search(r"\n  en: \{\n(.*?)\n  \},?\n", PAGE, re.S).group(1)
+
+
+def english(key):
+    """The English text of a translation key (the markup is empty: the script writes it from this table)."""
+    return re.search(r"(?<![A-Za-z])" + key + r": '((?:[^'\\]|\\.)*)'", EN_TABLE).group(1)
+
+
+def test_how_it_runs_names_only_what_the_infrastructure_code_defines():
+    """"Built on AWS" and "How it runs" list services; each must have its resource or permission in template.yaml or the
+    permissions boundary, the schedule must be the one the template sets, and no service the project does not use may
+    appear in those lines."""
+    template = (ROOT / "template.yaml").read_text(encoding="utf-8")
+    boundary = (ROOT / "infra" / "boundary-policy.json").read_text(encoding="utf-8")
+    line = english("awsLine")
+    in_template = {
+        "Lambda": "AWS::Serverless::Function",
+        "API Gateway": "Type: HttpApi",
+        "DynamoDB": "AWS::DynamoDB::Table",
+        "EventBridge Scheduler": "ScheduleV2",
+        "Parameter Store": "ssm:GetParameter",
+    }
+    assert [name for name in in_template if name in line] == list(in_template)  # all five, and the line names no other
+    for name, token in in_template.items():
+        assert token in template, (name, token)
+    # the schedule the page states, "daily at 09:00 India time", is the one the template sets
+    assert "cron(0 9 * * ? *)" in template and "ScheduleExpressionTimezone: Asia/Kolkata" in template
+    assert english("run3").startswith("Daily at 09:00 India time")
+    # one IAM role per function, limited by the permissions boundary to the table, the logs and the key parameter
+    assert "PermissionsBoundary" in template
+    assert all(action in boundary for action in ("dynamodb:PutItem", "logs:PutLogEvents", "ssm:GetParameter"))
+    # no other service is named in these lines
+    lines = " ".join(english(key) for key in ["awsLine", *[f"run{n}" for n in range(1, 7)]])
+    for other in ("S3", "SQS", "SNS", "SES", "Bedrock", "CloudFront", "Cognito", "Kinesis", "Fargate", "EC2", "RDS", "Amplify", "AppSync", "Step Functions"):
+        assert not re.search(r"\b" + re.escape(other) + r"\b", lines), other

@@ -109,3 +109,31 @@ test('Forget this plant on this device clears this browser only: the readings st
   await page.getByRole('button', { name: 'ਪੰਜਾਬੀ' }).click();
   await expect(page.getByRole('button', { name: 'ਇਸ ਡਿਵਾਈਸ ਉੱਤੇ ਇਸ ਪਲਾਂਟ ਨੂੰ ਭੁੱਲ ਜਾਓ' })).toBeVisible();
 });
+
+test('Built on AWS and How it runs: one line, an expander of six lines, and the region only from the deploy host', async ({ page, request, baseURL }) => {
+  const id = await syntheticPlant(request);
+  await page.goto(`/?site=${id}`);
+  await expect(page.locator('#aws')).toContainText('Built on AWS: Lambda, API Gateway, DynamoDB, EventBridge Scheduler, Parameter Store.');
+  const how = page.locator('#how-runs');
+  await expect(how.locator('li:visible')).toHaveCount(0);  // collapsed until opened
+  await how.locator('summary').click();
+  await expect(how.locator('li:visible')).toHaveCount(6);  // a local run is not served from an API Gateway host: no region line
+  await expect(how).toContainText('Daily at 09:00 India time, an EventBridge Scheduler schedule runs a second Lambda function');
+  await expect(how).toContainText('Not on AWS: Google Gemini reads photos; NASA POWER and PVGIS supply weather and expected output.');
+
+  // From an API Gateway host (a stand-in answered by this test's own server) the region line appears, in each language.
+  const host = 'https://abc123.execute-api.ap-south-1.amazonaws.com';
+  await page.route(`${host}/**`, async (route) => {
+    const url = new URL(route.request().url());
+    await route.fulfill({ response: await route.fetch({ url: `${baseURL}${url.pathname}${url.search}` }) });
+  });
+  await page.goto(`${host}/?site=${id}`);
+  await page.locator('#how-runs summary').click();
+  await expect(page.locator('#how-runs li:visible')).toHaveCount(7);
+  await expect(page.locator('#run-region')).toHaveText('Region: Mumbai (ap-south-1)');
+  await page.getByRole('button', { name: 'हिन्दी' }).click();
+  await expect(page.locator('#run-region')).toHaveText('रीजन: मुंबई (ap-south-1)');
+  await expect(page.locator('#aws')).toContainText('AWS पर बना: Lambda, API Gateway, DynamoDB, EventBridge Scheduler, Parameter Store।');
+  await page.getByRole('button', { name: 'ਪੰਜਾਬੀ' }).click();
+  await expect(page.locator('#run-region')).toHaveText('ਰੀਜਨ: ਮੁੰਬਈ (ap-south-1)');
+});
