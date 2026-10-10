@@ -18,6 +18,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 GUARDED_TEST_FILE = "tests/test_loop.py"
 PAGE_TESTS = {"test_page_is_served_self_contained", "test_indic_font_subsets_cover_the_page"}
+SIZE_LINE = re.compile(r"^(- `app/index.html` stays under )\d+( KB, inlined fonts included\.)$")  # the one CLAUDE.md line the user let v4 change
+
+
+def same_but_size_line(a, b):
+    """True when two CLAUDE.md texts are equal once the page size limit is ignored."""
+    norm = lambda text: [SIZE_LINE.sub(r"N", line) for line in text.splitlines()]
+    return norm(a) == norm(b)
 
 
 def git(*args):
@@ -57,6 +64,8 @@ def main(argv):
         sys.exit("docs/PROTECTED_PATHS lists no paths")
 
     changed = set(git("diff", "--name-only", sha, "--", *paths).split())  # working tree against the frozen commit
+    if "CLAUDE.md" in changed and same_but_size_line((ROOT / "CLAUDE.md").read_text(encoding="utf-8"), git("show", f"{sha}:CLAUDE.md")):
+        changed.discard("CLAUDE.md")  # only the size line moved, as the user authorised
     changed |= set(git("diff", "--cached", "--name-only", sha, "--", *paths).split())  # staged, even if the file was put back
     changed |= set(git("ls-files", "--others", "--exclude-standard", "--", *paths).split())  # new and untracked
     unmatched = [p for p in paths if not git("ls-files", "--", p).split()]  # a pattern that matches nothing protects nothing

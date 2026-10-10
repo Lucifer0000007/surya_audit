@@ -336,7 +336,7 @@ def test_page_is_served_self_contained(client):
     assert "default-src 'none'" in csp and "connect-src 'self'" in csp
     assert "manifest-src data:" in csp and "font-src data:" in csp  # the inline manifest and fonts; no remote origin anywhere
     assert "http" not in csp.replace("'self'", "")
-    assert len(resp.content) < 250_000, len(resp.content)  # CLAUDE.md: under 250 KB (read as 250,000 bytes), inlined fonts included
+    assert len(resp.content) < 700_000, len(resp.content)  # CLAUDE.md: under 700 KB (read as 700,000 bytes), inlined fonts included
 
 
 def test_indic_font_subsets_cover_the_page():
