@@ -219,6 +219,7 @@
   .action-head { display: flex; gap: 12px; align-items: center; }
   .action .approve { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
   .action .approve label { flex: 1 1 170px; }
+  .action .speak { border-color: transparent; padding-left: 0; justify-self: start; }
   .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; font-weight: 600; padding: 4px 12px; border: 1px solid var(--control); border-radius: var(--pill); width: fit-content; }
   .chip svg { flex: none; }
   .picto { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.875rem; color: var(--text-2); min-width: 56px; }
@@ -526,13 +527,13 @@
       </section>
 
       <section role="tabpanel" id="panel-fix" aria-labelledby="tab-fix" tabindex="0" hidden>
-        <div class="card" id="suggestions">
+        <section class="section tight" id="suggestions" aria-labelledby="sugg-title">
           <header>
             <h2 id="sugg-title" data-i18n="fixTitle"></h2>
             <p class="muted small" data-i18n="fixIntro"></p>
           </header>
           <ul class="actions-list" id="action-list"></ul>
-        </div>
+        </section>
       </section>
 
       <section role="tabpanel" id="panel-why" aria-labelledby="tab-why" tabindex="0" hidden>
@@ -2058,20 +2059,21 @@ function renderActions(a) {
     : (x.verification.outcome === 'pending' || x.verification.provisional) ? 1 : stale(x) ? 2 : 3);
   const lastDate = a.timeline.length ? a.timeline[a.timeline.length - 1].date : todayIso();
   const items = [...a.actions].sort((x, y) => rank(x) - rank(y) || y.proposed_on.localeCompare(x.proposed_on));
+  const first = items.find((x) => x.status === 'proposed' && !stale(x));  // the one primary action of the screen
   for (const action of items) {
     const v = action.verification;
     const sug = srvProps(action.suggestion);
     const li = el('li', { class: 'action', 'data-testid': `action-${action.kind}` },
       el('div', { class: 'action-head' }, pictogram(action.kind), el('h3', { text: ACTIONS[action.kind] || action.kind })),
+      outcomeChip(v),
       el('p', sug),
       sug['data-srv'] && sug['data-srv'] !== 'translated' ? el('p', { class: 'note', text: t('inEnglish') }) : null,
       el('p', { class: 'note', text: tf('suggestedOn', { date: fmtDate(action.proposed_on), cause: CAUSES[action.cause] || action.cause }) }),
-      outcomeChip(v),
       stepper(action));
     if (action.status === 'proposed') {
       const id = `approve-${action.id}`;
       const input = el('input', { id, type: 'date', value: lastDate, min: action.proposed_on, max: todayIso(), required: true });
-      const button = el('button', { type: 'submit', class: stale(action) ? 'approve-btn secondary' : 'approve-btn' },
+      const button = el('button', { type: 'submit', class: action === first ? 'approve-btn' : 'approve-btn secondary' },
         el('span', { class: 'lbl', text: t('approve') }),
         svg('svg', { class: 'tick', width: 22, height: 22, viewBox: '0 0 24 24', 'aria-hidden': 'true', fill: 'none',
           stroke: 'currentColor', 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));

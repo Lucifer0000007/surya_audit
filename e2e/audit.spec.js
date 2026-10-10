@@ -1178,3 +1178,26 @@ test('Log on a phone: the photo drop zone and the energy field are on the first 
   const order = await page.locator('#reading-form').evaluate((f) => ['#kwh-input', '.datepick', '[name=kind]', '#save-btn'].map((s) => f.querySelector(s).getBoundingClientRect().top));
   expect([...order].sort((a, b) => a - b)).toEqual(order);
 });
+
+test('Fix: each suggestion is a row with its status word; one primary Approve, on the first phone screen', async ({ page, request }) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows());  // the whole scenario: two suggestions wait for the owner
+  await page.goto(`/?site=${id}#fix`);
+  await expect(page.locator('#panel-fix')).toBeVisible();
+  const rowsOnFix = page.locator('#action-list > li');
+  await expect(rowsOnFix).toHaveCount(2);
+  for (let i = 0; i < 2; i++) await expect(rowsOnFix.nth(i).locator('.chip')).toContainText('Waiting for your approval');
+  // In each row the status word sits right under the title, before the sentence.
+  const order = await rowsOnFix.first().evaluate((li) => ['h3', '.chip', 'p'].map((s) => li.querySelector(s).getBoundingClientRect().top));
+  expect([...order].sort((a, b) => a - b)).toEqual(order);
+  // Exactly one primary button on the screen: the first suggestion's Approve; the other row's is quiet.
+  await expect(page.locator('#action-list .approve-btn:not(.secondary)')).toHaveCount(1);
+  const approve = rowsOnFix.first().getByRole('button', { name: 'Approve' });
+  expect(await approve.evaluate((n) => n.classList.contains('secondary'))).toBe(false);
+  expect(await rowsOnFix.nth(1).getByRole('button', { name: 'Approve' }).evaluate((n) => n.classList.contains('secondary'))).toBe(true);
+  // ...and it is on the first phone screen, clear of the tab bar.
+  const barTop = (await page.locator('#tablist').boundingBox()).y;
+  const box = await approve.boundingBox();
+  expect(box.y + box.height, 'Approve ends above the tab bar').toBeLessThanOrEqual(barTop);
+});
