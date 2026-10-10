@@ -51,26 +51,32 @@ from a source, it says so. Vendor pages are labelled as such.
   Scientific Reports, 14 April 2026, https://www.nature.com/articles/s41598-026-45485-2): monthly soiling loss 1-1.5 %
   with weekly cleaning, 2.5 % biweekly, 5 % every four weeks (about 0.17-0.21 % per day). Retrieved 2026-10-08.
 
-## Fonts (inlined, Phase 7)
+## Fonts (inlined, Phase 7; pruned to the page's words, Phase 9)
 
 Noto Sans Devanagari Regular and Noto Sans Gurmukhi Regular, unhinted static TTFs from the Noto project
 (https://raw.githubusercontent.com/notofonts/notofonts.github.io/main/fonts/NotoSansDevanagari/unhinted/ttf/NotoSansDevanagari-Regular.ttf,
 .../NotoSansGurmukhi/unhinted/ttf/NotoSansGurmukhi-Regular.ttf), **SIL Open Font License 1.1**, Copyright 2022 The
 Noto Project Authors (https://raw.githubusercontent.com/google/fonts/main/ofl/notosansdevanagari/OFL.txt). Retrieved
-2026-10-08. Subset to the characters the page uses (67 Devanagari, 64 Gurmukhi, plus digits and punctuation) with
-fontTools 4.66.1 and brotli 1.2.0, run through uvx:
+2026-10-08. Phase 7 subset them to the characters the page uses (`pyftsubset --text-file ... --layout-features='*'`),
+which kept 496 Devanagari glyphs because fontTools keeps every conjunct any pair of the kept letters could form
+(fontTools subset docs, https://fonttools.readthedocs.io/en/latest/subset/index.html, retrieved 2026-10-08).
 
-```
-pyftsubset NotoSansDevanagari-Regular.ttf --text-file=deva.txt --layout-features='*' --flavor=woff2 --no-hinting --desubroutinize --output-file=deva.woff2
-pyftsubset NotoSansGurmukhi-Regular.ttf  --text-file=guru.txt --layout-features='*' --flavor=woff2 --no-hinting --desubroutinize --output-file=guru.woff2
-```
+Phase 9 prunes further, to the words the page really writes. `scripts/subset_fonts.py` (run by
+`bash scripts/build_fonts.sh` through `uv run --with`, pinned: fontTools 4.66.1, brotli 1.2.0, uharfbuzz 0.56.3, a
+Python binding of HarfBuzz, https://pypi.org/pypi/uharfbuzz/json, retrieved 2026-10-10; build tools, not project
+dependencies) does this:
 
-`--layout-features='*'` keeps the OpenType shaping features Indic scripts need (fontTools subset docs,
-https://fonttools.readthedocs.io/en/latest/subset/index.html, retrieved 2026-10-08). Results: 29,037 and 9,384 bytes,
-inlined as base64 `@font-face` data URLs (about 51 KB in the page), which needs `font-src data:` in the CSP.
-`bash scripts/build_fonts.sh` runs exactly these commands with the versions pinned, writes the character lists to
-`fixtures/fonts/`, and splices the new subsets into the page; `tests/test_loop.py` fails when the page uses a character
-outside those lists.
+1. It takes every run of characters inside a font's `unicode-range` from the page text (the units the browser shapes
+   with that font) and writes them to `fixtures/fonts/deva.runs.txt` and `guru.runs.txt`.
+2. It shapes each run with the full font in HarfBuzz and records every glyph present at any lookup step.
+3. It subsets to those glyphs with layout closure switched off, so the font ships only the substitutions those words use.
+4. It shapes every run again with the pruned font and exits non-zero unless the glyphs, clusters, advances and offsets
+   are identical to the full font's.
+
+Result: Devanagari 129 of 845 glyphs, 12,228 bytes (was 29,037 with 496 glyphs); Gurmukhi 83 of 282 glyphs, 6,360 bytes
+(was 9,384). They are inlined as base64 `@font-face` data URLs, which needs `font-src data:` in the CSP.
+`tests/test_loop.py` fails while the page has a word that is not in the runs files, so a new Hindi or Punjabi word
+cannot ship with a font that cannot shape it.
 
 ## Browser facts used by Phase 7
 

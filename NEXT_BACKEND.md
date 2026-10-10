@@ -11,3 +11,40 @@ Routes and response shapes are frozen during the UI phases (5-8), so these wait 
   audit response as `watch_below` next to `flag_below`, document it in the README table, and the page can show the
   tier from that field alone, with a shape of its own (the half-covered sun now marks "near usual, but the audit
   points to a possible cause").
+
+- **Codes and parameters next to the audit's English sentences** (Phase 9). Hindi and Punjabi pages translate the
+  backend's sentences by matching the exact English text (`SERVER` in `app/index.html`, 32 patterns). That breaks
+  silently when a sentence is reworded, and every new sentence needs a new pattern. An additive field would remove the
+  matching: next to each `why` line, suggestion and verification reason, return `{code, params}` and keep the English
+  `text` for English pages and the complaint draft. Proposed codes and parameters (all numbers are what the sentence
+  already contains):
+
+  | code | params |
+  |---|---|
+  | `not_enough_readings` | |
+  | `no_dip_run` | `min_dips` |
+  | `needs_readings_before_dip` | `needed` |
+  | `sudden_step` | `since, run, drop_pct, before, entry_pct` |
+  | `dip_not_steady` | `since` |
+  | `dip_too_small` | `since, entry_pct` |
+  | `gradual_slide` | `per_day_pct, readings, below_pct` |
+  | `step_also_present` | |
+  | `no_decline` | `trend_pct_per_day, below_pct` |
+  | `needs_readings_to_learn` | `needed` |
+  | `low_start_present` / `low_start_gone` / `low_start_fine` | `first` (`start` or `after_inspection` with `date`), `pct`, `recent_pct` or `recent_unknown` |
+  | `within_noise` | `within_pct, deviation_pct` |
+  | `weather_unpublished` | `pct` |
+  | `below_with_known_weather` | `below_pct` |
+  | `not_learnt_yet` | `have, needed` |
+  | `weather_not_a_start_gap` | |
+  | `suggest_clean` / `suggest_inverter` / `suggest_inspection` | |
+  | `verify_pending` | `have, needed, after` |
+  | `verify_result` | `count, after, still, pct, reference` (`pvgis` or `usual`), `back_later`, `unpublished` |
+  | `escalation_line` | `action, approved_on, verification` (nested) |
+  | `category_note` | |
+  | error codes | `photo_unavailable`, `photo_busy`, `photo_unreadable`, `plant_changed`, `date_in_future`, `reading_too_large` (`kwh, kw, days`), `source_unavailable` |
+
+  Not translated today (shown in English, `lang="en"`): Gemini's own note about what it read (`what_was_read`), the
+  complaint draft (English by design), the errors `image_base64 is not valid base64`, `image must be between 1 byte
+  and N bytes`, `site not found`, `action not found`, `action is already ...` and `approved_on must be between ... and
+  today`, and any sentence the backend gains. The screen check counts these.
