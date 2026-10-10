@@ -214,7 +214,9 @@ test('import: a file over 100 KB is refused, never read in part', async ({ page,
   const id = await newPlant(request);
   await openImport(page, id);
   await page.locator('#import-file').setInputFiles({ name: 'big.csv', mimeType: 'text/csv', buffer: Buffer.alloc(100001, '\n') });
-  await expect(page.locator('#import-sum')).toHaveText('More than 366 lines. Split them and add them in parts.');
+  await expect(page.locator('#import-sum')).toBeVisible();  // the box stays open, so the owner can read it
+  await expect(page.locator('#import-sum')).toHaveText('That file is over 100 KB. Split it and add it in parts.');
+  await expect(page.locator('#status')).toContainText('over 100 KB');
   await expect(page.locator('#import-go')).toBeHidden();
 });
 

@@ -334,15 +334,15 @@
     @page { margin: 14mm; }
     :root { --canvas: #fff; --surface: #fff; --text: #000; --text-2: #333; --text-3: #555; --hairline: #bbb; --control: #666; }
     body { padding: 0 !important; }
-    .topbar, .tabs, .skip, #status, #retry, #error, [role="tabpanel"]:not(#panel-report), #panel-report button, #panel-report .row, #panel-report .callout, #escalation, [data-i18n="waNote"], .strip .more { display: none !important; }
+    .topbar, .tabs, .skip, #status, #retry, #error, [role="tabpanel"]:not(#panel-report), #panel-report button, #panel-report .row, #panel-report .callout:not(#draft-stale), #escalation, [data-i18n="waNote"], .strip .more { display: none !important; }
     #panel-report { display: block !important; }
     #complaint { max-width: none; padding: 0; border: 0; }
     #draft-text { field-sizing: content; min-height: 0; padding: 0; border: 0; font-size: 0.875rem; line-height: 1.45; resize: none; overflow: visible; color: #000; outline: 0; }
   }
   @media (forced-colors: active) {
-    [role="tab"][aria-selected="true"] { border-top-color: Highlight; }
     .card, .strip, .action, .cause, .band, .section, .tabs, [role="tab"][aria-selected="true"], .flag, .chip { border-color: CanvasText; }
     .band { border: 1px solid CanvasText; }
+    [role="tab"][aria-selected="true"] { border-top-color: Highlight; }
   }
 </style>
 </head>
@@ -711,6 +711,7 @@ const L = {
   importLines: ['Pasted lines', 'चिपकाई हुई पंक्तियाँ', 'ਚਿਪਕਾਈਆਂ ਲਾਈਨਾਂ'],
   importCsv: ['CSV file', 'CSV फ़ाइल', 'CSV ਫ਼ਾਈਲ'],
   importTooMany: ['More than 366 lines. Split them and add them in parts.', '366 से ज़्यादा पंक्तियाँ हैं। इन्हें बाँटकर हिस्सों में जोड़ें।', '366 ਤੋਂ ਵੱਧ ਲਾਈਨਾਂ ਹਨ। ਇਨ੍ਹਾਂ ਨੂੰ ਵੰਡ ਕੇ ਹਿੱਸਿਆਂ ਵਿੱਚ ਜੋੜੋ।'],
+  importTooBig: ['That file is over 100 KB. Split it and add it in parts.', 'वह फ़ाइल 100 KB से बड़ी है। इसे बाँटकर हिस्सों में जोड़ें।', 'ਉਹ ਫ਼ਾਈਲ 100 KB ਤੋਂ ਵੱਡੀ ਹੈ। ਇਸ ਨੂੰ ਵੰਡ ਕੇ ਹਿੱਸਿਆਂ ਵਿੱਚ ਜੋੜੋ।'],
   loopTitle: ['How it works', 'यह कैसे काम करता है', 'ਇਹ ਕਿਵੇਂ ਕੰਮ ਕਰਦਾ ਹੈ'],
   loop1: ['Detect a dip in output', 'उत्पादन में गिरावट पकड़ना', 'ਉਤਪਾਦਨ ਵਿੱਚ ਗਿਰਾਵਟ ਫੜਨੀ'],
   loop2: ['Rank the possible causes', 'संभावित कारणों को क्रम देना', 'ਸੰਭਾਵੀ ਕਾਰਨਾਂ ਨੂੰ ਕ੍ਰਮ ਦੇਣਾ'],
@@ -1613,7 +1614,7 @@ $('import-file').addEventListener('change', async (ev) => {
   const f = ev.target.files[0];
   ev.target.value = '';
   if (!f) return;
-  if (f.size > 100000) { clearImport(); importShow([]); $('import-sum').textContent = t('importTooMany'); return; }  // never read half a file
+  if (f.size > 100000) { importShow([]); $('import').open = true; $('import-sum').textContent = t('importTooBig'); say(t('importTooBig')); return; }  // never read half a file
   $('import-text').value = await f.text();
   importCheck();
 });
@@ -1776,6 +1777,7 @@ function renderCategories(draft) {
   $('categories').replaceChildren(...(cats.length ? [el('span', { text: `${t('catsLead')} ` }), el('span', { lang: 'en', text: `${cats.join(', ')}. ` })] : []),
     el('span', srvProps(draft.mnre_categories.note)));
 }
+if (!CSS.supports('field-sizing', 'content')) addEventListener('beforeprint', () => { const d = $('draft-text'); d.style.height = 'auto'; d.style.height = `${d.scrollHeight}px`; });  // a long draft prints in full
 $('draft-btn').addEventListener('click', async (ev) => {
   const draft = await busy(ev.currentTarget, () => api('POST', `/api/sites/${encodeURIComponent(state.id)}/complaint`));
   if (!draft) return;
