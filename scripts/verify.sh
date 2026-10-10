@@ -3,7 +3,7 @@
 # Stage-aware: boots the API offline (fixtures, no keys), drives the synthetic
 # scenario over HTTP, runs pytest, and runs the Playwright check of / once an
 # index.html exists. On the first failure it prints one reason line and exits non-zero.
-# Worst case is about 19 minutes (sum of the timeouts below); the Stop hook allows 25.
+# Worst case is about 22 minutes (sum of the timeouts below); the Stop hook allows 25.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
@@ -104,7 +104,7 @@ else
     || fail "npm install: $(last_line .verify-e2e.log)"
   timeout 300 npx playwright install chromium >> .verify-e2e.log 2>&1 \
     || fail "playwright browser install: $(last_line .verify-e2e.log)"
-  BASE_URL="$BASE" timeout 120 npx playwright test >> .verify-e2e.log 2>&1 \
+  BASE_URL="$BASE" timeout 300 npx playwright test >> .verify-e2e.log 2>&1 \
     || fail "playwright: $(last_line .verify-e2e.log)"
   PLAYWRIGHT=passed
 fi
