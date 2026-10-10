@@ -307,6 +307,8 @@
   footer { padding: 16px 16px 32px; color: var(--text-2); font-size: 0.875rem; display: grid; gap: 6px; }
   footer strong { color: var(--text); }
   .busy { opacity: 0.6; }
+  #queue { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  .chip.queued { background: var(--accent); color: var(--accent-ink); }
 
   @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes pop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
@@ -543,6 +545,7 @@
        </label>
       </div>
       <div class="row"><button type="submit" class="hero-btn" id="save-btn" aria-disabled="true" aria-describedby="save-hint" data-i18n="save"></button></div>
+      <div id="queue" hidden></div>
       <p class="note" id="save-hint" data-i18n="saveHint"></p>
      </form>
      <p class="note" id="mic-note" hidden data-i18n="micNote"></p>
@@ -873,6 +876,13 @@ const L = {
   plantGone: ['That plant was not found. Set it up again.', 'वह प्लांट नहीं मिला। इसे दोबारा सेट करें।', 'ਉਹ ਪਲਾਂਟ ਨਹੀਂ ਮਿਲਿਆ। ਇਸਨੂੰ ਦੁਬਾਰਾ ਸੈੱਟ ਕਰੋ।'],
   replaceSaved: ['A reading for {date} is already saved ({kwh} {u}). Replace it?', '{date} की एक रीडिंग पहले से सेव है ({kwh} {u})। बदलें?', '{date} ਦੀ ਇੱਕ ਰੀਡਿੰਗ ਪਹਿਲਾਂ ਹੀ ਸੇਵ ਹੈ ({kwh} {u})। ਬਦਲੀਏ?'],
   savedReading: ['Saved the reading for {date}.', '{date} की रीडिंग सेव हो गई।', '{date} ਦੀ ਰੀਡਿੰਗ ਸੇਵ ਹੋ ਗਈ।'],
+  replaceWaiting: ['A reading for {date} ({kwh} {u}) is waiting to be saved. Replace it?', '{date} की एक रीडिंग ({kwh} {u}) सेव होने का इंतज़ार कर रही है। बदलें?', '{date} ਦੀ ਇੱਕ ਰੀਡਿੰਗ ({kwh} {u}) ਸੇਵ ਹੋਣ ਦੀ ਉਡੀਕ ਵਿੱਚ ਹੈ। ਬਦਲੀਏ?'],
+  offlineKept: ['Offline: the reading for {date} will be saved when you are connected.', 'ऑफ़लाइन: {date} की रीडिंग कनेक्शन आने पर सेव होगी।', 'ਆਫ਼ਲਾਈਨ: {date} ਦੀ ਰੀਡਿੰਗ ਕਨੈਕਸ਼ਨ ਆਉਣ ਉੱਤੇ ਸੇਵ ਹੋਵੇਗੀ।'],
+  queuedOne: ['Offline: 1 reading will be saved when you are connected ({dates}).', 'ऑफ़लाइन: 1 रीडिंग कनेक्शन आने पर सेव होगी ({dates})।', 'ਆਫ਼ਲਾਈਨ: 1 ਰੀਡਿੰਗ ਕਨੈਕਸ਼ਨ ਆਉਣ ਉੱਤੇ ਸੇਵ ਹੋਵੇਗੀ ({dates})।'],
+  queuedMany: ['Offline: {n} readings will be saved when you are connected ({dates}).', 'ऑफ़लाइन: {n} रीडिंग कनेक्शन आने पर सेव होंगी ({dates})।', 'ਆਫ਼ਲਾਈਨ: {n} ਰੀਡਿੰਗਾਂ ਕਨੈਕਸ਼ਨ ਆਉਣ ਉੱਤੇ ਸੇਵ ਹੋਣਗੀਆਂ ({dates})।'],
+  tryNow: ['Try now', 'अभी भेजें', 'ਹੁਣੇ ਭੇਜੋ'],
+  savedQueuedOne: ['Saved the waiting reading.', 'इंतज़ार कर रही रीडिंग सेव हो गई।', 'ਉਡੀਕ ਵਾਲੀ ਰੀਡਿੰਗ ਸੇਵ ਹੋ ਗਈ।'],
+  savedQueuedMany: ['Saved {n} waiting readings.', 'इंतज़ार कर रही {n} रीडिंग सेव हो गईं।', 'ਉਡੀਕ ਵਾਲੀਆਂ {n} ਰੀਡਿੰਗਾਂ ਸੇਵ ਹੋ ਗਈਆਂ।'],
   photoReading: ['Reading your photo…', 'आपकी फ़ोटो पढ़ रहे हैं…', 'ਤੁਹਾਡੀ ਫ਼ੋਟੋ ਪੜ੍ਹ ਰਹੇ ਹਾਂ…'],
   photoRead: ['Read from your photo:', 'फ़ोटो से पढ़ा:', 'ਫ਼ੋਟੋ ਤੋਂ ਪੜ੍ਹਿਆ:'],
   photoLifetime: ['It shows a lifetime total of {kwh} {u}. Enter the energy for one day or week instead: the difference between two meter readings.', 'इसमें कुल (lifetime) {kwh} {u} दिख रही है। इसकी जगह एक दिन या एक हफ़्ते की बिजली लिखें: दो मीटर रीडिंग का अंतर।', 'ਇਸ ਵਿੱਚ ਕੁੱਲ (lifetime) {kwh} {u} ਦਿਸ ਰਹੀ ਹੈ। ਇਸ ਦੀ ਥਾਂ ਇੱਕ ਦਿਨ ਜਾਂ ਇੱਕ ਹਫ਼ਤੇ ਦੀ ਬਿਜਲੀ ਲਿਖੋ: ਦੋ ਮੀਟਰ ਰੀਡਿੰਗਾਂ ਦਾ ਫ਼ਰਕ।'],
@@ -1085,8 +1095,9 @@ const ASSUME_SOURCES = [
   { text: 'Rs 150 per kW per clean: CEEW, Maximising Rooftop Solar Performance by Enabling a Robust O&M Ecosystem (June 2026): cleaning alone costs Rs 100 to 200 per kW per visit; CEEW assumes Rs 150. A vendor\u2019s own packages run about Rs 390 to 450 a visit for plants up to 3.25 kWp. Retrieved 2026-10-08.', urls: [['CEEW', 'https://www.ceew.in/sites/default/files/ceew-oandm-ecosystem-for-rts-web-ready-file.pdf'], ['vendor page', 'https://www.solarsquare.in/blog/solar-panel-cleaning-pricing-in-india/']] },
   { text: 'Fixed schedule of 2 cleans a month: BHEL\u2019s rooftop O&M specification says panels are "cleaned at least once every fifteen days", and a Roorkee field study found monthly soiling losses of 1 to 1.5% with weekly cleaning, 2.5% biweekly, 5% every four weeks. Retrieved 2026-10-08.', urls: [['BHEL', 'https://tenders.bhel.com/sites/default/files/TS-2021-11-01-04%3A22%3A11.pdf'], ['Roorkee study', 'https://www.nature.com/articles/s41598-026-45485-2']] },
 ];
+const QUEUE_KEY = 'surya-audit-queued-readings';
 const state = {
-  id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, photoFill: null,
+  id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, photoFill: null, flushing: null, saving: null,
   tab: 'today', chartPlayed: false, chartWidth: 0, tiltAuto: null, prevSteps: {},
 };
 const $ = (id) => document.getElementById(id);
@@ -1193,7 +1204,7 @@ function applyBigger(on) {
 $('bigger').addEventListener('click', () => applyBigger(!document.documentElement.hasAttribute('data-bigger')));
 (function initPrefs() {
   let saved = null, big = '';
-  try { saved = localStorage.getItem(LANG_KEY); big = localStorage.getItem(BIGGER_KEY); localStorage.removeItem('surya-audit-queued-readings'); } catch { /* ignore */ }
+  try { saved = localStorage.getItem(LANG_KEY); big = localStorage.getItem(BIGGER_KEY); } catch { /* ignore */ }
   // First visit, nothing chosen yet: follow the browser's language when it is Hindi or Punjabi, else English.
   const nav = String(navigator.language || '').toLowerCase();
   applyLang(saved || (nav.startsWith('hi') ? 'hi' : nav.startsWith('pa') ? 'pa' : 'en'), false, false);
@@ -1518,6 +1529,7 @@ $('switch').addEventListener('click', () => {
 $('forget').addEventListener('click', () => {
   if (!confirm(tf('forgetConfirm', { link: `${location.origin}/?site=${state.id}` }))) return;
   if (storeGet() === state.id) storeClear();  // another remembered plant is not this one's to forget
+  setQueue(state.id, []);
   try { localStorage.removeItem(ASSUME_KEY); } catch { /* ignore */ }
   if (location.search || location.hash) history.replaceState(null, '', location.pathname);
   showSetup(t('forgot'));
@@ -1531,12 +1543,28 @@ $('reading-form').addEventListener('submit', async (ev) => {
   applyDateKind();
   const body = { date: f.date.value, kwh: Number(f.kwh.value), kind: f.kind.value };
   const saved = state.audit && state.audit.timeline.find((p) => p.date === body.date);
+  const waiting = queued().find((q) => q.body.date === body.date);
   if (saved && !confirm(tf('replaceSaved', { date: fmtDate(body.date), kwh: kwh(saved.kwh), u: units() }))) return;
+  if (!saved && waiting && !confirm(tf('replaceWaiting', { date: fmtDate(body.date), kwh: kwh(waiting.body.kwh), u: units() }))) return;
   const button = f.querySelector('button[type=submit]');
   button.disabled = true; showError('');
   try {
     let audit;
-    try { audit = await api('POST', `/api/sites/${encodeURIComponent(site)}/readings`, body); } catch (e) { showError(e.message); return; }  // nothing was saved: the values stay for another try
+    if (state.flushing) await state.flushing.catch(() => {});  // never race a queue flush
+    try {
+      state.saving = api('POST', `/api/sites/${encodeURIComponent(site)}/readings`, body);
+      audit = await state.saving;
+    } catch (e) {
+      if (e.status) { showError(e.message); return; }  // the server answered: a real problem with the values
+      // No answer at all: keep the reading here and send it when the connection is back.
+      setQueue(site, [...queuedFor(site).filter((q) => q.body.date !== body.date), { site, body }]);
+      setKwh('');
+      clearPhoto();
+      say(tf('offlineKept', { date: fmtDate(body.date) }));
+      return;
+    } finally {
+      state.saving = null;
+    }
     if (state.id !== site) return;  // the owner moved to another plant meanwhile
     setKwh('');
     clearPhoto();
@@ -1548,6 +1576,60 @@ $('reading-form').addEventListener('submit', async (ev) => {
     button.disabled = false;
   }
 });
+
+// ---------- offline queue: a reading that cannot reach the server waits in this browser ----------
+function queuedFor(site) { return (jsonGet(QUEUE_KEY) || []).filter((q) => q && q.site === site && q.body); }
+function queued() { return queuedFor(state.id); }
+function setQueue(site, items) {
+  const others = (jsonGet(QUEUE_KEY) || []).filter((q) => q && q.site !== site);
+  const all = [...others, ...items];
+  if (all.length) jsonSet(QUEUE_KEY, all); else try { localStorage.removeItem(QUEUE_KEY); } catch { /* ignore */ }  // an empty queue leaves no key
+  if (site === state.id) renderQueue();
+}
+function renderQueue() {
+  const box = $('queue');
+  box.replaceChildren();
+  const items = queued();
+  box.hidden = !items.length;
+  if (!items.length) return;
+  box.append(el('span', { class: 'chip queued', role: 'status' }, icon('clock'),
+    tf(items.length > 1 ? 'queuedMany' : 'queuedOne', { n: items.length, dates: items.map((q) => fmtDate(q.body.date, true)).join(', ') })),
+    el('button', { type: 'button', class: 'link', id: 'queue-now', text: t('tryNow'), onclick: () => flushQueue() }));
+}
+// Sends the queue for the plant that is open now. A reading the server refuses outright (a 4xx other than
+// 429) is dropped with its message; on no response, 429 or 5xx the rest stays queued for next time.
+function flushQueue() {
+  if (state.flushing) return state.flushing;
+  const site = state.id;
+  if (!site || !queuedFor(site).length) return Promise.resolve();
+  state.flushing = (async () => {
+    let audit = null;
+    let sent = 0;
+    const drop = (q) => setQueue(site, queuedFor(site).filter((x) => x.body.date !== q.body.date));
+    try {
+      if (state.saving) await state.saving.catch(() => {});
+      // One item at a time from the live queue, so readings queued meanwhile are neither lost nor reverted.
+      for (let q = queuedFor(site)[0]; q; q = queuedFor(site)[0]) {
+        try {
+          audit = await api('POST', `/api/sites/${encodeURIComponent(site)}/readings`, q.body);
+          sent += 1;
+          drop(q);
+        } catch (e) {
+          const refused = e.status && e.status < 500 && e.status !== 429;
+          if (!refused) break;  // no response, 429 or 5xx: leave the queue as it is for next time
+          drop(q);
+          if (state.id === site) showError(`${fmtDate(q.body.date)}: ${e.message}`);
+        }
+      }
+    } finally {
+      state.flushing = null;
+      if (state.id === site) renderQueue();
+      if (audit && state.id === site) { render(audit); markDraftStale(); say(sent === 1 ? t('savedQueuedOne') : tf('savedQueuedMany', { n: sent })); }
+    }
+  })();
+  return state.flushing;
+}
+window.addEventListener('online', () => { if (state.id) flushQueue(); });
 
 // many days at once: YYYY-MM-DD or DD/MM/YYYY only (any other order is ambiguous), checked, confirmed, saved one by one
 const IMPORT_MAX = 366;
@@ -1844,6 +1926,7 @@ function render(audit) {
   renderLight(audit);
   renderHeadline(audit);
   renderActions(audit);
+  renderQueue();
   renderTimeline(audit);
   renderCauses(audit);
   renderEscalation(audit);
@@ -2523,6 +2606,7 @@ async function load(id) {
   const tab = tabFromHash();
   if (!tab) history.replaceState(null, '', `${location.pathname}${location.search}#today`);
   showTab(tab || 'today', true);
+  if (navigator.onLine) flushQueue();  // readings queued while offline, if any
 }
 
 (async function init() {

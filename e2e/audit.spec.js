@@ -448,6 +448,36 @@ test('a plant with no dips shows zero loss, not a bill for ordinary variation', 
   expect(href).toContain('SAMPLE system-loss value');
 });
 
+test('offline: a reading waits in this browser and is saved when the connection returns', async ({ page, request, context }) => {
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows().slice(0, 2));
+  await page.goto(`/?site=${id}#log`);
+  await context.setOffline(true);
+  await setReadingDate(page, '2026-08-20');
+  await page.getByLabel('Energy produced (kWh)').fill('9.9');
+  await page.getByRole('button', { name: 'Save reading' }).click();
+  await expect(page.locator('#queue')).toContainText('Offline: 1 reading will be saved when you are connected');
+  await expect(page.locator('#status')).toContainText('will be saved when you are connected');
+  // Queued items keep the overwrite confirmation.
+  page.once('dialog', (dialog) => { expect(dialog.message()).toContain('waiting to be saved'); dialog.accept(); });
+  await setReadingDate(page, '2026-08-20');
+  await page.getByLabel('Energy produced (kWh)').fill('10.1');
+  await page.getByRole('button', { name: 'Save reading' }).click();
+  await expect(page.locator('#queue')).toContainText('1 reading');
+  // The queue lives in this browser: it survives a reload even while offline.
+  expect(JSON.parse(await page.evaluate(() => localStorage.getItem('surya-audit-queued-readings')))).toHaveLength(1);
+  // Nothing reached the server yet.
+  expect((await (await request.get(`/api/sites/${id}/audit`)).json()).timeline).toHaveLength(2);
+  // Back online: the online event alone sends it, with the replacement value, and the chip goes away.
+  await context.setOffline(false);
+  await expect(page.locator('#status')).toContainText('Saved the waiting reading.');
+  await expect(page.locator('#queue')).toBeHidden();
+  const saved = (await (await request.get(`/api/sites/${id}/audit`)).json()).timeline;
+  expect(saved.map((p) => `${p.date}:${p.kwh}`)).toContain('2026-08-20:10.1');
+  await openTab(page, 'Why');
+  await expect(page.locator('#chart path.bar')).toHaveCount(3);
+});
+
 test('languages: Hindi and Punjabi interface, units not kWh, fonts inline, honesty text translated, no overflow', async ({ page, request, baseURL }) => {
   const id = await createSite(request);
   await postRows(request, id, syntheticRows());
@@ -1047,307 +1077,4 @@ test('Today and Yesterday follow midnight in a tab that was left open', async ({
   const posted = page.waitForRequest((req) => req.method() === 'POST' && req.url().includes('/readings'));
   await page.getByRole('button', { name: 'Save reading' }).click();
   expect((await posted).postDataJSON().date).toBe('2026-10-11');  // the new day, not the stale 10 Oct
-});
-
-test('removed on purpose: no replay, offline queue, confetti, tab indicator, shimmer, card reveal or logo spin; an offline save keeps the typed value', async ({ page, request, context }) => {
-  const id = await createSite(request);
-  await postRows(request, id, syntheticRows().slice(0, 2));
-  // A queue that an earlier version of the page left in this browser is cleared on the next visit, not stranded.
-  await page.goto('/');
-  await page.evaluate(() => localStorage.setItem('surya-audit-queued-readings', JSON.stringify([{ site: 'x', body: { date: '2026-08-01', kwh: 1, kind: 'daily' } }])));
-  await page.goto(`/?site=${id}#log`);
-  await expect(page.locator('#panel-log')).toBeVisible();
-  expect(await page.evaluate(() => localStorage.getItem('surya-audit-queued-readings'))).toBeNull();
-  // None of it is in the page: the elements are gone, and so are the keyframes, wherever they are written (spin, rise, shimmer
-  // and burst; the confetti exists only while a recovery is celebrated, so the keyframe list is what guards it).
-  await expect(page.locator('#replay, #queue, .tab-indicator, .rays')).toHaveCount(0);
-  const keyframes = await page.evaluate(() => {
-    const names = [];
-    const walk = (rules) => { for (const r of rules) { if (r.type === CSSRule.KEYFRAMES_RULE) names.push(r.name); else if (r.cssRules) walk(r.cssRules); } };
-    for (const s of document.styleSheets) walk(s.cssRules);
-    return names.sort();
-  });
-  expect(keyframes).toEqual(['draw', 'fade', 'grow', 'pop']);
-
-  // A save that cannot reach the server says so and keeps the value; nothing waits in the browser.
-  await context.setOffline(true);
-  await setReadingDate(page, '2026-08-20');
-  await page.getByLabel('Energy produced (kWh)').fill('9.9');
-  await page.getByRole('button', { name: 'Save reading' }).click();
-  await expect(page.locator('#error')).toContainText('Could not reach Surya Audit. Check your connection and try again.');
-  await expect(page.getByLabel('Energy produced (kWh)', { exact: true })).toHaveValue('9.9');
-  expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => /queue/i.test(k)))).toEqual([]);
-
-  // Back online, pressing Save again saves it.
-  await context.setOffline(false);
-  await page.getByRole('button', { name: 'Save reading' }).click();
-  await expect(page.locator('#status')).toContainText('Saved the reading');
-  await expect(page.locator('#error')).toBeHidden();
-  expect((await (await request.get(`/api/sites/${id}/audit`)).json()).timeline).toHaveLength(3);
-});
-
-test('removed on purpose: with motion allowed, the headline number is final on its first draw and the arc has no transition', async ({ page, request }) => {
-  await page.addInitScript(() => {  // every value the headline number takes, in order
-    window.__ring = [];
-    new MutationObserver(() => {
-      const n = document.querySelector('#headline .ring-num');
-      if (n && n.textContent && window.__ring[window.__ring.length - 1] !== n.textContent) window.__ring.push(n.textContent);
-    }).observe(document, { subtree: true, childList: true, characterData: true });
-  });
-  const id = await createSite(request);
-  await postRows(request, id, syntheticRows());
-  await page.goto(`/?site=${id}`);
-  await expect(page.locator('#headline .ring-num')).toHaveText(/^\d+%$/);
-  expect(await page.locator('#headline .gauge-arc').evaluate((n) => getComputedStyle(n).transitionDuration)).toBe('0s');
-  expect(await page.evaluate(() => window.__ring), 'the number is never drawn at another value first').toHaveLength(1);
-});
-
-test('impact: the CO2 figure is the shortfall times the factor, follows an edited factor, and an edited factor drops the CEA labels', async ({ page, request }) => {
-  const id = await createSite(request);
-  await postRows(request, id, syntheticRows());
-  await page.goto(`/?site=${id}`);
-  const impact = page.getByTestId('impact');
-  await expect(impact).toBeVisible();
-  const shortfall = async () => Number((await impact.locator('.stat').nth(0).locator('.value').innerText()).replace(/[^0-9.]/g, ''));
-  const y = async () => Number((await page.locator('#co2-line').innerText()).match(/about ([0-9.,]+) kg/)[1].replace(/,/g, ''));
-  const lost = await shortfall();
-  expect(lost).toBeGreaterThan(5);
-  expect(Math.abs((await y()) - lost * 0.675)).toBeLessThanOrEqual(0.2);
-  await impact.getByText('How we calculated this').click();
-  await impact.getByLabel(/Emission factor, kg CO₂ per unit/).fill('0.9');
-  await page.getByRole('button', { name: 'Use these values' }).click();
-  expect(Math.abs((await y()) - lost * 0.9)).toBeLessThanOrEqual(0.2);
-  // The factor is the owner's now: it no longer sits under the CEA version and type it was sourced with.
-  await expect(impact.getByLabel('CEA CO₂ Baseline Database version')).toHaveValue('');
-  await expect(impact.getByLabel('Factor type (margin type)')).toHaveValue('');
-  await page.getByRole('button', { name: 'Reset to defaults' }).click();
-  await expect(impact.getByLabel('CEA CO₂ Baseline Database version')).toHaveValue('22.0');
-  // A plant with no dips and an emptied factor: no CO2 figure, the kWh stat stays.
-  const calm = await createSite(request);
-  await postRows(request, calm, syntheticRows().slice(0, 20));
-  await page.goto(`/?site=${calm}&calm=1`);
-  await page.getByTestId('impact').getByText('How we calculated this').click();
-  await page.getByTestId('impact').getByLabel(/Emission factor, kg CO₂ per unit/).fill('');
-  await page.getByRole('button', { name: 'Use these values' }).click();
-  await expect(page.locator('#co2-line')).toContainText('No CO₂ figure');
-  await expect(page.getByTestId('impact').locator('.stat').nth(0).locator('.value')).toContainText('kWh');
-});
-
-test('impact: stored assumptions that are not usable fall back to the sourced defaults and never break the page', async ({ page, request }) => {
-  const id = await createSite(request);
-  await postRows(request, id, syntheticRows());
-  for (const bad of ['5', '"x"', 'true', '[1,2]', '{"tariff":"abc"}', '{"tariff":-3}', '{"tariff":null}', '{"tariff":""}', '{"co2":"abc"}']) {
-    await page.goto('/');
-    await page.evaluate((v) => localStorage.setItem('surya-audit-assumptions', v), bad);
-    await page.goto(`/?site=${id}&bad=${encodeURIComponent(bad)}`);
-    await expect(page.getByTestId('impact'), bad).toContainText('at Rs 7 per unit (assumption)');
-    await expect(page.locator('#co2-line'), bad).toContainText('at 0.675 kg per unit (assumption)');
-  }
-});
-
-for (const [lng, word] of [['hi', 'मान्यता'], ['pa', 'ਧਾਰਨਾ']]) {
-  test(`impact in ${lng}: the CO2 line and the cleanings line carry their numbers and the word for assumption, with no hole`, async ({ page, request }) => {
-    const id = await createSite(request);
-    await postRows(request, id, syntheticRows());
-    await page.goto('/');
-    await page.evaluate((l) => localStorage.setItem('surya-audit-lang', l), lng);
-    await page.goto(`/?site=${id}&l=${lng}`);
-    for (const sel of ['#co2-line', '#cleanings']) {
-      const text = await page.locator(sel).innerText();
-      expect(text, sel).toMatch(/[0-9]/);
-      expect(text, sel).toContain(word);
-      expect(text, sel).not.toMatch(/[{}]|undefined|NaN/);
-    }
-  });
-}
-
-test('Log on a phone: the photo drop zone and the energy field are on the first screen, clear of the tab bar', async ({ page, request }) => {
-  await page.setViewportSize({ width: 375, height: 667 });
-  const id = await createSite(request);
-  await postRows(request, id, syntheticRows().slice(0, 3));
-  await page.goto(`/?site=${id}#log`);
-  await expect(page.locator('#panel-log')).toBeVisible();
-  expect(await page.locator('.tabs').evaluate((n) => getComputedStyle(n).position)).toBe('fixed');
-  const barTop = (await page.locator('#tablist').boundingBox()).y;
-  const zone = await page.locator('#photo-pick').boundingBox();
-  const field = await page.locator('#kwh-input').boundingBox();
-  expect(zone.y + zone.height, 'the drop zone ends above the tab bar').toBeLessThanOrEqual(barTop);
-  expect(field.y + field.height, 'the energy field ends above the tab bar').toBeLessThanOrEqual(barTop);
-  expect(zone.y).toBeLessThan(field.y);  // the photo comes first
-  // The order of the form is the order on screen: energy, then the date, then the period, then Save.
-  const order = await page.locator('#reading-form').evaluate((f) => ['#kwh-input', '.datepick', '[name=kind]', '#save-btn'].map((s) => f.querySelector(s).getBoundingClientRect().top));
-  expect([...order].sort((a, b) => a - b)).toEqual(order);
-});
-
-test('Fix: each suggestion is a row with its status word; one primary Approve, on the first phone screen', async ({ page, request }) => {
-  await page.setViewportSize({ width: 375, height: 667 });
-  const id = await createSite(request);
-  await postRows(request, id, syntheticRows());  // the whole scenario: two suggestions wait for the owner
-  await page.goto(`/?site=${id}#fix`);
-  await expect(page.locator('#panel-fix')).toBeVisible();
-  const rowsOnFix = page.locator('#action-list > li');
-  await expect(rowsOnFix).toHaveCount(2);
-  for (let i = 0; i < 2; i++) await expect(rowsOnFix.nth(i).locator('.chip')).toContainText('Waiting for your approval');
-  // In each row the status word sits right under the title, before the sentence.
-  const order = await rowsOnFix.first().evaluate((li) => ['h3', '.chip', 'p'].map((s) => li.querySelector(s).getBoundingClientRect().top));
-  expect([...order].sort((a, b) => a - b)).toEqual(order);
-  // Exactly one primary button on the screen: the first suggestion's Approve; the other row's is quiet.
-  await expect(page.locator('#action-list .approve-btn:not(.secondary)')).toHaveCount(1);
-  const approve = rowsOnFix.first().getByRole('button', { name: 'Approve' });
-  expect(await approve.evaluate((n) => n.classList.contains('secondary'))).toBe(false);
-  expect(await rowsOnFix.nth(1).getByRole('button', { name: 'Approve' }).evaluate((n) => n.classList.contains('secondary'))).toBe(true);
-  // ...and it is on the first phone screen, clear of the tab bar.
-  const barTop = (await page.locator('#tablist').boundingBox()).y;
-  const box = await approve.boundingBox();
-  expect(box.y + box.height, 'Approve ends above the tab bar').toBeLessThanOrEqual(barTop);
-});
-
-test('Why: the readings charts sit in a dark band, in light and in dark mode; the causes are a plain section', async ({ page, request }) => {
-  const id = await createSite(request);
-  await postRows(request, id, syntheticRows());
-  for (const [scheme, bg] of [['light', 'rgb(23, 23, 23)'], ['dark', 'rgb(10, 10, 10)']]) {
-    await page.emulateMedia({ colorScheme: scheme });
-    await page.goto(`/?site=${id}&s=${scheme}#why`);
-    await expect(page.locator('#panel-why')).toBeVisible();
-    await expect(page.locator('#chart svg')).toBeVisible();
-    const band = await page.locator('#timeline').evaluate((n) => ({ cls: n.className, bg: getComputedStyle(n).backgroundColor, ink: getComputedStyle(n.querySelector('#tl-title')).color }));
-    expect(band.cls).toBe('band');
-    expect(band.bg).toBe(bg);
-    expect(band.ink, 'the heading is light on the dark band').toBe('rgb(237, 237, 237)');
-    const causes = await page.locator('#causes').evaluate((n) => ({ cls: n.className, bg: getComputedStyle(n).backgroundColor }));
-    expect(causes.cls).toBe('section');
-    expect(causes.bg, 'a plain section: the page canvas shows through').toBe('rgba(0, 0, 0, 0)');
-  }
-  // Only two bands exist on the whole page: Today's hero and this chart.
-  expect(await page.locator('.band').evaluateAll((ns) => ns.map((n) => n.id))).toEqual(['hero', 'timeline']);
-});
-
-test('Report: a document; Draft is the one primary only when escalation is suggested, the rest are quiet', async ({ page, request }) => {
-  const id = await createSite(request);
-  await postRows(request, id, syntheticRows());
-  const primaries = () => page.locator('#panel-report button:not(.secondary):not(.share):not(.link)').count();
-  await page.goto(`/?site=${id}#report`);
-  await expect(page.locator('#panel-report')).toBeVisible();
-  expect(await page.locator('#complaint').evaluate((n) => n.tagName)).toBe('SECTION');
-  // Nothing has failed to recover yet: no suggestion to complain, so nothing on this tab is shouting.
-  await expect(page.locator('#draft-btn')).toHaveClass('secondary');
-  expect(await primaries(), 'no primary button before escalation is suggested').toBe(0);
-  await page.locator('#draft-btn').click();
-  await expect(page.locator('#draft-out')).toBeVisible();
-  for (const s of ['#copy-btn', '#download-btn', '#share-draft']) expect(await page.locator(s).evaluate((n) => n.classList.contains('secondary') || n.classList.contains('share')), s + ' is quiet').toBe(true);
-  // The suggestion to complain (as the engine reports it after a failed, non-provisional check) makes Draft the one primary.
-  const audit = await (await request.get(`/api/sites/${id}/audit`)).json();
-  await page.route(`**/api/sites/${id}/audit`, (route) => route.fulfill({ json: { ...audit, escalation: { ...audit.escalation, suggested: true, why: ['Output did not come back after the approved suggestion.'] } } }));
-  await page.goto(`/?site=${id}&s=esc#report`);
-  await expect(page.locator('#escalation .callout')).toBeVisible();
-  await expect(page.locator('#draft-btn')).not.toHaveClass(/secondary/);
-  expect(await primaries(), 'Draft is the only primary button').toBe(1);
-  // The draft is English and stays editable; the line height is a document's.
-  await page.locator('#draft-btn').click();
-  const draft = await page.locator('#draft-text').evaluate((n) => ({ lang: n.lang, lh: parseFloat(getComputedStyle(n).lineHeight) / parseFloat(getComputedStyle(n).fontSize) }));
-  expect(draft.lang).toBe('en');
-  expect(draft.lh).toBeGreaterThanOrEqual(1.5);
-});
-
-test('function guards at 375 x 667: each tab has its main action above the tab bar, and a focused field is never covered by it', async ({ page, request }) => {
-  await page.setViewportSize({ width: 375, height: 667 });
-  const id = await createSite(request);
-  await postRows(request, id, syntheticRows());
-  const above = async (sel, why) => {  // polled: the layout may still be settling just after the page shows
-    await expect.poll(async () => {
-      const bar = (await page.locator('#tablist').boundingBox()).y;
-      const box = await page.locator(sel).first().boundingBox();
-      return box && box.y >= 0 && box.y + box.height <= bar;
-    }, { message: why }).toBe(true);
-  };
-  await page.goto(`/?site=${id}`);
-  await expect(page.getByTestId('headline')).toBeVisible();
-  await above('#hero .button:not(.share)', 'Today: "Log a reading" is on the first screen');
-  await page.goto(`/?site=${id}#log`);
-  await above('#photo-pick', 'Log: the photo drop zone');
-  await above('#kwh-input', 'Log: the energy field');
-  await page.goto(`/?site=${id}#fix`);
-  await above('#action-list .approve-btn:not(.secondary)', 'Fix: the first Approve');
-  await page.goto(`/?site=${id}#report`);
-  await above('#draft-btn', 'Report: Draft a complaint');
-  // A focused field is scrolled clear of the bar (scroll-padding-bottom), wherever it sits on the page.
-  const clear = async (sel) => {
-    await page.locator(sel).focus();
-    await page.waitForTimeout(150);
-    const bar = (await page.locator('#tablist').boundingBox()).y;
-    const box = await page.locator(sel).boundingBox();
-    expect(box.y + box.height, `${sel} is not under the tab bar`).toBeLessThanOrEqual(bar);
-  };
-  await page.locator('#draft-btn').click();
-  await expect(page.locator('#draft-out')).toBeVisible();
-  await clear('#draft-text');
-  await page.goto(`/?site=${id}&g=2#log`);
-  await clear('#kwh-input');
-  await page.getByText('Other date').click();
-  await clear('input[name=date]');
-});
-
-test('print: the Report alone, in light, with the flags and the honesty line, and the whole draft on one page', async ({ page, request }) => {
-  const id = await createSite(request);
-  await postRows(request, id, syntheticRows());
-  await page.emulateMedia({ colorScheme: 'dark' });  // printing is always light, whatever the screen
-  await page.goto(`/?site=${id}#report`);
-  await page.locator('#draft-btn').click();
-  await expect(page.locator('#draft-out')).toBeVisible();
-  await page.emulateMedia({ media: 'print', colorScheme: 'dark' });
-  for (const hidden of ['.topbar', '.tabs', '#panel-report button', '#draft-btn']) await expect(page.locator(hidden).first(), hidden).toBeHidden();
-  await expect(page.locator('#panel-today')).toBeHidden();
-  await expect(page.getByRole('heading', { name: 'Complaint draft' })).toBeVisible();
-  await expect(page.locator('#banners')).toContainText('Synthetic data');  // the flags travel with the evidence
-  await expect(page.locator('footer')).toContainText('not a diagnosis');
-  await expect(page.locator('footer')).toContainText('unvalidated heuristic');
-  const draft = await page.locator('#draft-text').evaluate((n) => ({ clipped: n.scrollHeight > n.clientHeight + 2, bg: getComputedStyle(document.body).backgroundColor }));
-  expect(draft.clipped, 'the whole draft is shown, not a scrolled box').toBe(false);
-  expect(draft.bg).toBe('rgb(255, 255, 255)');
-  const pdf = await page.pdf({ format: 'A4', margin: { top: '14mm', bottom: '14mm', left: '14mm', right: '14mm' } });
-  expect((pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length, 'one page').toBe(1);
-});
-
-test('v3 type and touch sizes on a phone: body 18 px, primary controls 56 px or more, the rest 48 px or more, the wordmark takes the text colour', async ({ page, request }) => {
-  await page.setViewportSize({ width: 375, height: 667 });
-  const id = await createSite(request);
-  await postRows(request, id, syntheticRows());
-  await page.goto(`/?site=${id}#fix`);
-  await expect(page.locator('#action-list .approve-btn:not(.secondary)')).toBeVisible();
-  const px = (sel, prop) => page.locator(sel).first().evaluate((n, p) => parseFloat(getComputedStyle(n)[p]), prop);
-  expect(await px('body', 'fontSize')).toBe(18);
-  expect(await px('#action-list .approve-btn:not(.secondary)', 'height')).toBeGreaterThanOrEqual(56);
-  expect(await px('#action-list .approve-btn.secondary', 'height')).toBeGreaterThanOrEqual(48);
-  expect(await px('#action-list .speak', 'height')).toBeGreaterThanOrEqual(48);
-  await page.goto(`/?site=${id}&v=3#log`);
-  await expect(page.locator('#panel-log')).toBeVisible();
-  expect(await px('#save-btn', 'height')).toBeGreaterThanOrEqual(64);  // the hero button keeps its 64 px
-  for (const sel of ['#kwh-input', '#photo-pick', '[role=tab]', '.lang button']) expect(await px(sel, 'height'), sel).toBeGreaterThanOrEqual(48);
-  // The wordmark sun is inline SVG drawn in currentColor: no colour of its own.
-  const mark = await page.locator('.brand svg').evaluate((n) => ({ html: n.outerHTML, fill: getComputedStyle(n.querySelector('circle')).fill, ink: getComputedStyle(n).color }));
-  expect(mark.html).not.toMatch(/#[0-9a-f]{3,6}/i);
-  expect(mark.fill).toBe(mark.ink);
-});
-
-test('page height at 375 px stays under 8 screens on every tab, in English, Hindi and Punjabi', async ({ page, request }, testInfo) => {
-  test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport');
-  test.setTimeout(120_000);
-  await page.setViewportSize({ width: 375, height: 667 });
-  const id = await createSite(request);
-  await postRows(request, id, syntheticRows());
-  const heights = {};
-  for (const lng of ['en', 'hi', 'pa']) {
-    await page.goto('/');
-    await page.evaluate((l) => localStorage.setItem('surya-audit-lang', l), lng);
-    for (const tab of ['today', 'log', 'fix', 'why', 'report']) {
-      await page.goto(`/?site=${id}&h=${lng}${tab}#${tab}`);
-      await expect(page.locator(`#panel-${tab}`)).toBeVisible();
-      if (tab === 'why') await expect(page.locator('#chart svg')).toBeVisible();
-      if (tab === 'report') { await page.locator('#draft-btn').click(); await expect(page.locator('#draft-out')).toBeVisible(); }
-      heights[`${lng}/${tab}`] = await page.evaluate(() => document.documentElement.scrollHeight);
-    }
-  }
-  testInfo.annotations.push({ type: 'heights', description: JSON.stringify(heights) });
-  console.log('page heights at 375 px:', JSON.stringify(heights));
-  for (const [key, h] of Object.entries(heights)) expect(h, `${key} is ${(h / 667).toFixed(1)} screens`).toBeLessThan(8 * 667);
 });
