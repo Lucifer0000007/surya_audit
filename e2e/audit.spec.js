@@ -952,7 +952,7 @@ test('no English left in Hindi and Punjabi: known audit sentences are translated
     const result = await page.evaluate(() => {
       document.querySelectorAll('details').forEach((d) => { d.open = true; });
       const shown = (n) => n.getClientRects().length > 0 && !n.closest('[hidden]');
-      const keep = /^(Surya|Audit|SAMPLE|synthetic|SYNTHETIC|WhatsApp|JSON|PVGIS|NASA|POWER|MNRE|JRC|CEA|EU|Google|Gemini|Chrome|AWS|DynamoDB|Lambda|API|Gateway|HTTP|FastAPI|EventBridge|Scheduler|Parameter|Store|SecureString|IAM|CloudWatch|Logs|kW|kWh|kg|CO|OWNER|TO|FILL|lifetime|latitude|longitude|EN|English)$/;  // brand and source names, units, and labels kept verbatim
+      const keep = /^(Surya|Audit|SAMPLE|synthetic|SYNTHETIC|WhatsApp|JSON|PVGIS|NASA|POWER|MNRE|JRC|CEA|EU|Google|Gemini|Chrome|AWS|DynamoDB|Lambda|API|Gateway|HTTP|FastAPI|EventBridge|Scheduler|Parameter|Store|SecureString|IAM|CloudWatch|Logs|kW|kWh|kg|CO|OWNER|TO|FILL|lifetime|latitude|longitude|EN|English|CSV|YYYY|MM|DD)$/;  // brand and source names, units, format names and labels kept verbatim
       const latin = (s) => (s.match(/[A-Za-z]{2,}/g) || []).filter((w) => !keep.test(w));
       const srv = Array.from(document.querySelectorAll('[data-srv]')).filter(shown).map((n) => [n.dataset.srv, n.textContent.trim()]);
       const left = [];
