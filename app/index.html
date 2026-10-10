@@ -532,7 +532,7 @@
           <p class="note" data-i18n="photoNote">Surya Audit does not keep your photo; Google Gemini reads it under Google’s own terms.</p>
           <div id="photo-review" class="photo-review" hidden>
             <img id="photo-thumb" alt="Your photo" width="72" height="72">
-            <div><p id="photo-note"></p><button type="button" class="link" id="photo-clear" data-i18n="discardPhoto">Discard photo</button></div>
+            <div><p id="photo-note" role="status"></p><button type="button" class="link" id="photo-clear" data-i18n="discardPhoto">Discard photo</button></div>
           </div>
           <div id="queue" hidden></div>
           <form id="reading-form" autocomplete="off">
@@ -768,6 +768,7 @@ const T = {
     photoReading: 'Reading your photo…', photoRead: 'Read from your photo:',
     photoLifetime: 'It shows a lifetime total of {kwh} {u}. Enter the energy for one day or week instead: the difference between two meter readings.',
     photoCheck: 'Check the values below and correct them before you save. Nothing is saved yet.', photoNotSaved: 'The photo was not saved.',
+    photoNothing: 'Could not find an energy value in this photo. Type the reading by hand.',
     photoDiscarded: 'Photo discarded.', discardPhoto: 'Discard photo', yourPhoto: 'Your photo',
     photoOpenFail: 'This photo could not be opened here. Try a JPEG or PNG screenshot, or type the reading.', photoReadFail: 'Could not read the photo.',
     netFail: 'Could not reach Surya Audit. Check your connection and try again.',
@@ -929,6 +930,7 @@ const T = {
     photoReading: 'आपकी फ़ोटो पढ़ रहे हैं…', photoRead: 'फ़ोटो से पढ़ा:',
     photoLifetime: 'इसमें कुल (lifetime) {kwh} {u} दिख रही है। इसकी जगह एक दिन या एक हफ़्ते की बिजली लिखें: दो मीटर रीडिंग का अंतर।',
     photoCheck: 'नीचे के मान जाँचें और सेव से पहले ठीक करें। अभी कुछ सेव नहीं हुआ।', photoNotSaved: 'फ़ोटो सेव नहीं हुई।',
+    photoNothing: 'इस फ़ोटो से बिजली का कोई मान नहीं पढ़ा जा सका। रीडिंग खुद लिखें।',
     photoDiscarded: 'फ़ोटो हटा दी गई।', discardPhoto: 'फ़ोटो हटाएँ', yourPhoto: 'आपकी फ़ोटो',
     photoOpenFail: 'यह फ़ोटो यहाँ खुल नहीं सकी। JPEG या PNG स्क्रीनशॉट आज़माएँ, या रीडिंग लिखें।', photoReadFail: 'फ़ोटो पढ़ी नहीं जा सकी।',
     netFail: 'सूर्य ऑडिट तक पहुँच नहीं हो पाई। अपना कनेक्शन जाँचें और फिर कोशिश करें।',
@@ -1090,6 +1092,7 @@ const T = {
     photoReading: 'ਤੁਹਾਡੀ ਫ਼ੋਟੋ ਪੜ੍ਹ ਰਹੇ ਹਾਂ…', photoRead: 'ਫ਼ੋਟੋ ਤੋਂ ਪੜ੍ਹਿਆ:',
     photoLifetime: 'ਇਸ ਵਿੱਚ ਕੁੱਲ (lifetime) {kwh} {u} ਦਿਸ ਰਹੀ ਹੈ। ਇਸ ਦੀ ਥਾਂ ਇੱਕ ਦਿਨ ਜਾਂ ਇੱਕ ਹਫ਼ਤੇ ਦੀ ਬਿਜਲੀ ਲਿਖੋ: ਦੋ ਮੀਟਰ ਰੀਡਿੰਗਾਂ ਦਾ ਫ਼ਰਕ।',
     photoCheck: 'ਹੇਠਲੇ ਮੁੱਲ ਜਾਂਚੋ ਅਤੇ ਸੇਵ ਤੋਂ ਪਹਿਲਾਂ ਠੀਕ ਕਰੋ। ਹਾਲੇ ਕੁਝ ਸੇਵ ਨਹੀਂ ਹੋਇਆ।', photoNotSaved: 'ਫ਼ੋਟੋ ਸੇਵ ਨਹੀਂ ਹੋਈ।',
+    photoNothing: 'ਇਸ ਫ਼ੋਟੋ ਤੋਂ ਬਿਜਲੀ ਦਾ ਕੋਈ ਮੁੱਲ ਨਹੀਂ ਪੜ੍ਹਿਆ ਜਾ ਸਕਿਆ। ਰੀਡਿੰਗ ਆਪ ਲਿਖੋ।',
     photoDiscarded: 'ਫ਼ੋਟੋ ਹਟਾ ਦਿੱਤੀ ਗਈ।', discardPhoto: 'ਫ਼ੋਟੋ ਹਟਾਓ', yourPhoto: 'ਤੁਹਾਡੀ ਫ਼ੋਟੋ',
     photoOpenFail: 'ਇਹ ਫ਼ੋਟੋ ਇੱਥੇ ਖੁੱਲ੍ਹ ਨਹੀਂ ਸਕੀ। JPEG ਜਾਂ PNG ਸਕ੍ਰੀਨਸ਼ਾਟ ਅਜ਼ਮਾਓ, ਜਾਂ ਰੀਡਿੰਗ ਲਿਖੋ।', photoReadFail: 'ਫ਼ੋਟੋ ਪੜ੍ਹੀ ਨਹੀਂ ਜਾ ਸਕੀ।',
     netFail: 'ਸੂਰਜ ਆਡਿਟ ਤੱਕ ਪਹੁੰਚ ਨਹੀਂ ਹੋ ਸਕੀ। ਆਪਣਾ ਕਨੈਕਸ਼ਨ ਜਾਂਚੋ ਅਤੇ ਫਿਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ।',
@@ -1266,7 +1269,7 @@ const ASSUME_SOURCES = [
 const QUEUE_KEY = 'surya-audit-queued-readings';
 
 const state = {
-  id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, flushing: null, saving: null,
+  id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, photoFill: null, flushing: null, saving: null,
   tab: 'today', seenTabs: new Set(), chartPlayed: false, chartWidth: 0, tiltAuto: null,
   prevOutcomes: null, prevSteps: {}, heroValue: 0, heroFrac: 0, replay: null,
 };
@@ -1705,16 +1708,21 @@ $('setup-form').addEventListener('click', (ev) => {
   }
   wizardGo(step);
 });
+let locatingSince = 0;  // one position request at a time; one the browser never answers expires after 12 s
 $('locate').addEventListener('click', () => {
   if (!navigator.geolocation) { showError(t('geoUnavailable')); return; }
+  if (Date.now() - locatingSince < 12000) return;
+  locatingSince = Date.now();
+  showError('');
   say(t('geoFinding'));
   navigator.geolocation.getCurrentPosition((pos) => {
+    locatingSince = 0;
     const f = $('setup-form');
     f.lat.value = pos.coords.latitude.toFixed(2);
     f.lon.value = pos.coords.longitude.toFixed(2);
     buzz();
     say(t('geoDone'));
-  }, () => { say(''); showError(t('geoFailed')); });
+  }, () => { locatingSince = 0; say(''); showError(t('geoFailed')); }, { timeout: 10000 });  // no fix in 10 s is a failure: the owner types the coordinates
 });
 
 $('setup-form').addEventListener('submit', async (ev) => {
@@ -1843,13 +1851,14 @@ $('reading-form').addEventListener('submit', async (ev) => {
 
 function clearPhoto() {
   state.photoSeq += 1;  // a reply for a discarded photo is ignored
+  state.photoFill = null;  // whatever the photo filled in is the owner's from here on
   if (state.photoUrl) URL.revokeObjectURL(state.photoUrl);
   state.photoUrl = null;
   $('photo').value = '';
   $('photo-thumb').removeAttribute('src');
   $('photo-review').hidden = true;
 }
-$('photo-clear').addEventListener('click', () => { clearPhoto(); say(t('photoDiscarded')); });
+$('photo-clear').addEventListener('click', () => { undoPhotoFill(); clearPhoto(); say(t('photoDiscarded')); });
 
 function loadImage(url) {
   return new Promise((resolve, reject) => {
@@ -1893,8 +1902,20 @@ $('photo').addEventListener('change', (ev) => { const file = ev.target.files && 
     if (file) readPhoto(file);
   });
 }
+// What a photo filled in is cleared when a new photo is picked or this one is discarded, unless the owner changed any of it:
+// then all of it is theirs (otherwise a photo that reads nothing would sit under the old photo's date and energy, or one
+// reading would be split in two).
+function undoPhotoFill() {
+  const f = $('reading-form'), was = state.photoFill;
+  state.photoFill = null;
+  if (!was || Object.keys(was).some((k) => f[k].value !== was[k])) return;
+  if ('date' in was) setReadingDate(todayIso());
+  if ('kwh' in was) setKwh('');
+  if ('kind' in was) f.kind.value = 'daily';
+}
 async function readPhoto(file) {
   showError('');
+  undoPhotoFill();
   if (state.photoUrl) URL.revokeObjectURL(state.photoUrl);
   const seq = ++state.photoSeq;
   let image;
@@ -1909,13 +1930,17 @@ async function readPhoto(file) {
     if (seq !== state.photoSeq) return;
     const c = res.candidate || {};
     const f = $('reading-form');
-    if (c.date) setReadingDate(c.date);
-    if (c.kwh != null) setKwh(c.kwh);
-    if (c.kind) f.kind.value = c.kind;
+    const fill = {};
+    if (c.date) { setReadingDate(c.date); fill.date = f.date.value; }
+    if (c.kwh != null) { setKwh(c.kwh); fill.kwh = f.kwh.value; }
+    if (c.kind && c.kwh != null) { f.kind.value = c.kind; fill.kind = f.kind.value; }  // the period says what the energy covers
+    state.photoFill = fill;
     const parts = [];
     if (c.what_was_read) parts.push(`${t('photoRead')} `, el('span', { lang: 'en', text: c.what_was_read }), `${t('stop')} `);  // Gemini's note is English
     if (c.kwh == null && c.cumulative_meter_kwh != null) parts.push(`${tf('photoLifetime', { kwh: kwh(c.cumulative_meter_kwh), u: units() })} `);
-    parts.push(t('photoCheck'));
+    const energy = c.kwh != null || c.cumulative_meter_kwh != null;
+    if (!energy) parts.push(`${t('photoNothing')} `);
+    if (energy || fill.date) parts.push(t('photoCheck'));
     $('photo-note').replaceChildren(...parts);
   } catch (e) {
     if (seq !== state.photoSeq) return;
