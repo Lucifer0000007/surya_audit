@@ -266,6 +266,10 @@
   .chart .approved { stroke: var(--text-2); stroke-width: 1; }
   .chart text, .kwh text { fill: var(--text-2); font-size: 14px; font-variant-numeric: tabular-nums; }
   .chart .hit { fill: transparent; }
+  .replay { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  .replay-caption { margin: 0; font-size: 0.875rem; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .chart .bar.hold { opacity: 0; }
+  .chart .bar.pop { animation: grow 260ms ease-out both; }
   .chart svg.animate .threshold { animation: draw 320ms ease-out both; }
   .chart svg.animate .bar { animation: grow 420ms ease-out both; animation-delay: calc(320ms + var(--d, 0) * 14ms); }
   .kwh { position: relative; margin-top: 8px; }
@@ -581,6 +585,10 @@
       <h2 id="tl-title" data-i18n="readings"></h2>
       <p class="muted small" id="tl-sub"></p>
      </header>
+     <div class="replay" id="replay" hidden>
+      <button type="button" class="secondary" id="replay-btn">Replay the days</button>
+      <p class="replay-caption" id="replay-caption" aria-live="polite"></p>
+     </div>
      <div class="chart" id="chart"></div>
      <ul class="legend" id="legend"></ul>
      <h3 id="kwh-title" class="small muted"></h3>
@@ -883,6 +891,10 @@ const L = {
   tryNow: ['Try now', 'अभी भेजें', 'ਹੁਣੇ ਭੇਜੋ'],
   savedQueuedOne: ['Saved the waiting reading.', 'इंतज़ार कर रही रीडिंग सेव हो गई।', 'ਉਡੀਕ ਵਾਲੀ ਰੀਡਿੰਗ ਸੇਵ ਹੋ ਗਈ।'],
   savedQueuedMany: ['Saved {n} waiting readings.', 'इंतज़ार कर रही {n} रीडिंग सेव हो गईं।', 'ਉਡੀਕ ਵਾਲੀਆਂ {n} ਰੀਡਿੰਗਾਂ ਸੇਵ ਹੋ ਗਈਆਂ।'],
+  replay: ['Replay the {n} days', '{n} दिन दोबारा देखें', '{n} ਦਿਨ ਦੁਬਾਰਾ ਵੇਖੋ'],
+  stopReplay: ['Stop replay', 'रोकें', 'ਰੋਕੋ'],
+  replayDone: ['Replay finished: {n} readings, {dips} dips.', 'रीप्ले पूरा: {n} रीडिंग, {dips} गिरावट।', 'ਰੀਪਲੇ ਪੂਰਾ: {n} ਰੀਡਿੰਗਾਂ, {dips} ਗਿਰਾਵਟਾਂ।'],
+  dayOf: ['Day {i} of {n}', 'दिन {i} / {n}', 'ਦਿਨ {i} / {n}'],
   photoReading: ['Reading your photo…', 'आपकी फ़ोटो पढ़ रहे हैं…', 'ਤੁਹਾਡੀ ਫ਼ੋਟੋ ਪੜ੍ਹ ਰਹੇ ਹਾਂ…'],
   photoRead: ['Read from your photo:', 'फ़ोटो से पढ़ा:', 'ਫ਼ੋਟੋ ਤੋਂ ਪੜ੍ਹਿਆ:'],
   photoLifetime: ['It shows a lifetime total of {kwh} {u}. Enter the energy for one day or week instead: the difference between two meter readings.', 'इसमें कुल (lifetime) {kwh} {u} दिख रही है। इसकी जगह एक दिन या एक हफ़्ते की बिजली लिखें: दो मीटर रीडिंग का अंतर।', 'ਇਸ ਵਿੱਚ ਕੁੱਲ (lifetime) {kwh} {u} ਦਿਸ ਰਹੀ ਹੈ। ਇਸ ਦੀ ਥਾਂ ਇੱਕ ਦਿਨ ਜਾਂ ਇੱਕ ਹਫ਼ਤੇ ਦੀ ਬਿਜਲੀ ਲਿਖੋ: ਦੋ ਮੀਟਰ ਰੀਡਿੰਗਾਂ ਦਾ ਫ਼ਰਕ।'],
@@ -1097,7 +1109,7 @@ const ASSUME_SOURCES = [
 ];
 const QUEUE_KEY = 'surya-audit-queued-readings';
 const state = {
-  id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, photoFill: null, flushing: null, saving: null,
+  id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, photoFill: null, flushing: null, saving: null, replay: null,
   tab: 'today', chartPlayed: false, chartWidth: 0, tiltAuto: null, prevSteps: {},
 };
 const $ = (id) => document.getElementById(id);
@@ -1110,6 +1122,7 @@ function el(tag, props, ...children) {
   for (const [k, v] of Object.entries(props || {})) {
     if (v == null || v === false) continue;
     if (k === 'text') node.textContent = v;
+    else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
     else node.setAttribute(k, v === true ? '' : v);
   }
   for (const c of children) {
@@ -1347,6 +1360,7 @@ function showTab(name, force) {
     b.tabIndex = on ? 0 : -1;
   }
   state.tab = name;
+  if (name !== 'why') stopReplay(false);
   const swap = () => { for (const t of TABS) $(`panel-${t}`).hidden = t !== name; onTabShown(name); };
   const animate = !calm() && from !== name && !$('site').hidden;
   if (animate && document.startViewTransition) {
@@ -1417,6 +1431,7 @@ function showSetup(message) {
   state.id = null; state.audit = null;
   clearImport();
   state.prevSteps = {}; state.chartPlayed = false; state.tiltAuto = null;
+  stopReplay(false);
   resetDraft();
   clearPhoto();
   $('reading-form').reset();
@@ -2336,6 +2351,9 @@ function renderTimeline(a) {
   const learnt = a.baseline.learnt;
   $('tl-sub').textContent = (!tl.length ? t('tlEmpty') : learnt ? t('tlSubUsual') : t('tlSubEstimate'))
     + (tl.length > CHART_MAX ? ` ${tf('tlShowing', { n: CHART_MAX, total: tl.length })}` : '');
+  const shown = Math.min(tl.length, CHART_MAX);
+  $('replay').hidden = !(a.synthetic && shown > 1);
+  if (!state.replay) $('replay-btn').textContent = tf('replay', { n: shown });
   if (state.tab === 'why') drawTimelineChart();
   renderLegend(tl, a);
   renderTable(tl);
@@ -2343,6 +2361,7 @@ function renderTimeline(a) {
 
 function drawTimelineChart() {
   const a = state.audit;
+  if (state.replay) return;  // the replay is drawing the chart
   const animate = !state.chartPlayed && !calm();
   if (a.timeline.length) state.chartPlayed = true;
   drawChart($('chart'), a.timeline.slice(-CHART_MAX), a.actions, a.flag_below, { animate });
@@ -2410,11 +2429,11 @@ function pointState(p) {
   return '';
 }
 
-// Draws the bars.
+// Draws the bars; returns reveal(i) so the replay can bring bars in one day at a time.
 function drawChart(box, points, actions, flagBelow, opts) {
   const o = opts || {};
   box.replaceChildren();
-  if (!points.length) return;
+  if (!points.length) return { reveal() {} };
   const W = Math.max(280, Math.round(box.clientWidth || 600));
   state.chartWidth = W;
   const H = 220;
@@ -2441,7 +2460,7 @@ function drawChart(box, points, actions, flagBelow, opts) {
     const v = p.relative || 0;
     const x = m.l + i * slot + (slot - bw) / 2;
     const h = Math.max(2, y(0) - y(v));
-    const cls = ['bar', pointState(p), p.weather_known ? '' : 'unknown'].filter(Boolean).join(' ');
+    const cls = ['bar', pointState(p), p.weather_known ? '' : 'unknown', o.hold ? 'hold' : ''].filter(Boolean).join(' ');
     const bar = svg('path', { class: cls, d: barPath(x, y(0) - h, bw, h, 4), 'data-dip': String(p.flagged) });
     bar.style.setProperty('--d', String(i));
     bars.push(bar);
@@ -2507,7 +2526,51 @@ function drawChart(box, points, actions, flagBelow, opts) {
     if (ev.key === 'ArrowRight') { ev.preventDefault(); show(Math.min(points.length - 1, current + 1)); }
     if (ev.key === 'Escape') hide();
   });
+  return {
+    reveal(i) {
+      const bar = bars[i];
+      if (!bar) return;
+      bar.classList.remove('hold');
+      if (!calm()) bar.classList.add('pop');
+    },
+  };
 }
+
+// ---------- replay: the synthetic scenario's days appear one by one ----------
+function stopReplay(finished) {
+  if (!state.replay) return;
+  clearInterval(state.replay);
+  state.replay = null;
+  const a = state.audit;
+  if (!a) return;
+  $('replay-btn').textContent = tf('replay', { n: Math.min(a.timeline.length, CHART_MAX) });
+  if (finished) {
+    const shown = a.timeline.slice(-CHART_MAX);
+    $('replay-caption').textContent = tf('replayDone', { n: shown.length, dips: shown.filter((p) => p.flagged).length });
+  } else {
+    $('replay-caption').textContent = '';
+    if (state.tab === 'why') {
+      drawChart($('chart'), a.timeline.slice(-CHART_MAX), a.actions, a.flag_below, {});
+      drawKwhChart($('kwh-chart'), a.timeline.slice(-CHART_MAX), a);
+    }
+  }
+}
+
+$('replay-btn').addEventListener('click', () => {
+  if (state.replay) { stopReplay(false); return; }
+  const a = state.audit;
+  const points = a.timeline.slice(-CHART_MAX);
+  const chart = drawChart($('chart'), points, a.actions, a.flag_below, { hold: true });
+  $('replay-btn').textContent = t('stopReplay');
+  let i = 0;
+  state.replay = setInterval(() => {
+    if (i >= points.length) { stopReplay(true); return; }
+    chart.reveal(i);
+    const p = points[i];
+    $('replay-caption').textContent = `${tf('dayOf', { i: i + 1, n: points.length })} · ${fmtDate(p.date)}: ${p.relative == null ? '–' : pctText(p)}${p.flagged ? ` (${t('noteDip')})` : ''}`;
+    i += 1;
+  }, 110);
+});
 
 function renderLegend(tl, a) {
   const legend = $('legend');
@@ -2590,7 +2653,7 @@ new ResizeObserver(() => {
   cancelAnimationFrame(resizeFrame);
   resizeFrame = requestAnimationFrame(() => {
     const box = $('chart');
-    if (!state.audit || state.tab !== 'why' || $('site').hidden) return;
+    if (!state.audit || state.replay || state.tab !== 'why' || $('site').hidden) return;
     if (Math.abs(Math.round(box.clientWidth) - state.chartWidth) < 2) return;
     drawChart(box, state.audit.timeline.slice(-CHART_MAX), state.audit.actions, state.audit.flag_below, {});
     drawKwhChart($('kwh-chart'), state.audit.timeline.slice(-CHART_MAX), state.audit);

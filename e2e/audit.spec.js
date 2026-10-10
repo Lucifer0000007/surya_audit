@@ -113,6 +113,11 @@ test('synthetic scenario: flagged dips, ranked causes, approve, complaint draft'
   await expect(page.locator('#chart .tip')).toContainText('Dip: below 85%');
   await page.getByText('Show readings as a table').click();
   await expect(page.locator('#table tbody tr')).toHaveCount(60);
+  // The synthetic scenario can be replayed day by day.
+  await page.getByRole('button', { name: 'Replay the 60 days' }).click();
+  await expect(page.locator('#replay-caption')).toContainText('Day ');
+  await page.getByRole('button', { name: 'Stop replay' }).click();
+  await expect(page.locator('#chart path.bar:not(.hold)')).toHaveCount(60);
   await page.screenshot({ path: path.join(SCREENS, `${testInfo.project.name}-why.png`), fullPage: true });
 
   // Fix: the September cleaning suggestion was never approved, and dust is no longer rated above low.
@@ -476,6 +481,22 @@ test('offline: a reading waits in this browser and is saved when the connection 
   expect(saved.map((p) => `${p.date}:${p.kwh}`)).toContain('2026-08-20:10.1');
   await openTab(page, 'Why');
   await expect(page.locator('#chart path.bar')).toHaveCount(3);
+});
+
+test('offline: the Try now button sends a waiting reading', async ({ page, request }) => {
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows().slice(0, 2));
+  await page.goto(`/?site=${id}#log`);
+  await page.route('**/readings', (route) => route.abort('internetdisconnected'));  // the call fails with no answer, as offline does
+  await setReadingDate(page, '2026-08-21');
+  await page.getByLabel('Energy produced (kWh)').fill('8.8');
+  await page.getByRole('button', { name: 'Save reading' }).click();
+  await expect(page.locator('#queue')).toContainText('1 reading');
+  await page.unroute('**/readings');
+  await page.getByRole('button', { name: 'Try now' }).click();
+  await expect(page.locator('#status')).toContainText('Saved the waiting reading.');
+  await expect(page.locator('#queue')).toBeHidden();
+  expect((await (await request.get(`/api/sites/${id}/audit`)).json()).timeline).toHaveLength(3);
 });
 
 test('languages: Hindi and Punjabi interface, units not kWh, fonts inline, honesty text translated, no overflow', async ({ page, request, baseURL }) => {
