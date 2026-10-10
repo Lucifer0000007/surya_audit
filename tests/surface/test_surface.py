@@ -262,3 +262,14 @@ def test_the_mono_face_is_for_latin_metadata_and_is_switched_off_in_hindi_and_pu
     for group in mono:
         for part in (s.strip() for s in group.split(",")):
             assert part in reset, f"{part} keeps the mono face in Hindi and Punjabi"
+
+
+def test_the_only_dev_dependencies_are_playwright_and_axe_core_with_exact_versions():
+    """The user approved axe-core (exact version, at least 14 days old) as a dev-only dependency; nothing else may slip in."""
+    import json
+
+    package = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+    assert "dependencies" not in package
+    dev = package["devDependencies"]
+    assert set(dev) == {"@playwright/test", "axe-core"}
+    assert all(re.fullmatch(r"\d+\.\d+\.\d+", version) for version in dev.values()), dev  # pinned: no caret, tilde or range

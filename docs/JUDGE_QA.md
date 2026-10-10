@@ -1,7 +1,7 @@
 # Questions a judge may ask, answered against the code
 
 Written read-only on 2026-10-10 for the Surya Audit hackathon entry. Every answer is tagged and carries file:line evidence
-from this repository. The audit engine, the API and the infrastructure are frozen at commit `f54a173`, which is assumed to be what is deployed (not re-confirmed against the stack), so
+from this repository. The audit engine, the API and the infrastructure are frozen at commit `f54a173` (docs/FROZEN_SHA now names its docs-only successor `66b7280`), assumed to be what is deployed (not re-confirmed against the stack), so
 their line numbers are stable; the page is cited by function name.
 
 - **Built**: implemented, and exercised by a test.

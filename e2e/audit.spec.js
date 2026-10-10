@@ -1321,10 +1321,33 @@ test('v3 type and touch sizes on a phone: body 18 px, primary controls 56 px or 
   expect(await px('#action-list .speak', 'height')).toBeGreaterThanOrEqual(48);
   await page.goto(`/?site=${id}&v=3#log`);
   await expect(page.locator('#panel-log')).toBeVisible();
-  expect(await px('#save-btn', 'height')).toBeGreaterThanOrEqual(56);
+  expect(await px('#save-btn', 'height')).toBeGreaterThanOrEqual(64);  // the hero button keeps its 64 px
   for (const sel of ['#kwh-input', '#photo-pick', '[role=tab]', '.lang button']) expect(await px(sel, 'height'), sel).toBeGreaterThanOrEqual(48);
   // The wordmark sun is inline SVG drawn in currentColor: no colour of its own.
   const mark = await page.locator('.brand svg').evaluate((n) => ({ html: n.outerHTML, fill: getComputedStyle(n.querySelector('circle')).fill, ink: getComputedStyle(n).color }));
   expect(mark.html).not.toMatch(/#[0-9a-f]{3,6}/i);
   expect(mark.fill).toBe(mark.ink);
+});
+
+test('page height at 375 px stays under 8 screens on every tab, in English, Hindi and Punjabi', async ({ page, request }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport');
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 375, height: 667 });
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows());
+  const heights = {};
+  for (const lng of ['en', 'hi', 'pa']) {
+    await page.goto('/');
+    await page.evaluate((l) => localStorage.setItem('surya-audit-lang', l), lng);
+    for (const tab of ['today', 'log', 'fix', 'why', 'report']) {
+      await page.goto(`/?site=${id}&h=${lng}${tab}#${tab}`);
+      await expect(page.locator(`#panel-${tab}`)).toBeVisible();
+      if (tab === 'why') await expect(page.locator('#chart svg')).toBeVisible();
+      if (tab === 'report') { await page.locator('#draft-btn').click(); await expect(page.locator('#draft-out')).toBeVisible(); }
+      heights[`${lng}/${tab}`] = await page.evaluate(() => document.documentElement.scrollHeight);
+    }
+  }
+  testInfo.annotations.push({ type: 'heights', description: JSON.stringify(heights) });
+  console.log('page heights at 375 px:', JSON.stringify(heights));
+  for (const [key, h] of Object.entries(heights)) expect(h, `${key} is ${(h / 667).toFixed(1)} screens`).toBeLessThan(8 * 667);
 });
