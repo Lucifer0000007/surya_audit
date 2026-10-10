@@ -1286,3 +1286,24 @@ test('function guards at 375 x 667: each tab has its main action above the tab b
   await page.getByText('Other date').click();
   await clear('input[name=date]');
 });
+
+test('print: the Report alone, in light, with the flags and the honesty line, and the whole draft on one page', async ({ page, request }) => {
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows());
+  await page.emulateMedia({ colorScheme: 'dark' });  // printing is always light, whatever the screen
+  await page.goto(`/?site=${id}#report`);
+  await page.locator('#draft-btn').click();
+  await expect(page.locator('#draft-out')).toBeVisible();
+  await page.emulateMedia({ media: 'print', colorScheme: 'dark' });
+  for (const hidden of ['.topbar', '.tabs', '#panel-report button', '#draft-btn']) await expect(page.locator(hidden).first(), hidden).toBeHidden();
+  await expect(page.locator('#panel-today')).toBeHidden();
+  await expect(page.getByRole('heading', { name: 'Complaint draft' })).toBeVisible();
+  await expect(page.locator('#banners')).toContainText('Synthetic data');  // the flags travel with the evidence
+  await expect(page.locator('footer')).toContainText('not a diagnosis');
+  await expect(page.locator('footer')).toContainText('unvalidated heuristic');
+  const draft = await page.locator('#draft-text').evaluate((n) => ({ clipped: n.scrollHeight > n.clientHeight + 2, bg: getComputedStyle(document.body).backgroundColor }));
+  expect(draft.clipped, 'the whole draft is shown, not a scrolled box').toBe(false);
+  expect(draft.bg).toBe('rgb(255, 255, 255)');
+  const pdf = await page.pdf({ format: 'A4', margin: { top: '14mm', bottom: '14mm', left: '14mm', right: '14mm' } });
+  expect((pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length, 'one page').toBe(1);
+});

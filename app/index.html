@@ -42,7 +42,7 @@
   html[data-bigger] { font-size: 118.75%; }
   body { margin: 0; background: var(--canvas); color: var(--text); font-family: "Surya Indic", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 1rem; line-height: 1.5; font-synthesis: none; }
   :lang(hi), :lang(pa) { line-height: 1.65; letter-spacing: 0; text-transform: none; }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)); }
   main.wrap { padding: 0; }  /* the column has no gutter of its own: every band and section carries its own */
   #setup { margin: 24px 16px; }
   [hidden] { display: none !important; }
@@ -65,7 +65,7 @@
   :lang(hi) :is(.mono, .eyebrow, .chip-date, #sources), :lang(pa) :is(.mono, .eyebrow, .chip-date, #sources) { font-family: inherit; font-size: 0.875rem; }
 
   /* ---------- header, strip, tabs ---------- */
-  .topbar { background: var(--surface); border-bottom: 1px solid var(--hairline); }
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--hairline); padding-top: env(safe-area-inset-top); }
   .topbar .wrap { display: flex; align-items: center; gap: 16px; min-height: 56px; }
   .brand { display: flex; align-items: center; gap: 8px; font-size: 1.125rem; }
   .brand svg { flex: none; }
@@ -328,6 +328,15 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
+  @media print {
+    @page { margin: 14mm; }
+    :root { --canvas: #fff; --surface: #fff; --text: #000; --text-2: #333; --text-3: #555; --hairline: #bbb; --control: #666; }
+    body { padding: 0 !important; }
+    .topbar, .tabs, .skip, #status, #retry, #error, [role="tabpanel"]:not(#panel-report), #panel-report button, #panel-report .row, #panel-report .callout, #escalation, [data-i18n="waNote"], .strip .more { display: none !important; }
+    #panel-report { display: block !important; }
+    #complaint { max-width: none; padding: 0; border: 0; }
+    #draft-text { field-sizing: content; min-height: 0; padding: 0; border: 0; font-size: 0.875rem; line-height: 1.45; resize: none; overflow: visible; color: #000; outline: 0; }
+  }
   @media (forced-colors: active) {
     .card, .strip, .action, .cause, .band, .section, .tabs, [role="tab"][aria-selected="true"], .flag, .chip { border-color: CanvasText; }
     .band { border: 1px solid CanvasText; }
@@ -571,7 +580,7 @@
           <ul class="legend" id="kwh-legend"></ul>
           <details>
             <summary data-i18n="showTable"></summary>
-            <div class="table-wrap"><table id="table"></table></div>
+            <div class="table-wrap" tabindex="0" role="region" aria-labelledby="tl-title"><table id="table"></table></div>
           </details>
         </section>
         <section class="section" id="causes" aria-labelledby="causes-title">
@@ -1263,6 +1272,7 @@ function showError(msg) {
   const e = $('error');
   e.textContent = msg || '';
   e.hidden = !msg;
+  if (msg) e.scrollIntoView({ block: 'nearest' });
   if (msg && lang !== 'en' && !isIndic(msg)) e.setAttribute('lang', 'en'); else e.removeAttribute('lang');
 }
 
@@ -2177,7 +2187,7 @@ function renderActions(a) {
     if (action.status === 'proposed') {
       const id = `approve-${action.id}`;
       const input = el('input', { id, type: 'date', value: lastDate, min: action.proposed_on, max: todayIso(), required: true });
-      const button = el('button', { type: 'submit', class: action === first ? 'approve-btn' : 'approve-btn secondary' },
+      const button = el('button', { type: 'submit', 'aria-label': `${t('approve')}: ${ACTIONS[action.kind] || action.kind}`, class: action === first ? 'approve-btn' : 'approve-btn secondary' },
         el('span', { class: 'lbl', text: t('approve') }),
         svg('svg', { class: 'tick', width: 22, height: 22, viewBox: '0 0 24 24', 'aria-hidden': 'true', fill: 'none',
           stroke: 'currentColor', 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
