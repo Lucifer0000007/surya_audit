@@ -1201,3 +1201,23 @@ test('Fix: each suggestion is a row with its status word; one primary Approve, o
   const box = await approve.boundingBox();
   expect(box.y + box.height, 'Approve ends above the tab bar').toBeLessThanOrEqual(barTop);
 });
+
+test('Why: the readings charts sit in a dark band, in light and in dark mode; the causes are a plain section', async ({ page, request }) => {
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows());
+  for (const [scheme, bg] of [['light', 'rgb(23, 23, 23)'], ['dark', 'rgb(10, 10, 10)']]) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto(`/?site=${id}&s=${scheme}#why`);
+    await expect(page.locator('#panel-why')).toBeVisible();
+    await expect(page.locator('#chart svg')).toBeVisible();
+    const band = await page.locator('#timeline').evaluate((n) => ({ cls: n.className, bg: getComputedStyle(n).backgroundColor, ink: getComputedStyle(n.querySelector('#tl-title')).color }));
+    expect(band.cls).toBe('band');
+    expect(band.bg).toBe(bg);
+    expect(band.ink, 'the heading is light on the dark band').toBe('rgb(237, 237, 237)');
+    const causes = await page.locator('#causes').evaluate((n) => ({ cls: n.className, bg: getComputedStyle(n).backgroundColor }));
+    expect(causes.cls).toBe('section');
+    expect(causes.bg, 'a plain section: the page canvas shows through').toBe('rgba(0, 0, 0, 0)');
+  }
+  // Only two bands exist on the whole page: Today's hero and this chart.
+  expect(await page.locator('.band').evaluateAll((ns) => ns.map((n) => n.id))).toEqual(['hero', 'timeline']);
+});

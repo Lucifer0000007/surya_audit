@@ -113,7 +113,7 @@
   .band { display: grid; gap: 24px; padding: 48px 16px; min-width: 0; background: var(--inverted); color: var(--text); border-block: 1px solid var(--dk-hairline);
     --text: var(--dk-text); --text-2: var(--dk-text-2); --text-3: var(--dk-text-3); --hairline: var(--dk-hairline); --control: var(--dk-control); --surface: var(--inverted); }
   .card { display: grid; gap: 16px; min-width: 0; padding: 24px 16px; border: 1px solid var(--hairline); border-radius: var(--r); background: var(--surface); }
-  .card > header, .section > header { display: grid; gap: 4px; }
+  .card > header, .section > header, .band > header { display: grid; gap: 4px; }
   @media (min-width: 720px) { .section, .band { padding: 80px 24px; } .card { padding: 24px; } }
 
   /* ---------- controls ---------- */
@@ -537,28 +537,28 @@
       </section>
 
       <section role="tabpanel" id="panel-why" aria-labelledby="tab-why" tabindex="0" hidden>
-        <div class="card" id="timeline" data-testid="timeline">
+        <section class="band" id="timeline" data-testid="timeline" aria-labelledby="tl-title">
           <header>
             <h2 id="tl-title" data-i18n="readings"></h2>
             <p class="muted small" id="tl-sub"></p>
           </header>
           <div class="chart" id="chart"></div>
           <ul class="legend" id="legend"></ul>
-          <h3 id="kwh-title" class="small muted">Units made against units expected, reading by reading</h3>
+          <h3 id="kwh-title" class="small muted"></h3>
           <div class="kwh" id="kwh-chart"></div>
           <ul class="legend" id="kwh-legend"></ul>
           <details>
             <summary data-i18n="showTable"></summary>
             <div class="table-wrap"><table id="table"></table></div>
           </details>
-        </div>
-        <div class="card" id="causes">
+        </section>
+        <section class="section" id="causes" aria-labelledby="causes-title">
           <header>
             <h2 id="causes-title" data-i18n="causesTitle"></h2>
             <p class="muted small" data-i18n="causesIntro"></p>
           </header>
           <ol class="causes" id="cause-list"></ol>
-        </div>
+        </section>
       </section>
 
       <section role="tabpanel" id="panel-report" aria-labelledby="tab-report" tabindex="0" hidden>
