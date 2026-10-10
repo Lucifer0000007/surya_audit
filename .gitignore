@@ -18,3 +18,5 @@ local_screens/
 .playwright-cli/
 # Skills installer mirror: the same files are committed under .claude/skills
 .agents/
+# Local screenshot sets (before/after); a few compressed ones are committed under docs/
+screenshots/
