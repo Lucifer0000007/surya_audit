@@ -1005,7 +1005,7 @@ test('no English left in Hindi and Punjabi: known audit sentences are translated
   expect([...found.leftovers], 'English left on a Hindi or Punjabi page').toEqual([]);
 });
 
-test('a photo note and an error do not linger in the old language after a switch', async ({ page, request }) => {
+test('a photo note and an error do not linger in the old language after a switch; a failed load keeps its message', async ({ page, request }) => {
   const id = await createSite(request);
   await page.goto(`/?site=${id}#log`);
   await page.locator('#photo').setInputFiles({ name: 'meter.png', mimeType: 'image/png', buffer: Buffer.from(TINY_PNG, 'base64') });
@@ -1013,6 +1013,40 @@ test('a photo note and an error do not linger in the old language after a switch
   await page.getByRole('button', { name: 'हिन्दी' }).click();
   await expect(page.locator('#photo-note')).toHaveText('');
   await expect(page.locator('#photo-review')).toBeVisible();  // the photo itself stays for the owner to discard
+
+  // An error from saving a reading is cleared by the switch...
+  await page.getByRole('button', { name: 'English' }).click();
+  await page.route('**/api/sites/*/readings', (route) => route.fulfill({ status: 422, contentType: 'application/json', body: JSON.stringify({ detail: 'reading date is in the future' }) }));
+  await page.getByLabel('Energy produced (kWh)', { exact: true }).fill('9.5');
+  await page.getByRole('button', { name: 'Save reading' }).click();
+  await expect(page.locator('#error')).toBeVisible();
+  await page.getByRole('button', { name: 'हिन्दी' }).click();
+  await expect(page.locator('#error')).toBeHidden();
+
+  // ...but a plant that failed to load keeps its message next to Try again.
+  await page.unroute('**/api/sites/*/readings');
+  await page.route('**/api/sites/*/audit', (route) => route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }));
+  await page.goto(`/?site=${id}&failing=1#today`);
+  await expect(page.locator('#retry')).toBeVisible();
+  await expect(page.locator('#error')).toBeVisible();
+  await page.getByRole('button', { name: 'English' }).click();
+  await expect(page.locator('#retry')).toBeVisible();
+  await expect(page.locator('#error')).toBeVisible();
+});
+
+test('the complaint line about categories follows a language switch, in both directions', async ({ page, request }) => {
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows());
+  await page.goto(`/?site=${id}#report`);
+  await page.locator('#draft-btn').click();
+  await expect(page.locator('#categories')).toContainText('SAMPLE: category names are unverified.');
+  await page.getByRole('button', { name: 'हिन्दी' }).click();
+  await expect(page.locator('#categories')).toContainText('नमूना (SAMPLE)');  // the warning is not left in English
+  await expect(page.locator('#categories')).not.toContainText('unverified');
+  expect(await page.locator('#categories').getAttribute('lang')).toBeNull();
+  await page.getByRole('button', { name: 'English' }).click();
+  await expect(page.locator('#categories')).toContainText('SAMPLE: category names are unverified.');
+  await expect(page.locator('#categories')).not.toContainText('नमूना');
 });
 
 test('Today and Yesterday follow midnight in a tab that was left open', async ({ page, request }) => {
