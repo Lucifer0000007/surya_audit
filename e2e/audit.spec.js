@@ -275,9 +275,9 @@ test('tabs: ARIA, keyboard, URL hash, Back, reload and honesty flags on every ta
     await expectNoSideScroll(page);
   }
 
-  // With motion allowed, tab changes use view transitions; the logo stands still.
+  // With motion allowed, tab changes use view transitions and the logo rays turn.
   expect(await page.evaluate(() => window.__viewTransitions)).toBeGreaterThan(0);
-  expect(await animationOf(page.locator('.brand svg g'))).toBe('none');
+  expect(await animationOf(page.locator('.rays'))).toBe('spin');
 });
 
 test('reduced motion: no animations, no view transitions, final values at once', async ({ page, request }) => {
@@ -289,8 +289,9 @@ test('reduced motion: no animations, no view transitions, final values at once',
   const last = audit.timeline[audit.timeline.length - 1];
   await page.goto(`/?site=${id}`);
 
-  // The headline number is final at once and nothing is animated.
+  // The headline number is final at once (no count-up) and nothing is animated.
   await expect(page.locator('#headline .ring-num')).toHaveText(`${Math.round(last.relative * 100)}%`);
+  expect(await animationOf(page.locator('.rays'))).toBe('none');
   expect(await animationOf(page.locator('#headline .dots i.on'), '::after')).toBe('none');
   const arcTransition = await page.locator('#headline .gauge-arc').evaluate((n) => getComputedStyle(n).transitionDuration);
   expect(arcTransition).toBe('0s');
@@ -299,6 +300,7 @@ test('reduced motion: no animations, no view transitions, final values at once',
   await expect(page.locator('#chart path.bar')).toHaveCount(60);
   expect(await page.locator('#chart svg').getAttribute('class')).toBeNull();
   expect(await animationOf(page.locator('#chart .bar'))).toBe('none');
+  expect(await animationOf(page.locator('#panel-why > .band'))).toBe('none');
   await openTab(page, 'Fix');
   await openTab(page, 'Report');
   expect(await page.evaluate(() => window.__viewTransitions)).toBe(0);
@@ -1098,4 +1100,40 @@ test('Today and Yesterday follow midnight in a tab that was left open', async ({
   const posted = page.waitForRequest((req) => req.method() === 'POST' && req.url().includes('/readings'));
   await page.getByRole('button', { name: 'Save reading' }).click();
   expect((await posted).postDataJSON().date).toBe('2026-10-11');  // the new day, not the stale 10 Oct
+});
+
+test('motion: the headline number counts up and the arc eases, the tab indicator slides, a recovery is celebrated with confetti', async ({ page, request }) => {
+  await page.addInitScript(() => {  // every value the headline number takes, in order
+    window.__ring = [];
+    new MutationObserver(() => {
+      const n = document.querySelector('#headline .ring-num');
+      if (n && n.textContent && window.__ring[window.__ring.length - 1] !== n.textContent) window.__ring.push(n.textContent);
+    }).observe(document, { subtree: true, childList: true, characterData: true });
+  });
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows());
+  await page.goto(`/?site=${id}`);
+  await expect(page.locator('#headline .ring-num')).toHaveText(/^\d+%$/);
+  await expect.poll(() => page.evaluate(() => window.__ring.length), 'the number passes through values on its way up').toBeGreaterThan(2);
+  expect(await page.locator('#headline .gauge-arc').evaluate((n) => getComputedStyle(n).transitionDuration)).toBe('0.9s');
+  // The tab indicator is one element that moves under the selected tab.
+  await expect(page.locator('.tab-indicator')).toHaveCount(1);
+  expect(await page.locator('#tablist').evaluate((n) => n.style.getPropertyValue('--i'))).toBe('0');
+  await openTab(page, 'Why');
+  expect(await page.locator('#tablist').evaluate((n) => n.style.getPropertyValue('--i'))).toBe('3');
+  // Confetti is 28 pieces that remove themselves.
+  await page.evaluate(() => confetti(document.getElementById('headline')));
+  await expect(page.locator('.confetti i')).toHaveCount(28);
+  await expect(page.locator('.confetti')).toHaveCount(0, { timeout: 4000 });
+});
+
+test('motion: reduced motion draws no confetti and the skeleton does not shimmer', async ({ page, request }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows());
+  await page.goto(`/?site=${id}`);
+  await expect(page.locator('#headline .ring-num')).toHaveText(/^\d+%$/);
+  await page.evaluate(() => confetti(document.getElementById('headline')));
+  await expect(page.locator('.confetti')).toHaveCount(0);
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector('.sk-card'), '::after').animationName)).toBe('none');
 });

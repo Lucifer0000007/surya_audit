@@ -71,6 +71,7 @@
   .topbar .wrap { display: flex; align-items: center; gap: 16px; min-height: 56px; }
   .brand { display: flex; align-items: center; gap: 8px; font-size: 1.125rem; }
   .brand svg { flex: none; }
+  .rays { transform-box: fill-box; transform-origin: center; animation: spin 90s linear infinite; }
   .tagline { color: var(--text-2); font-size: 0.875rem; margin-left: auto; text-align: right; }
   .prefs { display: flex; gap: 8px; align-items: center; margin-left: auto; }
   .tagline + .prefs { margin-left: 0; }
@@ -95,10 +96,11 @@
   .strip-body p { display: flex; gap: 12px; align-items: flex-start; padding: 8px 12px; border: 1px solid var(--hairline); border-radius: var(--r); }
   .strip-body svg { flex: none; margin-top: 4px; }
   .tabs { position: sticky; top: 0; z-index: 10; background: var(--canvas); border-bottom: 1px solid var(--hairline); }
-  [role="tablist"] { display: flex; max-width: 760px; margin: 0 auto; padding: 0 16px; }
+  [role="tablist"] { position: relative; display: flex; max-width: 760px; margin: 0 auto; padding: 0 16px; }
+  .tab-indicator { position: absolute; top: 0; left: 16px; width: calc((100% - 32px) / 5); height: 3px; background: var(--text); pointer-events: none; transform: translateX(calc(var(--i, 0) * 100%)); transition: transform 260ms ease-out; }
   [role="tab"] { flex: 1 1 0; min-height: 48px; padding: 8px; border: 0; border-top: 3px solid transparent; border-radius: 0; background: transparent; color: var(--text-2); font-weight: 600; gap: 8px; }
   [role="tab"] svg { flex: none; }
-  [role="tab"][aria-selected="true"] { color: var(--text); border-top-color: var(--text); }
+  [role="tab"][aria-selected="true"] { color: var(--text); }
   [role="tab"]:focus-visible { outline-offset: -2px; }
   @media (max-width: 719.98px) {
     body.has-tabs { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
@@ -106,6 +108,7 @@
     body { font-size: 1.125rem; }
     .tabs { position: fixed; top: auto; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--hairline); border-bottom: 0; padding: 0 4px env(safe-area-inset-bottom); }
     [role="tablist"] { padding: 0; }
+    .tab-indicator { left: 0; width: 20%; }
     [role="tab"] { flex-direction: column; gap: 4px; min-height: 64px; padding: 8px 4px; font-size: 0.875rem; }
   }
   .fade-in { animation: fade 200ms ease-out both; }
@@ -189,7 +192,7 @@
   .ring { position: relative; flex: none; width: 128px; height: 128px; display: grid; place-items: center; }
   .gauge { position: absolute; inset: 0; width: 100%; height: 100%; }
   .gauge-track { fill: none; stroke: var(--hairline); stroke-width: 10; }
-  .gauge-arc { fill: none; stroke: var(--text); stroke-width: 10; stroke-linecap: round; }
+  .gauge-arc { fill: none; stroke: var(--text); stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 900ms ease-out; }
   .gauge-arc.dip { stroke: var(--accent); }
   .ring-num { position: relative; font-size: 1.75rem; font-weight: 600; font-variant-numeric: tabular-nums; }
   .hero-text { display: grid; gap: 4px; min-width: 0; }
@@ -303,7 +306,8 @@
 
   /* loading skeleton (static blocks) */
   .skeleton { display: grid; gap: 16px; padding: 24px 16px; }
-  .sk-card { display: grid; gap: 12px; padding: 24px; border: 1px solid var(--hairline); border-radius: var(--r); }
+  .sk-card { position: relative; overflow: hidden; display: grid; gap: 12px; padding: 24px; border: 1px solid var(--hairline); border-radius: var(--r); }
+  .sk-card::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 45%; background: var(--surface); opacity: 0.6; transform: translateX(-110%); animation: shimmer 1.3s ease-in-out infinite; }
   .sk-line { height: 16px; border-radius: var(--r); background: var(--hairline); }
   .sk-ring { width: 104px; height: 104px; border-radius: 50%; border: 8px solid var(--hairline); }
 
@@ -311,6 +315,9 @@
   footer { padding: 16px 16px 32px; color: var(--text-2); font-size: 0.875rem; display: grid; gap: 6px; }
   footer strong { color: var(--text); }
   .busy { opacity: 0.6; }
+  .reveal { animation: rise 420ms ease-out both; animation-delay: calc(var(--k, 0) * 70ms); }
+  .confetti { position: fixed; z-index: 30; width: 0; height: 0; pointer-events: none; }
+  .confetti i { position: absolute; width: 6px; height: 10px; border-radius: var(--r); animation: burst 1.1s cubic-bezier(0.2, 0.7, 0.3, 1) forwards; }
   #queue { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
   .chip.queued { background: var(--accent); color: var(--accent-ink); }
 
@@ -318,6 +325,10 @@
   @keyframes pop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
   @keyframes draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
   @keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes shimmer { to { transform: translateX(260%); } }
+  @keyframes burst { from { transform: translate(0, 0) rotate(0deg); opacity: 1; } to { transform: translate(var(--x), var(--y)) rotate(var(--r)); opacity: 0; } }
 
   @media (max-width: 480px) { .tagline { display: none; } }
   /* Wide screens: the column sits on a slightly darker backdrop with hairline edges (tone only, no shadow). */
@@ -350,7 +361,7 @@
   @media (forced-colors: active) {
     .card, .strip, .action, .cause, .band, .section, .tabs, [role="tab"][aria-selected="true"], .flag, .chip { border-color: CanvasText; }
     .band { border: 1px solid CanvasText; }
-    [role="tab"][aria-selected="true"] { border-top-color: Highlight; }
+    .tab-indicator { background: Highlight; forced-color-adjust: none; }
   }
 </style>
 </head>
@@ -359,7 +370,7 @@
 <header class="topbar">
  <div class="wrap">
   <h1 class="brand">
-   <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg>
+   <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><g class="rays" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg>
    <span translate="no">Surya Audit</span>
   </h1>
   <p class="tagline" data-i18n="tagline"></p>
@@ -431,6 +442,7 @@
  <div id="site" hidden>
   <nav class="tabs" aria-label="Sections" data-i18n-label="sections">
    <div role="tablist" id="tablist" aria-label="Plant audit" data-i18n-label="plantAudit">
+    <span class="tab-indicator" aria-hidden="true"></span>
     <button type="button" role="tab" id="tab-today" data-tab="today" aria-controls="panel-today" aria-selected="true" tabindex="0"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span data-i18n="tab_today"></span></button>
     <button type="button" role="tab" id="tab-log" data-tab="log" aria-controls="panel-log" aria-selected="false" tabindex="-1"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span data-i18n="tab_log"></span></button>
     <button type="button" role="tab" id="tab-fix" data-tab="fix" aria-controls="panel-fix" aria-selected="false" tabindex="-1"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6.5a4 4 0 0 0-5 5L3.5 17.5a1.4 1.4 0 0 0 0 2l1 1a1.4 1.4 0 0 0 2 0l6-6a4 4 0 0 0 5-5l-2.6 2.6-2.4-.6-.6-2.4z"/></svg><span data-i18n="tab_fix"></span></button>
@@ -1110,7 +1122,8 @@ const ASSUME_SOURCES = [
 const QUEUE_KEY = 'surya-audit-queued-readings';
 const state = {
   id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, photoFill: null, flushing: null, saving: null, replay: null,
-  tab: 'today', chartPlayed: false, chartWidth: 0, tiltAuto: null, prevSteps: {},
+  tab: 'today', seenTabs: new Set(), chartPlayed: false, chartWidth: 0, tiltAuto: null,
+  prevOutcomes: null, prevSteps: {}, heroValue: 0, heroFrac: 0,
 };
 const $ = (id) => document.getElementById(id);
 const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -1349,6 +1362,53 @@ function tabFromHash() {
   return TABS.includes(h) ? h : null;
 }
 
+// ---------- motion helpers (all of them do nothing under prefers-reduced-motion) ----------
+function countUp(node, from, to, ms) {
+  if (calm() || from === to) { node.textContent = `${to}%`; return; }
+  const start = performance.now();
+  const step = (now) => {
+    const k = Math.min(1, (now - start) / (ms || 800));
+    const eased = 1 - Math.pow(1 - k, 3);
+    node.textContent = `${Math.round(from + (to - from) * eased)}%`;
+    if (k < 1 && node.isConnected) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+function confetti(anchor) {
+  if (calm()) return;
+  const r = anchor ? anchor.getBoundingClientRect() : null;
+  const layer = el('div', { class: 'confetti', 'aria-hidden': 'true' });
+  layer.style.left = `${r ? r.left + r.width / 2 : window.innerWidth / 2}px`;
+  layer.style.top = `${r ? r.top + Math.min(r.height, 120) / 2 : window.innerHeight / 3}px`;
+  const colors = ['var(--accent)', 'var(--text)', 'var(--text-2)', 'var(--text-3)'];
+  for (let i = 0; i < 28; i++) {
+    const piece = el('i');
+    const angle = (i / 28) * Math.PI * 2;
+    const dist = 56 + (i % 5) * 18;
+    piece.style.setProperty('--x', `${Math.round(Math.cos(angle) * dist)}px`);
+    piece.style.setProperty('--y', `${Math.round(Math.sin(angle) * dist - 36)}px`);
+    piece.style.setProperty('--r', `${(i * 47) % 360}deg`);
+    piece.style.background = colors[i % colors.length];
+    layer.append(piece);
+  }
+  document.body.append(layer);
+  setTimeout(() => layer.remove(), 1300);
+}
+
+// The first time a tab is opened its blocks rise in one after another.
+function revealPanel(name) {
+  if (state.seenTabs.has(name)) return;
+  state.seenTabs.add(name);
+  if (calm()) return;
+  $(`panel-${name}`).querySelectorAll(':scope > .band, :scope > .section, :scope > .card').forEach((block, k) => {
+    block.style.setProperty('--k', k);
+    block.classList.remove('reveal');
+    void block.offsetWidth;
+    block.classList.add('reveal');
+  });
+}
+
 function showTab(name, force) {
   const from = state.tab;
   if (from === name && !force) return;
@@ -1360,6 +1420,7 @@ function showTab(name, force) {
     b.tabIndex = on ? 0 : -1;
   }
   state.tab = name;
+  tablist.style.setProperty('--i', String(TABS.indexOf(name)));
   if (name !== 'why') stopReplay(false);
   const swap = () => { for (const t of TABS) $(`panel-${t}`).hidden = t !== name; onTabShown(name); };
   const animate = !calm() && from !== name && !$('site').hidden;
@@ -1384,6 +1445,7 @@ function showTab(name, force) {
 function goTo(name, focusTab) {
   if (focusTab) tabButton(name).focus();
   showTab(name);
+  revealPanel(name);
   // The hash records the tab for Back, reload and links; the hashchange handler finds it already shown.
   if (tabFromHash() !== name) history.pushState(null, '', `#${name}`);
 }
@@ -1430,7 +1492,8 @@ function markDraftStale() { if (state.draft) $('draft-stale').hidden = false; }
 function showSetup(message) {
   state.id = null; state.audit = null;
   clearImport();
-  state.prevSteps = {}; state.chartPlayed = false; state.tiltAuto = null;
+  state.prevOutcomes = null; state.prevSteps = {}; state.heroValue = 0; state.heroFrac = 0;
+  state.seenTabs = new Set(); state.chartPlayed = false; state.tiltAuto = null;
   stopReplay(false);
   resetDraft();
   clearPhoto();
@@ -1931,6 +1994,11 @@ $('download-btn').addEventListener('click', () => {
 
 // rendering
 function render(audit) {
+  // Celebrate only a suggestion that flips to "came back" while the owner is here, never old data.
+  const before = state.prevOutcomes;
+  const newlyRecovered = before ? audit.actions.filter((x) => x.verification.outcome === 'recovered'
+    && !x.verification.provisional && before[x.id] && before[x.id] !== 'recovered') : [];
+  state.prevOutcomes = Object.fromEntries(audit.actions.map((x) => [x.id, x.verification.outcome]));
   state.audit = audit;
   $('setup').hidden = true;
   $('skeleton').hidden = true;
@@ -1949,6 +2017,12 @@ function render(audit) {
   renderImpact(audit);
   renderPrivacy();
   syncDate();
+  if (newlyRecovered.length) {
+    const card = document.querySelector(`[data-action-id="${CSS.escape(newlyRecovered[0].id)}"]`);
+    const visible = [card, $('headline'), document.querySelector('[role="tabpanel"]:not([hidden]) > .band')]
+      .find((n) => n && !n.closest('[hidden]'));
+    confetti(visible);
+  }
 }
 
 // Today / Yesterday / Other date: the date input stays the saved value; the chips fill it and follow midnight.
@@ -2039,14 +2113,22 @@ function confidence(level) {
   return el('span', { class: 'conf' }, dots, t(`conf_${level}`));
 }
 
-// Ring gauge: the arc shows the reading's share of the usual level.
+// Ring gauge: the arc's stroke-dashoffset eases from the last value shown to this one.
 function gauge(frac, dip) {
   const R = 52;
   const C = 2 * Math.PI * R;
   const root = svg('svg', { class: 'gauge', viewBox: '0 0 128 128', 'aria-hidden': 'true' });
   root.append(svg('circle', { class: 'gauge-track', cx: 64, cy: 64, r: R }));
-  root.append(svg('circle', { class: dip ? 'gauge-arc dip' : 'gauge-arc', cx: 64, cy: 64, r: R,
-    'stroke-dasharray': C.toFixed(2), 'stroke-dashoffset': (C * (1 - Math.max(0, Math.min(1, frac)))).toFixed(2), transform: 'rotate(-90 64 64)' }));
+  const arc = svg('circle', { class: dip ? 'gauge-arc dip' : 'gauge-arc', cx: 64, cy: 64, r: R,
+    'stroke-dasharray': C.toFixed(2), transform: 'rotate(-90 64 64)' });
+  const target = C * (1 - Math.max(0, Math.min(1, frac)));
+  if (calm()) {
+    arc.style.strokeDashoffset = target.toFixed(2);
+  } else {
+    arc.style.strokeDashoffset = (C * (1 - state.heroFrac)).toFixed(2);
+    nextFrame(() => { arc.style.strokeDashoffset = target.toFixed(2); });
+  }
+  root.append(arc);
   return root;
 }
 
@@ -2127,7 +2209,12 @@ function renderHeadline(a) {
     ring.append(el('span', { class: 'ring-num', text: '–' }));
   } else {
     const frac = Math.max(0, Math.min(1, last.relative));
-    ring.append(gauge(frac, last.flagged), el('span', { class: 'ring-num', 'aria-hidden': 'true', text: `${value}%` }));
+    ring.append(gauge(frac, last.flagged));
+    const num = el('span', { class: 'ring-num', 'aria-hidden': 'true' });
+    ring.append(num);
+    countUp(num, state.heroValue, value);
+    state.heroValue = value;
+    state.heroFrac = frac;
   }
   box.append(el('div', { class: 'row' },
     el('a', { class: 'button', href: '#log', text: t('logReading') }),
@@ -2300,7 +2387,7 @@ function renderActions(a) {
   for (const action of items) {
     const v = action.verification;
     const sug = srvProps(action.suggestion);
-    const li = el('li', { class: 'action', 'data-testid': `action-${action.kind}` },
+    const li = el('li', { class: 'action', 'data-testid': `action-${action.kind}`, 'data-action-id': action.id },
       el('div', { class: 'action-head' }, pictogram(action.kind), el('h3', { text: ACTIONS[action.kind] || action.kind })),
       outcomeChip(v),
       el('p', sug),
