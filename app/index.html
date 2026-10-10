@@ -1361,6 +1361,7 @@ function applyLang(next, rerender, persist) {
   if (persist) { try { localStorage.setItem(LANG_KEY, lang); } catch { /* ignore */ } }  // only a choice the owner made
   stopSpeaking();
   if (rerender) { say(''); $('photo-note').replaceChildren(); if ($('retry').hidden) showError(''); }  // messages in the old language must not linger
+  if (rerender && state.draft) renderCategories(state.draft);
   if (rerender && state.audit) render(state.audit);
 }
 document.querySelector('.lang').addEventListener('click', (ev) => {
@@ -1942,15 +1943,20 @@ async function approve(action, dateValue, button) {
 }
 
 // ---------- complaint ----------
+// The line under the draft about complaint categories, in the current language: the category names are the
+// server's English; the lead and the SAMPLE note are translated. It is rebuilt when the language changes.
+function renderCategories(draft) {
+  const cats = draft.mnre_categories.suggested;
+  $('categories').replaceChildren(...(cats.length ? [el('span', { text: `${t('catsLead')} ` }), el('span', { lang: 'en', text: `${cats.join(', ')}. ` })] : []),
+    el('span', srvProps(draft.mnre_categories.note)));
+}
 $('draft-btn').addEventListener('click', async (ev) => {
   const draft = await busy(ev.currentTarget, () => api('POST', `/api/sites/${encodeURIComponent(state.id)}/complaint`));
   if (!draft) return;
   state.draft = draft;
   $('draft-stale').hidden = true;
   $('draft-text').value = draft.draft_text;
-  const cats = draft.mnre_categories.suggested;
-  $('categories').replaceChildren(...(cats.length ? [el('span', { text: `${t('catsLead')} ` }), el('span', { lang: 'en', text: `${cats.join(', ')}. ` })] : []),
-    el('span', srvProps(draft.mnre_categories.note)));  // category names are the server's English; the note is translated
+  renderCategories(draft);
   $('draft-out').hidden = false;
   const text = $('draft-text');
   text.focus();
