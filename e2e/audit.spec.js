@@ -1221,3 +1221,30 @@ test('Why: the readings charts sit in a dark band, in light and in dark mode; th
   // Only two bands exist on the whole page: Today's hero and this chart.
   expect(await page.locator('.band').evaluateAll((ns) => ns.map((n) => n.id))).toEqual(['hero', 'timeline']);
 });
+
+test('Report: a document; Draft is the one primary only when escalation is suggested, the rest are quiet', async ({ page, request }) => {
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows());
+  const primaries = () => page.locator('#panel-report button:not(.secondary):not(.share):not(.link)').count();
+  await page.goto(`/?site=${id}#report`);
+  await expect(page.locator('#panel-report')).toBeVisible();
+  expect(await page.locator('#complaint').evaluate((n) => n.tagName)).toBe('SECTION');
+  // Nothing has failed to recover yet: no suggestion to complain, so nothing on this tab is shouting.
+  await expect(page.locator('#draft-btn')).toHaveClass('secondary');
+  expect(await primaries(), 'no primary button before escalation is suggested').toBe(0);
+  await page.locator('#draft-btn').click();
+  await expect(page.locator('#draft-out')).toBeVisible();
+  for (const s of ['#copy-btn', '#download-btn', '#share-draft']) expect(await page.locator(s).evaluate((n) => n.classList.contains('secondary') || n.classList.contains('share')), s + ' is quiet').toBe(true);
+  // The suggestion to complain (as the engine reports it after a failed, non-provisional check) makes Draft the one primary.
+  const audit = await (await request.get(`/api/sites/${id}/audit`)).json();
+  await page.route(`**/api/sites/${id}/audit`, (route) => route.fulfill({ json: { ...audit, escalation: { ...audit.escalation, suggested: true, why: ['Output did not come back after the approved suggestion.'] } } }));
+  await page.goto(`/?site=${id}&s=esc#report`);
+  await expect(page.locator('#escalation .callout')).toBeVisible();
+  await expect(page.locator('#draft-btn')).not.toHaveClass(/secondary/);
+  expect(await primaries(), 'Draft is the only primary button').toBe(1);
+  // The draft is English and stays editable; the line height is a document's.
+  await page.locator('#draft-btn').click();
+  const draft = await page.locator('#draft-text').evaluate((n) => ({ lang: n.lang, lh: parseFloat(getComputedStyle(n).lineHeight) / parseFloat(getComputedStyle(n).fontSize) }));
+  expect(draft.lang).toBe('en');
+  expect(draft.lh).toBeGreaterThanOrEqual(1.5);
+});
