@@ -3,7 +3,7 @@
 # Stage-aware: boots the API offline (fixtures, no keys), drives the synthetic
 # scenario over HTTP, runs pytest, and runs the Playwright check of / once an
 # index.html exists. On the first failure it prints one reason line and exits non-zero.
-# Worst case is about 22 minutes (sum of the timeouts below); the Stop hook allows 25.
+# Worst case is about 23 minutes (sum of the timeouts below); the Stop hook allows 25.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
@@ -25,6 +25,10 @@ timeout 180 uv sync > .verify-sync.log 2>&1 || fail "uv sync: $(last_line .verif
 PY=.venv/Scripts/python.exe
 [ -x "$PY" ] || PY=.venv/bin/python
 [ -x "$PY" ] || fail "no .venv python after uv sync"
+
+# Surface upgrade: the engine, API, infrastructure and their tests must still equal the last deployed commit
+# (docs/FROZEN_SHA; the paths are in docs/PROTECTED_PATHS).
+timeout 60 "$PY" scripts/check_frozen.py > .verify-frozen.log 2>&1 || fail "frozen paths: $(last_line .verify-frozen.log)"
 
 PORT=$("$PY" -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])' | tr -d '\r')
 [ -n "$PORT" ] || fail "could not find a free port"
