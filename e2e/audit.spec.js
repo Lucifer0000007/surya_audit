@@ -619,7 +619,8 @@ test('setup wizard: three steps, big choices, tilt from latitude, same API call'
   await page.getByRole('button', { name: 'Next' }).click();
   await expect(page.getByLabel('Panel tilt (degrees)')).toHaveValue('27');
   await page.getByLabel('Plant size (kW)').fill('3');
-  await page.getByRole('radio', { name: 'South-west' }).check();
+  await page.getByText('South-west', { exact: true }).click();  // the label, as an owner does (the radio itself is hidden)
+  await expect(page.getByRole('radio', { name: 'South-west' })).toBeChecked();
   await expect(page.locator('#wiz-2 .big-choice label.checked')).toHaveText('South-west');  // visible without :has() too
   await page.getByRole('button', { name: 'Next' }).click();
   await expect(page.getByText('Do you know the system loss?')).toBeVisible();
@@ -837,7 +838,8 @@ test('type and layout: nothing under 14px, help text 15px and scaled by Bigger t
       if (n.closest('[hidden], script, style') || !n.getClientRects().length) continue;
       if (!Array.from(n.childNodes).some((c) => c.nodeType === 3 && c.textContent.trim())) continue;
       const px = parseFloat(getComputedStyle(n).fontSize);
-      if (px < 14) out.push(`${px}px ${n.tagName} "${n.textContent.trim().slice(0, 24)}"`);
+      const mono = /monospace|Menlo|Consolas/i.test(getComputedStyle(n).fontFamily);  // metadata only; Hindi and Punjabi never use it
+      if (px < (mono ? 13 : 14)) out.push(`${px}px ${n.tagName} "${n.textContent.trim().slice(0, 24)}"`);
     }
     return out;
   });
@@ -877,7 +879,7 @@ test('type and layout: nothing under 14px, help text 15px and scaled by Bigger t
   await expect(page.locator('#main')).toBeFocused();
   // Light and dark theme colours, brand names left alone by translators, thumbnail size, no autocomplete on forms.
   await expect(page.locator('meta[name="theme-color"]')).toHaveCount(2);
-  expect(await page.locator('meta[name="theme-color"][media*="dark"]').getAttribute('content')).toBe('#0f0f0e');
+  expect(await page.locator('meta[name="theme-color"][media*="dark"]').getAttribute('content')).toBe('#0a0a0a');
   expect(await page.locator('.brand span').getAttribute('translate')).toBe('no');
   expect(await page.locator('#draft-text').getAttribute('translate')).toBe('no');
   expect(await page.locator('#photo-thumb').getAttribute('width')).toBe('72');

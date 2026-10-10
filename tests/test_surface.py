@@ -23,23 +23,25 @@ def rules(css):
 
 
 def test_no_text_in_the_page_is_set_under_14px():
-    """Minimum text is 0.875rem (14 px). Sizes are in rem or px; anything relative to the parent (em, %) could shrink
+    """Minimum text is 0.875rem (14 px); Latin metadata set in the mono face (dates, source stamps, tags) may be 0.8125rem. Sizes are in rem or px; anything relative to the parent (em, %) could shrink
     below the floor unseen, so it is refused, except the root size that the "A+" button raises above 100%.
 
     The lint reads every `font-size` of the stylesheet and of inline `style=""` attributes. It fails closed: every mention
     of `font-size` or `fontSize` anywhere in the page must be one it parsed, so a size written in another form (a keyword,
-    calc(), clamp(), var(), a script property such as `style.fontSize` or `setProperty`, an SVG attribute) is refused, and so
+    calc(), var(), a script property such as `style.fontSize` or `setProperty`, an SVG attribute) is refused, and so
     is the `font` shorthand, in the stylesheet and in the script."""
     css = re.sub(r"/\*.*?\*/", "", STYLE, flags=re.S)
     blocks = rules(STYLE) + [("[style]", m) for m in re.findall(r'style="([^"]*)"', REST)]
     seen, too_small = 0, []
     for selector, body in blocks:
-        for value, unit in re.findall(r"font-size:\s*([0-9.]+)(rem|px|em|%)", body):
+        # clamp(min, preferred, max) is read by its minimum: that is the smallest size it can ever give
+        for value, unit in re.findall(r"font-size:\s*(?:clamp\(\s*)?([0-9.]+)(rem|px|em|%)", body):
             seen += 1
             if unit == "%" and re.fullmatch(r"(html|:root)(\[[^\]]+\])?", selector) and float(value) >= 100:
                 continue
             px = float(value) * 16 if unit == "rem" else float(value) if unit == "px" else None
-            if px is None or px < 14:
+            floor = 13 if re.search(r"font-family:[^;]*(--mono|monospace)", body) else 14  # the one exception: Latin metadata in the mono face
+            if px is None or px < floor:
                 too_small.append(f"{selector}: {value}{unit}")
     assert seen > 20, "too few font sizes found: the lint is not looking at the stylesheet"
     assert too_small == []
