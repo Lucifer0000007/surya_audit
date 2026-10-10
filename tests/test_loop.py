@@ -328,7 +328,7 @@ def test_heuristics_marked_unvalidated():
 def test_page_is_served_self_contained(client):
     resp = client.get("/")
     assert resp.status_code == 200 and resp.headers["content-type"].startswith("text/html")
-    assert "<title>Surya Audit</title>" in resp.text
+    assert "<title>Surya Audit: is your rooftop solar producing what it should?</title>" in resp.text
     assert "<script src" not in resp.text  # one dependency-free file...
     links = re.findall(r'<link[^>]*href="([^"]*)"', resp.text)
     assert links and all(href.startswith("data:") for href in links), links  # ...whose only <link> is the inline manifest

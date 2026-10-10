@@ -134,29 +134,88 @@ test('import: a refused line is reported and the rest are saved; pressing the bu
   await expect(page.locator('#import-go')).toBeHidden();
 });
 
-test('import: Stop leaves the rest unsaved and ready; no answer from the server stops the run and says so', async ({ page, request }) => {
+test('import: no answer from the server stops the run and says so; a busy server stops it too; what is left can be sent again', async ({ page, request }) => {
   const id = await newPlant(request);
   await openImport(page, id);
   const rows = csvRows().slice(0, 6);
   await paste(page, rows.map((r) => `${r.date},${r.kwh}`));
   await check(page);
-  let n = 0;
+  let n = 0, sent = 0;
   await page.route('**/api/sites/*/readings', async (route) => {
-    n += 1;
-    if (n === 2) await page.locator('#import-stop').click();  // pressed while the second save is on its way
-    if (n === 4) return route.abort('connectionrefused');
+    n += 1; sent += 1;
+    if (n === 3) return route.abort('connectionrefused');  // the connection drops on the third line
+    if (n === 6) return route.fulfill({ status: 503, json: { detail: 'busy' } });
     return route.continue();
   });
   await page.locator('#import-go').click();
   await expect(page.locator('#import-sum')).toHaveText('Readings saved: 2 of 6.');
+  expect(sent, 'the run stopped at the line that got no answer').toBe(3);
+  expect((await rowsOf(page).allInnerTexts()).join('\n')).toContain('Could not reach Surya Audit. Check your connection and try again.');
   await expect(page.locator('#import-go')).toHaveText('Save readings (4)');
   expect(await timeline(request, id)).toHaveLength(2);
-  // Again, and now the connection drops on the second line of what is left: the run stops there, with the connection message.
-  n = 2;
+  // Again: the lines that are left go (two of them), then the server answers 503 and the run stops there, not after 366 failures.
+  n = 3;
   await page.locator('#import-go').click();
-  await expect(page.locator('#import-sum')).toHaveText('Readings saved: 1 of 4.');
-  expect((await rowsOf(page).allInnerTexts()).join('\n')).toContain('Could not reach Surya Audit. Check your connection and try again.');
-  expect(await timeline(request, id)).toHaveLength(3);
+  await expect(page.locator('#import-sum')).toHaveText('Readings saved: 2 of 4.');
+  expect(sent, 'a 503 stops the run').toBe(3 + 3);
+  await expect(page.locator('#import-go')).toHaveText('Save readings (2)');
+  expect(await timeline(request, id)).toHaveLength(4);
+});
+
+test('import: while it runs nothing else can change what is shown; a plant switch or Forget clears the pasted lines', async ({ page, request }) => {
+  const id = await newPlant(request);
+  await openImport(page, id);
+  const rows = csvRows().slice(0, 4);
+  await paste(page, rows.map((r) => `${r.date},${r.kwh}`));
+  await check(page);
+  let release;
+  const gate = new Promise((r) => { release = r; });
+  await page.route('**/api/sites/*/readings', async (route) => { await gate; await route.continue(); });
+  await page.locator('#import-go').click();
+  for (const sel of ['#import-text', '#import-file', '#import-check', '#import-go', '#save-btn']) await expect(page.locator(sel), sel + ' is locked while it runs').toBeDisabled();
+  release();
+  await expect(page.locator('#import-sum')).toHaveText('Readings saved: 4 of 4.');
+  for (const sel of ['#import-text', '#import-file', '#import-check']) await expect(page.locator(sel)).toBeEnabled();
+  // Forget this plant: the pasted lines were for it, so they go too (and nothing is left for the next plant to send).
+  await paste(page, [`${csvRows()[10].date},9.5`]);
+  await check(page);
+  await expect(page.locator('#import-out')).toBeVisible();
+  await page.getByRole('tab', { name: 'Today' }).click();
+  page.once('dialog', (d) => d.accept());
+  await page.getByRole('button', { name: 'Forget this plant on this device' }).click();
+  await expect(page.getByRole('heading', { name: 'Set up your plant' })).toBeVisible();
+  expect(await page.evaluate(() => [document.getElementById('import-text').value, document.getElementById('import-out').hidden, document.getElementById('import').open])).toEqual(['', true, false]);
+});
+
+test('import: leap days, zero, tabs and semicolons, a trailing comma, and what is refused', async ({ page, request }) => {
+  const id = await newPlant(request);
+  await openImport(page, id);
+  await paste(page, [
+    '29/02/2024,5.1',  // a leap day
+    '29/02/2026,5.1',  // not a leap year
+    '2026-09-01\t0',  // a tab, and zero
+    '2026-09-02;6.5',  // a semicolon
+    '2026-09-03,7.5,',  // a trailing comma from a spreadsheet
+    '2026-09-04,12.',
+    '2026-09-05,.5',
+    '2026-09-06,1e3',
+    '2026-09-07,-5',
+    '1999-12-31,5',  // before the floor
+    '2026-09-08,' + '9'.repeat(400),
+  ]);
+  await check(page);
+  const statuses = await rowsOf(page).evaluateAll((lis) => lis.map((li) => li.lastChild.textContent));
+  expect(statuses).toEqual(['Ready', 'Date is not YYYY-MM-DD or DD/MM/YYYY', 'Ready', 'Ready', 'Ready',
+    'Energy must be one number, with a dot for decimals', 'Energy must be one number, with a dot for decimals', 'Energy must be one number, with a dot for decimals',
+    'Energy must be one number, with a dot for decimals', 'Date is not YYYY-MM-DD or DD/MM/YYYY', 'Energy must be one number, with a dot for decimals']);
+});
+
+test('import: a file over 100 KB is refused, never read in part', async ({ page, request }) => {
+  const id = await newPlant(request);
+  await openImport(page, id);
+  await page.locator('#import-file').setInputFiles({ name: 'big.csv', mimeType: 'text/csv', buffer: Buffer.alloc(100001, '\n') });
+  await expect(page.locator('#import-sum')).toHaveText('More than 366 lines. Split them and add them in parts.');
+  await expect(page.locator('#import-go')).toBeHidden();
 });
 
 test('import: days that already have a reading are asked about once; No saves nothing, Yes replaces them', async ({ page, request }) => {
@@ -237,7 +296,7 @@ test('import on a phone: no sideways scroll with a long list; the box and the bu
   await expect(rowsOf(page)).toHaveCount(41);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const barTop = (await page.locator('#tablist').boundingBox()).y;
-  for (const sel of ['#import-check', '#import-go']) {
+  for (const sel of ['#import-text', '#import-check', '#import-go']) {
     await page.locator(sel).scrollIntoViewIfNeeded();
     const box = await page.locator(sel).boundingBox();
     expect(box.y + box.height, `${sel} is above the tab bar`).toBeLessThanOrEqual(barTop);
