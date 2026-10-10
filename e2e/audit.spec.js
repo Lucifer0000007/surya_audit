@@ -113,11 +113,6 @@ test('synthetic scenario: flagged dips, ranked causes, approve, complaint draft'
   await expect(page.locator('#chart .tip')).toContainText('Dip: below 85%');
   await page.getByText('Show readings as a table').click();
   await expect(page.locator('#table tbody tr')).toHaveCount(60);
-  // The synthetic scenario can be replayed day by day.
-  await page.getByRole('button', { name: 'Replay the 60 days' }).click();
-  await expect(page.locator('#replay-caption')).toContainText('Day ');
-  await page.getByRole('button', { name: 'Stop replay' }).click();
-  await expect(page.locator('#chart path.bar:not(.hold)')).toHaveCount(60);
   await page.screenshot({ path: path.join(SCREENS, `${testInfo.project.name}-why.png`), fullPage: true });
 
   // Fix: the September cleaning suggestion was never approved, and dust is no longer rated above low.
@@ -275,9 +270,9 @@ test('tabs: ARIA, keyboard, URL hash, Back, reload and honesty flags on every ta
     await expectNoSideScroll(page);
   }
 
-  // With motion allowed, tab changes use view transitions and the logo rays turn.
+  // With motion allowed, tab changes use view transitions; the logo stands still.
   expect(await page.evaluate(() => window.__viewTransitions)).toBeGreaterThan(0);
-  expect(await animationOf(page.locator('.rays'))).toBe('spin');
+  expect(await animationOf(page.locator('.brand svg g'))).toBe('none');
 });
 
 test('reduced motion: no animations, no view transitions, final values at once', async ({ page, request }) => {
@@ -289,9 +284,8 @@ test('reduced motion: no animations, no view transitions, final values at once',
   const last = audit.timeline[audit.timeline.length - 1];
   await page.goto(`/?site=${id}`);
 
-  // The headline number is final at once (no count-up) and nothing is animated.
+  // The headline number is final at once and nothing is animated.
   await expect(page.locator('#headline .ring-num')).toHaveText(`${Math.round(last.relative * 100)}%`);
-  expect(await animationOf(page.locator('.rays'))).toBe('none');
   expect(await animationOf(page.locator('#headline .dots i.on'), '::after')).toBe('none');
   const arcTransition = await page.locator('#headline .gauge-arc').evaluate((n) => getComputedStyle(n).transitionDuration);
   expect(arcTransition).toBe('0s');
@@ -300,7 +294,6 @@ test('reduced motion: no animations, no view transitions, final values at once',
   await expect(page.locator('#chart path.bar')).toHaveCount(60);
   expect(await page.locator('#chart svg').getAttribute('class')).toBeNull();
   expect(await animationOf(page.locator('#chart .bar'))).toBe('none');
-  expect(await animationOf(page.locator('#panel-why > .card'))).toBe('none');
   await openTab(page, 'Fix');
   await openTab(page, 'Report');
   expect(await page.evaluate(() => window.__viewTransitions)).toBe(0);
@@ -431,36 +424,6 @@ test('a plant with no dips shows zero loss, not a bill for ordinary variation', 
   // The shared verdict carries the SAMPLE label when a sample loss value is in use.
   const href = decodeURIComponent(await page.locator('#share-verdict').getAttribute('href'));
   expect(href).toContain('SAMPLE system-loss value');
-});
-
-test('offline: a reading waits in this browser and is saved when the connection returns', async ({ page, request, context }) => {
-  const id = await createSite(request);
-  await postRows(request, id, syntheticRows().slice(0, 2));
-  await page.goto(`/?site=${id}#log`);
-  await context.setOffline(true);
-  await setReadingDate(page, '2026-08-20');
-  await page.getByLabel('Energy produced (kWh)').fill('9.9');
-  await page.getByRole('button', { name: 'Save reading' }).click();
-  await expect(page.locator('#queue')).toContainText('Offline: 1 reading will be saved when you are connected');
-  await expect(page.locator('#status')).toContainText('will be saved when you are connected');
-  // Queued items keep the overwrite confirmation.
-  page.once('dialog', (dialog) => { expect(dialog.message()).toContain('waiting to be saved'); dialog.accept(); });
-  await setReadingDate(page, '2026-08-20');
-  await page.getByLabel('Energy produced (kWh)').fill('10.1');
-  await page.getByRole('button', { name: 'Save reading' }).click();
-  await expect(page.locator('#queue')).toContainText('1 reading');
-  // The queue lives in this browser: it survives a reload even while offline.
-  expect(JSON.parse(await page.evaluate(() => localStorage.getItem('surya-audit-queued-readings')))).toHaveLength(1);
-  // Nothing reached the server yet.
-  expect((await (await request.get(`/api/sites/${id}/audit`)).json()).timeline).toHaveLength(2);
-  // Back online: the online event alone sends it, with the replacement value, and the chip goes away.
-  await context.setOffline(false);
-  await expect(page.locator('#status')).toContainText('Saved the waiting reading.');
-  await expect(page.locator('#queue')).toBeHidden();
-  const saved = (await (await request.get(`/api/sites/${id}/audit`)).json()).timeline;
-  expect(saved.map((p) => `${p.date}:${p.kwh}`)).toContain('2026-08-20:10.1');
-  await openTab(page, 'Why');
-  await expect(page.locator('#chart path.bar')).toHaveCount(3);
 });
 
 test('languages: Hindi and Punjabi interface, units not kWh, fonts inline, honesty text translated, no overflow', async ({ page, request, baseURL }) => {
@@ -843,7 +806,7 @@ test('first visit follows the browser language when it is Hindi or Punjabi; a ch
   }
 });
 
-test('type and layout: nothing under 13px, help text 15px and scaled by Bigger text, A+ has a tooltip, a skip link, theme colours', async ({ page, request }) => {
+test('type and layout: nothing under 14px, help text 15px and scaled by Bigger text, A+ has a tooltip, a skip link, theme colours', async ({ page, request }) => {
   const id = await createSite(request);
   await postRows(request, id, syntheticRows());
   const small = () => page.evaluate(() => {
@@ -852,7 +815,7 @@ test('type and layout: nothing under 13px, help text 15px and scaled by Bigger t
       if (n.closest('[hidden], script, style') || !n.getClientRects().length) continue;
       if (!Array.from(n.childNodes).some((c) => c.nodeType === 3 && c.textContent.trim())) continue;
       const px = parseFloat(getComputedStyle(n).fontSize);
-      if (px < 13) out.push(`${px}px ${n.tagName} "${n.textContent.trim().slice(0, 24)}"`);
+      if (px < 14) out.push(`${px}px ${n.tagName} "${n.textContent.trim().slice(0, 24)}"`);
     }
     return out;
   });
@@ -960,6 +923,7 @@ test('no English left in Hindi and Punjabi: known audit sentences are translated
   const scan = async (lng, siteId, tab, label) => {
     await page.goto(`/?site=${siteId}&scan=${++scans}#${tab}`);  // a new URL each time: always a fresh load of the plant
     await expect(page.locator(`#panel-${tab}`)).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('lang', lng);  // the language state first: under lang="en" the scan below would skip every node and pass empty
     if (tab === 'report') { await page.locator('#draft-btn').click(); await expect(page.locator('#draft-out')).toBeVisible(); }
     const result = await page.evaluate(() => {
       document.querySelectorAll('details').forEach((d) => { d.open = true; });
@@ -1059,4 +1023,57 @@ test('Today and Yesterday follow midnight in a tab that was left open', async ({
   const posted = page.waitForRequest((req) => req.method() === 'POST' && req.url().includes('/readings'));
   await page.getByRole('button', { name: 'Save reading' }).click();
   expect((await posted).postDataJSON().date).toBe('2026-10-11');  // the new day, not the stale 10 Oct
+});
+
+test('removed on purpose: no replay, offline queue, confetti, tab indicator, shimmer, card reveal or logo spin; an offline save keeps the typed value', async ({ page, request, context }) => {
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows().slice(0, 2));
+  // A queue that an earlier version of the page left in this browser is cleared on the next visit, not stranded.
+  await page.goto('/');
+  await page.evaluate(() => localStorage.setItem('surya-audit-queued-readings', JSON.stringify([{ site: 'x', body: { date: '2026-08-01', kwh: 1, kind: 'daily' } }])));
+  await page.goto(`/?site=${id}#log`);
+  await expect(page.locator('#panel-log')).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('surya-audit-queued-readings'))).toBeNull();
+  // None of it is in the page: the elements are gone, and so are the keyframes, wherever they are written (spin, rise, shimmer
+  // and burst; the confetti exists only while a recovery is celebrated, so the keyframe list is what guards it).
+  await expect(page.locator('#replay, #queue, .tab-indicator, .rays')).toHaveCount(0);
+  const keyframes = await page.evaluate(() => {
+    const names = [];
+    const walk = (rules) => { for (const r of rules) { if (r.type === CSSRule.KEYFRAMES_RULE) names.push(r.name); else if (r.cssRules) walk(r.cssRules); } };
+    for (const s of document.styleSheets) walk(s.cssRules);
+    return names.sort();
+  });
+  expect(keyframes).toEqual(['draw', 'fade', 'grow', 'pop']);
+
+  // A save that cannot reach the server says so and keeps the value; nothing waits in the browser.
+  await context.setOffline(true);
+  await setReadingDate(page, '2026-08-20');
+  await page.getByLabel('Energy produced (kWh)').fill('9.9');
+  await page.getByRole('button', { name: 'Save reading' }).click();
+  await expect(page.locator('#error')).toContainText('Could not reach Surya Audit. Check your connection and try again.');
+  await expect(page.getByLabel('Energy produced (kWh)', { exact: true })).toHaveValue('9.9');
+  expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => /queue/i.test(k)))).toEqual([]);
+
+  // Back online, pressing Save again saves it.
+  await context.setOffline(false);
+  await page.getByRole('button', { name: 'Save reading' }).click();
+  await expect(page.locator('#status')).toContainText('Saved the reading');
+  await expect(page.locator('#error')).toBeHidden();
+  expect((await (await request.get(`/api/sites/${id}/audit`)).json()).timeline).toHaveLength(3);
+});
+
+test('removed on purpose: with motion allowed, the headline number is final on its first draw and the arc has no transition', async ({ page, request }) => {
+  await page.addInitScript(() => {  // every value the headline number takes, in order
+    window.__ring = [];
+    new MutationObserver(() => {
+      const n = document.querySelector('#headline .ring-num');
+      if (n && n.textContent && window.__ring[window.__ring.length - 1] !== n.textContent) window.__ring.push(n.textContent);
+    }).observe(document, { subtree: true, childList: true, characterData: true });
+  });
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows());
+  await page.goto(`/?site=${id}`);
+  await expect(page.locator('#headline .ring-num')).toHaveText(/^\d+%$/);
+  expect(await page.locator('#headline .gauge-arc').evaluate((n) => getComputedStyle(n).transitionDuration)).toBe('0s');
+  expect(await page.evaluate(() => window.__ring), 'the number is never drawn at another value first').toHaveLength(1);
 });

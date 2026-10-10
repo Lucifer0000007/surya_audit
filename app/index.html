@@ -105,7 +105,6 @@
   .topbar .wrap { display: flex; align-items: center; gap: var(--s2); min-height: 56px; }
   .brand { display: flex; align-items: center; gap: var(--s1); font-weight: 650; font-size: 1.125rem; }
   .brand svg { flex: none; }
-  .rays { transform-box: fill-box; transform-origin: center; animation: spin 90s linear infinite; }
   .tagline { color: var(--ink-2); font-size: 0.875rem; margin-left: auto; text-align: right; }
   .prefs { display: flex; gap: var(--s1); align-items: center; margin-left: auto; }
   .tagline + .prefs { margin-left: 0; }
@@ -147,7 +146,7 @@
   input::placeholder { color: var(--ink-3); opacity: 1; }
   input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
   input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  textarea { min-height: 280px; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 0.85rem; line-height: 1.45; resize: vertical; }
+  textarea { min-height: 280px; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 0.875rem; line-height: 1.45; resize: vertical; }
   :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   button, .button { font: inherit; font-weight: 600; border-radius: var(--r-md); padding: 12px var(--s2); min-height: 48px; cursor: pointer; border: 1px solid transparent; background: var(--accent); color: var(--accent-ink); display: inline-flex; align-items: center; justify-content: center; gap: var(--s1); text-decoration: none; position: relative; line-height: 1.3; transition: transform 90ms var(--ease); }
   /* One soft lift marks the primary action; every other kind of button stays flat. */
@@ -173,20 +172,17 @@
 
   /* ---------- tabs: bottom bar on phones, segmented control from 720 px ---------- */
   .tabs { position: sticky; top: 0; z-index: 10; background: var(--page); padding: var(--s1) 0; }
-  [role="tablist"] { position: relative; display: flex; background: var(--surface-2); border-radius: 14px; padding: 4px; }
-  [role="tab"] { flex: 1 1 0; position: relative; z-index: 1; min-height: 48px; padding: 8px; border: 0; border-radius: 10px; background: transparent; color: var(--ink-2); font-weight: 600; gap: var(--s1); }
+  [role="tablist"] { display: flex; background: var(--surface-2); border-radius: 14px; padding: 4px; }
+  [role="tab"] { flex: 1 1 0; min-height: 48px; padding: 8px; border: 0; border-radius: 10px; background: transparent; color: var(--ink-2); font-weight: 600; gap: var(--s1); }
   [role="tab"] svg { flex: none; }
-  [role="tab"][aria-selected="true"] { color: var(--ink); }
-  .tab-indicator { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / 5); border-radius: 10px; background: var(--surface); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14); transform: translateX(calc(var(--i, 0) * 100%)); transition: transform 280ms var(--ease); pointer-events: none; }
-  .tab-indicator::after { content: ""; position: absolute; left: 32%; right: 32%; bottom: 5px; height: 3px; border-radius: 2px; background: var(--accent); }
+  [role="tab"][aria-selected="true"] { color: var(--ink); background: var(--surface); box-shadow: inset 0 -3px 0 var(--accent); }
   @media (max-width: 719.98px) {
     body.has-tabs { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
     html { scroll-padding-top: 8px; scroll-padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
     .tabs { position: fixed; top: auto; left: 0; right: 0; bottom: 0; padding: 0 4px env(safe-area-inset-bottom); background: var(--surface); border-top: 1px solid var(--line); }
     [role="tablist"] { background: transparent; border-radius: 0; padding: 0; }
-    [role="tab"] { flex-direction: column; gap: 2px; min-height: 64px; padding: 8px 2px; font-size: 0.8125rem; border-radius: 0; }
-    .tab-indicator { top: 0; bottom: auto; left: 0; width: 20%; height: 3px; background: transparent; box-shadow: none; border-radius: 0; }
-    .tab-indicator::after { left: 22%; right: 22%; top: 0; bottom: auto; }
+    [role="tab"] { flex-direction: column; gap: 2px; min-height: 64px; padding: 8px 2px; font-size: 0.875rem; border-radius: 0; }
+    [role="tab"][aria-selected="true"] { background: transparent; box-shadow: inset 0 3px 0 var(--accent); }
   }
   .fade-in { animation: fade 200ms ease-out both; }
   ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 180ms; }
@@ -227,18 +223,18 @@
   .datepick legend { margin-bottom: var(--s1); padding: 0; color: var(--ink-2); font-size: 0.9375rem; font-weight: 500; }
   .big-choice.chips { grid-template-columns: repeat(3, 1fr); }
   .big-choice.chips label { min-height: 48px; }
-  .chip-date { color: var(--ink-2); font-size: 0.8125rem; font-weight: 500; }
-  .picto { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.8125rem; color: var(--ink-2); min-width: 56px; }
+  .chip-date { color: var(--ink-2); font-size: 0.875rem; font-weight: 500; }
+  .picto { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.875rem; color: var(--ink-2); min-width: 56px; }
   .picto svg { width: 28px; height: 28px; }
   .action-head { display: flex; gap: 12px; align-items: center; }
 
   /* ---------- headline ---------- */
-  .eyebrow { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-2); }
+  .eyebrow { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-2); }
   .hero { display: flex; gap: var(--s2); align-items: center; }
   .ring { position: relative; flex: none; width: 128px; height: 128px; display: grid; place-items: center; }
   .gauge { position: absolute; inset: 0; width: 100%; height: 100%; }
   .gauge-track { fill: none; stroke: var(--grid); stroke-width: 10; }
-  .gauge-arc { fill: none; stroke: var(--series); stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 900ms var(--ease); }
+  .gauge-arc { fill: none; stroke: var(--series); stroke-width: 10; stroke-linecap: round; }
   .gauge-arc.dip { stroke: var(--critical); }
   .ring-num { position: relative; font-size: 1.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
   .hero-text { display: grid; gap: 4px; min-width: 0; }
@@ -256,11 +252,11 @@
   .action { border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--s2); display: grid; gap: var(--s1); }
   .action .approve { display: flex; flex-wrap: wrap; gap: var(--s1); align-items: end; }
   .action .approve label { flex: 1 1 170px; }
-  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: var(--surface-2); width: fit-content; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: var(--surface-2); width: fit-content; }
   .chip svg { flex: none; }
   .stepper { position: relative; padding-top: 4px; }
   .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); position: relative; }
-  .steps li { display: grid; justify-items: center; gap: 4px; text-align: center; font-size: 0.8125rem; color: var(--ink-2); }
+  .steps li { display: grid; justify-items: center; gap: 4px; text-align: center; font-size: 0.875rem; color: var(--ink-2); }
   .steps li[aria-current="step"] { color: var(--ink); font-weight: 700; }
   .step-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--control); background: var(--surface); display: grid; place-items: center; position: relative; z-index: 1; }
   .steps li.done .step-dot { border-color: var(--ink); background: var(--ink); }
@@ -290,7 +286,6 @@
   .chart .bar.dim { fill: var(--dim); }
   .chart .bar.unknown { fill-opacity: 0.45; }
   .chart .bar.active { fill-opacity: 1; filter: brightness(1.15); }
-  .chart .bar.hold { opacity: 0; }
   .chart .grid { stroke: var(--grid); stroke-width: 1; }
   .chart .usual { stroke: var(--axis); stroke-width: 1; }
   .chart .threshold { stroke: var(--critical); stroke-width: 1; stroke-dasharray: 4 3; transform-box: fill-box; transform-origin: 0 50%; }
@@ -301,35 +296,31 @@
   .kwh .actual { fill: none; stroke: var(--series); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
   .kwh .actual-dot { fill: var(--critical); stroke: var(--surface); stroke-width: 2; }
   .kwh .grid { stroke: var(--grid); stroke-width: 1; }
-  .kwh text { fill: var(--ink-2); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .kwh text { fill: var(--ink-2); font-size: 14px; font-variant-numeric: tabular-nums; }
   .key-line.expected { border-top: 2px solid var(--ink); opacity: 0.8; }
   .key-line.actual { border-top: 2px solid var(--series); }
-  .chart text { fill: var(--ink-2); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .chart text { fill: var(--ink-2); font-size: 14px; font-variant-numeric: tabular-nums; }
   .chart .hit { fill: transparent; }
   .chart svg.animate .threshold { animation: draw 320ms ease-out both; }
   .chart svg.animate .bar { animation: grow 420ms var(--ease) both; animation-delay: calc(320ms + var(--d, 0) * 14ms); }
-  .chart .bar.pop { animation: grow 260ms var(--ease) both; }
-  .tip { position: absolute; top: 0; pointer-events: none; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14); border-radius: 8px; padding: 8px 12px; font-size: 0.8125rem; min-width: 150px; max-width: 220px; z-index: 2; }
+  .tip { position: absolute; top: 0; pointer-events: none; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14); border-radius: 8px; padding: 8px 12px; font-size: 0.875rem; min-width: 150px; max-width: 220px; z-index: 2; }
   .tip strong { display: block; font-size: 0.95rem; color: var(--ink); }
   .tip span { display: block; color: var(--ink-2); }
-  .legend { display: flex; flex-wrap: wrap; gap: 6px var(--s2); font-size: 0.8125rem; color: var(--ink-2); list-style: none; margin: 0; padding: 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px var(--s2); font-size: 0.875rem; color: var(--ink-2); list-style: none; margin: 0; padding: 0; }
   .legend li { display: inline-flex; align-items: center; gap: 6px; }
   .swatch { width: 10px; height: 12px; border-radius: 2px 2px 0 0; display: inline-block; }
   .key-line { width: 14px; height: 0; border-top: 1px solid var(--critical); display: inline-block; }
   .key-line.dash { border-top-style: dashed; }
   .key-line.solid { border-top-color: var(--ink-2); width: 1px; height: 12px; border-top: 0; border-left: 1px solid var(--ink-2); }
-  .replay { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s2); align-items: center; }
-  .replay-caption { font-size: 0.875rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
   .table-wrap { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; line-height: 1.45; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+  table { border-collapse: collapse; width: 100%; line-height: 1.45; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
   th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   th:first-child, td:first-child, th:last-child, td:last-child { text-align: left; }
   th { color: var(--ink-2); font-weight: 600; }
 
-  /* ---------- loading skeleton (a solid band slides across; no gradients) ---------- */
+  /* ---------- loading skeleton (static blocks) ---------- */
   .skeleton { display: grid; gap: var(--s2); }
-  .sk-card { position: relative; overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s3); display: grid; gap: 12px; }
-  .sk-card::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 45%; background: var(--surface-2); opacity: 0.7; transform: translateX(-110%); animation: shimmer 1.3s ease-in-out infinite; }
+  .sk-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s3); display: grid; gap: 12px; }
   .sk-line { height: 14px; border-radius: 7px; background: var(--surface-2); }
   .sk-ring { width: 104px; height: 104px; border-radius: 50%; border: 10px solid var(--surface-2); }
 
@@ -337,38 +328,27 @@
   .impact { display: grid; gap: var(--s2); }
   .impact-grid { display: grid; gap: var(--s2); grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
   .stat { display: grid; gap: 2px; padding: 12px var(--s2); border-radius: var(--r-md); background: var(--surface-2); min-width: 0; }
-  .stat .label { font-size: 0.8125rem; color: var(--ink-2); }
+  .stat .label { font-size: 0.875rem; color: var(--ink-2); }
   .stat .value { font-size: 1.6rem; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
-  .stat .sub { font-size: 0.8125rem; color: var(--ink-2); }
-  .tag { display: inline-block; line-height: 1.4; font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--accent-text); border: 1px solid currentColor; border-radius: 999px; padding: 1px 8px; vertical-align: middle; }
+  .stat .sub { font-size: 0.875rem; color: var(--ink-2); }
+  .tag { display: inline-block; line-height: 1.4; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--accent-text); border: 1px solid currentColor; border-radius: 999px; padding: 1px 8px; vertical-align: middle; }
   .assume { display: grid; gap: 12px; padding: 12px var(--s2); border-radius: var(--r-md); border: 1px solid var(--line); }
   .assume summary { font-weight: 600; color: var(--ink); }
   .assume ol, .assume ul { margin: 0; padding-left: 18px; font-size: 0.875rem; color: var(--ink-2); display: grid; gap: 6px; }
   .share { background: #25d366; color: #0b2b16; border-color: transparent; }
   .share svg { flex: none; }
-  #queue { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s2); align-items: center; }
-  .queued { background: color-mix(in srgb, var(--warning) 22%, var(--surface)); }
 
   /* ---------- status, footer ---------- */
   .status { min-height: 1.5em; color: var(--ink-2); font-size: 0.9rem; }
   .error { color: var(--critical-text); font-weight: 600; }
   .busy { opacity: 0.6; transition: opacity 200ms; }
-  footer { padding: var(--s1) var(--s2) var(--s4); color: var(--ink-2); font-size: 0.8125rem; display: grid; gap: 6px; }
+  footer { padding: var(--s1) var(--s2) var(--s4); color: var(--ink-2); font-size: 0.875rem; display: grid; gap: 6px; }
   footer strong { color: var(--ink); }
 
-  /* ---------- reveal, confetti ---------- */
-  .card.reveal { animation: rise 420ms var(--ease) both; animation-delay: calc(var(--k, 0) * 70ms); }
-  .confetti { position: fixed; z-index: 30; width: 0; height: 0; pointer-events: none; }
-  .confetti i { position: absolute; width: 6px; height: 10px; border-radius: 2px; animation: burst 1.1s cubic-bezier(0.2, 0.7, 0.3, 1) forwards; }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   @keyframes pop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
   @keyframes draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
   @keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-  @keyframes shimmer { to { transform: translateX(260%); } }
-  @keyframes burst { from { transform: translate(0, 0) rotate(0deg); opacity: 1; } to { transform: translate(var(--x), var(--y)) rotate(var(--r)); opacity: 0; } }
 
   @media (max-width: 480px) { .tagline { display: none; } }
   /* Wide screens: the column sits on a slightly darker backdrop with hairline edges (tone only, no shadow). */
@@ -379,7 +359,7 @@
     button:where(:not(:disabled, [aria-disabled="true"])):hover, a.button:hover { background: color-mix(in srgb, var(--accent) 86%, var(--ink)); }
     button.secondary:hover, a.button.secondary:hover, .speak:hover, .mic:hover, .lang button:hover, .prefs .bigger:hover, [role="tab"]:hover { background: var(--surface-2); }
     .lang button[aria-pressed="true"]:hover, .prefs .bigger[aria-pressed="true"]:hover { background: var(--ink); }
-    [role="tab"][aria-selected="true"]:hover { background: transparent; }
+    [role="tab"][aria-selected="true"]:hover { background: var(--surface); }
     .mic[aria-pressed="true"]:hover { background: var(--accent); }
     button.link:hover, a.link:hover { background: none; text-decoration-thickness: 2px; }
     a.button.share:hover { background: color-mix(in srgb, #25d366 86%, var(--ink)); }
@@ -400,7 +380,7 @@
 <header class="topbar">
   <div class="wrap">
     <h1 class="brand">
-      <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="#eda100"/><g class="rays" stroke="#eda100" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg>
+      <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="#eda100"/><g stroke="#eda100" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg>
       <span translate="no">Surya Audit</span>
     </h1>
     <p class="tagline" data-i18n="tagline">Is your rooftop solar producing what it should?</p>
@@ -477,7 +457,6 @@
         <button type="button" role="tab" id="tab-fix" data-tab="fix" aria-controls="panel-fix" aria-selected="false" tabindex="-1"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6.5a4 4 0 0 0-5 5L3.5 17.5a1.4 1.4 0 0 0 0 2l1 1a1.4 1.4 0 0 0 2 0l6-6a4 4 0 0 0 5-5l-2.6 2.6-2.4-.6-.6-2.4z"/></svg><span data-i18n="tab_fix">Fix</span></button>
         <button type="button" role="tab" id="tab-why" data-tab="why" aria-controls="panel-why" aria-selected="false" tabindex="-1"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21h18M6.5 17v-5M12 17V6M17.5 17V9.5"/></svg><span data-i18n="tab_why">Why</span></button>
         <button type="button" role="tab" id="tab-report" data-tab="report" aria-controls="panel-report" aria-selected="false" tabindex="-1"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg><span data-i18n="tab_report">Report</span></button>
-        <span class="tab-indicator" aria-hidden="true"></span>
       </div>
     </nav>
 
@@ -534,7 +513,6 @@
             <img id="photo-thumb" alt="Your photo" width="72" height="72">
             <div><p id="photo-note" role="status"></p><button type="button" class="link" id="photo-clear" data-i18n="discardPhoto">Discard photo</button></div>
           </div>
-          <div id="queue" hidden></div>
           <form id="reading-form" autocomplete="off">
             <fieldset class="datepick">
               <legend data-i18n="date">Date</legend>
@@ -575,10 +553,6 @@
             <h2 id="tl-title" data-i18n="readings">Readings</h2>
             <p class="muted small" id="tl-sub"></p>
           </header>
-          <div class="replay" id="replay" hidden>
-            <button type="button" class="secondary" id="replay-btn">Replay the days</button>
-            <p class="replay-caption" id="replay-caption" aria-live="polite"></p>
-          </div>
           <div class="chart" id="chart"></div>
           <ul class="legend" id="legend"></ul>
           <h3 id="kwh-title" class="small muted">Units made against units expected, reading by reading</h3>
@@ -728,8 +702,6 @@ const T = {
     noteDim: "too dim to judge",
     noteUnknown: "weather not available yet",
     noteWeek: "week",
-    replay: "Replay the {n} days",
-    stopReplay: "Stop replay",
     water: "Water: cleaning only when the audit points to dust would use about {needed} L this month ({when}), against about {fixed} L for a fixed schedule of {cleans} cleans a month ({panels} panels, {perPanel} L each): about {saved} L less than that schedule.",
     oneClean: "one clean",
     noneSuggested: "none suggested by the audit yet",
@@ -760,11 +732,7 @@ const T = {
     linkNotFoundKept: 'No plant was found for that link. This is the plant this browser remembers.',
     linkNotFound: 'No plant was found for that link. Set up your plant.', plantGone: 'That plant was not found. Set it up again.',
     replaceSaved: 'A reading for {date} is already saved ({kwh} {u}). Replace it?',
-    replaceWaiting: 'A reading for {date} ({kwh} {u}) is waiting to be saved. Replace it?',
-    offlineKept: 'Offline: the reading for {date} will be saved when you are connected.', savedReading: 'Saved the reading for {date}.',
-    queuedOne: 'Offline: 1 reading will be saved when you are connected ({dates}).',
-    queuedMany: 'Offline: {n} readings will be saved when you are connected ({dates}).', tryNow: 'Try now',
-    savedQueuedOne: 'Saved the waiting reading.', savedQueuedMany: 'Saved {n} waiting readings.',
+    savedReading: 'Saved the reading for {date}.',
     photoReading: 'Reading your photo…', photoRead: 'Read from your photo:',
     photoLifetime: 'It shows a lifetime total of {kwh} {u}. Enter the energy for one day or week instead: the difference between two meter readings.',
     photoCheck: 'Check the values below and correct them before you save. Nothing is saved yet.', photoNotSaved: 'The photo was not saved.',
@@ -797,7 +765,6 @@ const T = {
     shareTop: 'Top possible cause: {cause} ({conf}). A possible cause, not a diagnosis.',
     chartLabel: 'Bar chart of {n} readings. Use the left and right arrow keys to read each one. The table below lists every value.',
     kwhChartLabel: 'Line chart of units made against units expected for {n} readings. The table above lists every value.',
-    replayDone: 'Replay finished: {n} readings, {dips} dips.', dayOf: 'Day {i} of {n}',
     langGroup: 'Language', panelsFace: 'Panels face', sections: 'Sections', plantAudit: 'Plant audit',
     srcDefault: 'Expected output: PVGIS (EU JRC), adjusted for actual weather from NASA POWER.', srcLead: 'Expected output from:',
     srcPvgis: 'PVGIS monthly yield, retrieved {d}', srcClim: 'NASA POWER monthly averages, retrieved {d}', srcDaily: 'NASA POWER daily weather, retrieved {d}',
@@ -889,8 +856,6 @@ const T = {
     noteDim: "बहुत धुंधला",
     noteUnknown: "मौसम उपलब्ध नहीं",
     noteWeek: "हफ़्ता",
-    replay: "{n} दिन दोबारा देखें",
-    stopReplay: "रोकें",
     water: "पानी: सिर्फ़ तब सफ़ाई करने पर जब ऑडिट धूल की ओर इशारा करे, इस महीने लगभग {needed} लीटर लगेगा ({when}), जबकि महीने में {cleans} बार की तय सफ़ाई में लगभग {fixed} लीटर ({panels} पैनल, {perPanel} लीटर प्रति पैनल): उस तय समय-सारणी से लगभग {saved} लीटर कम।",
     oneClean: "एक सफ़ाई",
     noneSuggested: "ऑडिट ने अभी कोई सुझाव नहीं दिया",
@@ -922,11 +887,7 @@ const T = {
     linkNotFoundKept: 'उस लिंक का कोई प्लांट नहीं मिला। यह वह प्लांट है जो इस ब्राउज़र को याद है।',
     linkNotFound: 'उस लिंक का कोई प्लांट नहीं मिला। अपना प्लांट सेट करें।', plantGone: 'वह प्लांट नहीं मिला। इसे दोबारा सेट करें।',
     replaceSaved: '{date} की एक रीडिंग पहले से सेव है ({kwh} {u})। बदलें?',
-    replaceWaiting: '{date} की एक रीडिंग ({kwh} {u}) सेव होने का इंतज़ार कर रही है। बदलें?',
-    offlineKept: 'ऑफ़लाइन: {date} की रीडिंग कनेक्शन आने पर सेव होगी।', savedReading: '{date} की रीडिंग सेव हो गई।',
-    queuedOne: 'ऑफ़लाइन: 1 रीडिंग कनेक्शन आने पर सेव होगी ({dates})।',
-    queuedMany: 'ऑफ़लाइन: {n} रीडिंग कनेक्शन आने पर सेव होंगी ({dates})।', tryNow: 'अभी भेजें',
-    savedQueuedOne: 'इंतज़ार कर रही रीडिंग सेव हो गई।', savedQueuedMany: 'इंतज़ार कर रही {n} रीडिंग सेव हो गईं।',
+    savedReading: '{date} की रीडिंग सेव हो गई।',
     photoReading: 'आपकी फ़ोटो पढ़ रहे हैं…', photoRead: 'फ़ोटो से पढ़ा:',
     photoLifetime: 'इसमें कुल (lifetime) {kwh} {u} दिख रही है। इसकी जगह एक दिन या एक हफ़्ते की बिजली लिखें: दो मीटर रीडिंग का अंतर।',
     photoCheck: 'नीचे के मान जाँचें और सेव से पहले ठीक करें। अभी कुछ सेव नहीं हुआ।', photoNotSaved: 'फ़ोटो सेव नहीं हुई।',
@@ -959,7 +920,6 @@ const T = {
     shareTop: 'सबसे संभावित कारण: {cause} ({conf})। यह संभावित कारण है, निदान नहीं।',
     chartLabel: '{n} रीडिंग का बार चार्ट। हर एक पढ़ने के लिए बाएँ-दाएँ तीर वाली कुंजी दबाएँ। नीचे की तालिका में हर मान है।',
     kwhChartLabel: '{n} रीडिंग के लिए बनी यूनिट बनाम अपेक्षित यूनिट का रेखा चार्ट। ऊपर की तालिका में हर मान है।',
-    replayDone: 'रीप्ले पूरा: {n} रीडिंग, {dips} गिरावट।', dayOf: 'दिन {i} / {n}',
     langGroup: 'भाषा', panelsFace: 'पैनल की दिशा', sections: 'हिस्से', plantAudit: 'प्लांट ऑडिट',
     srcDefault: 'अपेक्षित उत्पादन: PVGIS (EU JRC), NASA POWER के असली मौसम के हिसाब से।', srcLead: 'अपेक्षित उत्पादन का स्रोत:',
     srcPvgis: 'PVGIS मासिक उत्पादन, {d} को लिया', srcClim: 'NASA POWER मासिक औसत, {d} को लिया', srcDaily: 'NASA POWER दैनिक मौसम, {d} को लिया',
@@ -1051,8 +1011,6 @@ const T = {
     noteDim: "ਬਹੁਤ ਧੁੰਦਲਾ",
     noteUnknown: "ਮੌਸਮ ਉਪਲਬਧ ਨਹੀਂ",
     noteWeek: "ਹਫ਼ਤਾ",
-    replay: "{n} ਦਿਨ ਦੁਬਾਰਾ ਵੇਖੋ",
-    stopReplay: "ਰੋਕੋ",
     water: "ਪਾਣੀ: ਸਿਰਫ਼ ਉਦੋਂ ਸਫ਼ਾਈ ਕਰਨ ਉੱਤੇ ਜਦੋਂ ਆਡਿਟ ਧੂੜ ਵੱਲ ਇਸ਼ਾਰਾ ਕਰੇ, ਇਸ ਮਹੀਨੇ ਲਗਭਗ {needed} ਲੀਟਰ ਲੱਗੇਗਾ ({when}), ਜਦਕਿ ਮਹੀਨੇ ਵਿੱਚ {cleans} ਵਾਰ ਦੀ ਤੈਅ ਸਫ਼ਾਈ ਵਿੱਚ ਲਗਭਗ {fixed} ਲੀਟਰ ({panels} ਪੈਨਲ, {perPanel} ਲੀਟਰ ਪ੍ਰਤੀ ਪੈਨਲ): ਉਸ ਤੈਅ ਸਮਾਂ-ਸਾਰਣੀ ਤੋਂ ਲਗਭਗ {saved} ਲੀਟਰ ਘੱਟ।",
     oneClean: "ਇੱਕ ਸਫ਼ਾਈ",
     noneSuggested: "ਆਡਿਟ ਨੇ ਹਾਲੇ ਕੋਈ ਸੁਝਾਅ ਨਹੀਂ ਦਿੱਤਾ",
@@ -1084,11 +1042,7 @@ const T = {
     linkNotFoundKept: 'ਉਸ ਲਿੰਕ ਦਾ ਕੋਈ ਪਲਾਂਟ ਨਹੀਂ ਮਿਲਿਆ। ਇਹ ਉਹ ਪਲਾਂਟ ਹੈ ਜੋ ਇਸ ਬ੍ਰਾਊਜ਼ਰ ਨੂੰ ਯਾਦ ਹੈ।',
     linkNotFound: 'ਉਸ ਲਿੰਕ ਦਾ ਕੋਈ ਪਲਾਂਟ ਨਹੀਂ ਮਿਲਿਆ। ਆਪਣਾ ਪਲਾਂਟ ਸੈੱਟ ਕਰੋ।', plantGone: 'ਉਹ ਪਲਾਂਟ ਨਹੀਂ ਮਿਲਿਆ। ਇਸਨੂੰ ਦੁਬਾਰਾ ਸੈੱਟ ਕਰੋ।',
     replaceSaved: '{date} ਦੀ ਇੱਕ ਰੀਡਿੰਗ ਪਹਿਲਾਂ ਹੀ ਸੇਵ ਹੈ ({kwh} {u})। ਬਦਲੀਏ?',
-    replaceWaiting: '{date} ਦੀ ਇੱਕ ਰੀਡਿੰਗ ({kwh} {u}) ਸੇਵ ਹੋਣ ਦੀ ਉਡੀਕ ਵਿੱਚ ਹੈ। ਬਦਲੀਏ?',
-    offlineKept: 'ਆਫ਼ਲਾਈਨ: {date} ਦੀ ਰੀਡਿੰਗ ਕਨੈਕਸ਼ਨ ਆਉਣ ਉੱਤੇ ਸੇਵ ਹੋਵੇਗੀ।', savedReading: '{date} ਦੀ ਰੀਡਿੰਗ ਸੇਵ ਹੋ ਗਈ।',
-    queuedOne: 'ਆਫ਼ਲਾਈਨ: 1 ਰੀਡਿੰਗ ਕਨੈਕਸ਼ਨ ਆਉਣ ਉੱਤੇ ਸੇਵ ਹੋਵੇਗੀ ({dates})।',
-    queuedMany: 'ਆਫ਼ਲਾਈਨ: {n} ਰੀਡਿੰਗਾਂ ਕਨੈਕਸ਼ਨ ਆਉਣ ਉੱਤੇ ਸੇਵ ਹੋਣਗੀਆਂ ({dates})।', tryNow: 'ਹੁਣੇ ਭੇਜੋ',
-    savedQueuedOne: 'ਉਡੀਕ ਵਾਲੀ ਰੀਡਿੰਗ ਸੇਵ ਹੋ ਗਈ।', savedQueuedMany: 'ਉਡੀਕ ਵਾਲੀਆਂ {n} ਰੀਡਿੰਗਾਂ ਸੇਵ ਹੋ ਗਈਆਂ।',
+    savedReading: '{date} ਦੀ ਰੀਡਿੰਗ ਸੇਵ ਹੋ ਗਈ।',
     photoReading: 'ਤੁਹਾਡੀ ਫ਼ੋਟੋ ਪੜ੍ਹ ਰਹੇ ਹਾਂ…', photoRead: 'ਫ਼ੋਟੋ ਤੋਂ ਪੜ੍ਹਿਆ:',
     photoLifetime: 'ਇਸ ਵਿੱਚ ਕੁੱਲ (lifetime) {kwh} {u} ਦਿਸ ਰਹੀ ਹੈ। ਇਸ ਦੀ ਥਾਂ ਇੱਕ ਦਿਨ ਜਾਂ ਇੱਕ ਹਫ਼ਤੇ ਦੀ ਬਿਜਲੀ ਲਿਖੋ: ਦੋ ਮੀਟਰ ਰੀਡਿੰਗਾਂ ਦਾ ਫ਼ਰਕ।',
     photoCheck: 'ਹੇਠਲੇ ਮੁੱਲ ਜਾਂਚੋ ਅਤੇ ਸੇਵ ਤੋਂ ਪਹਿਲਾਂ ਠੀਕ ਕਰੋ। ਹਾਲੇ ਕੁਝ ਸੇਵ ਨਹੀਂ ਹੋਇਆ।', photoNotSaved: 'ਫ਼ੋਟੋ ਸੇਵ ਨਹੀਂ ਹੋਈ।',
@@ -1121,7 +1075,6 @@ const T = {
     shareTop: 'ਸਭ ਤੋਂ ਸੰਭਾਵੀ ਕਾਰਨ: {cause} ({conf})। ਇਹ ਸੰਭਾਵੀ ਕਾਰਨ ਹੈ, ਨਿਦਾਨ ਨਹੀਂ।',
     chartLabel: '{n} ਰੀਡਿੰਗਾਂ ਦਾ ਬਾਰ ਚਾਰਟ। ਹਰ ਇੱਕ ਪੜ੍ਹਨ ਲਈ ਖੱਬੇ-ਸੱਜੇ ਤੀਰ ਵਾਲੀਆਂ ਕੁੰਜੀਆਂ ਦਬਾਓ। ਹੇਠਲੀ ਸਾਰਣੀ ਵਿੱਚ ਹਰ ਮੁੱਲ ਹੈ।',
     kwhChartLabel: '{n} ਰੀਡਿੰਗਾਂ ਲਈ ਬਣੀਆਂ ਯੂਨਿਟਾਂ ਬਨਾਮ ਉਮੀਦ ਵਾਲੀਆਂ ਯੂਨਿਟਾਂ ਦਾ ਰੇਖਾ ਚਾਰਟ। ਉੱਪਰਲੀ ਸਾਰਣੀ ਵਿੱਚ ਹਰ ਮੁੱਲ ਹੈ।',
-    replayDone: 'ਰੀਪਲੇ ਪੂਰਾ: {n} ਰੀਡਿੰਗਾਂ, {dips} ਗਿਰਾਵਟਾਂ।', dayOf: 'ਦਿਨ {i} / {n}',
     langGroup: 'ਭਾਸ਼ਾ', panelsFace: 'ਪੈਨਲਾਂ ਦੀ ਦਿਸ਼ਾ', sections: 'ਹਿੱਸੇ', plantAudit: 'ਪਲਾਂਟ ਆਡਿਟ',
     srcDefault: 'ਉਮੀਦ ਵਾਲਾ ਉਤਪਾਦਨ: PVGIS (EU JRC), NASA POWER ਦੇ ਅਸਲੀ ਮੌਸਮ ਮੁਤਾਬਕ।', srcLead: 'ਉਮੀਦ ਵਾਲੇ ਉਤਪਾਦਨ ਦਾ ਸਰੋਤ:',
     srcPvgis: 'PVGIS ਮਾਸਿਕ ਉਤਪਾਦਨ, {d} ਨੂੰ ਲਿਆ', srcClim: 'NASA POWER ਮਾਸਿਕ ਔਸਤ, {d} ਨੂੰ ਲਿਆ', srcDaily: 'NASA POWER ਰੋਜ਼ਾਨਾ ਮੌਸਮ, {d} ਨੂੰ ਲਿਆ',
@@ -1266,12 +1219,9 @@ const ASSUME_SOURCES = [
   { text: 'Panel count: a guess of about 2 panels per kW, not from a source. Count yours and correct it.', urls: [] },
   { text: 'Fixed schedule of 2 cleans a month: BHEL\u2019s rooftop O&M specification says panels are "cleaned at least once every fifteen days", and a Roorkee field study found monthly soiling losses of 1 to 1.5% with weekly cleaning, 2.5% biweekly, 5% every four weeks.', urls: [['BHEL', 'https://tenders.bhel.com/sites/default/files/TS-2021-11-01-04%3A22%3A11.pdf'], ['Roorkee study', 'https://www.nature.com/articles/s41598-026-45485-2']] },
 ];
-const QUEUE_KEY = 'surya-audit-queued-readings';
-
 const state = {
-  id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, photoFill: null, flushing: null, saving: null,
-  tab: 'today', seenTabs: new Set(), chartPlayed: false, chartWidth: 0, tiltAuto: null,
-  prevOutcomes: null, prevSteps: {}, heroValue: 0, heroFrac: 0, replay: null,
+  id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, photoFill: null,
+  tab: 'today', chartPlayed: false, chartWidth: 0, tiltAuto: null, prevSteps: {},
 };
 const $ = (id) => document.getElementById(id);
 const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -1283,7 +1233,6 @@ function el(tag, props, ...children) {
   for (const [k, v] of Object.entries(props || {})) {
     if (v == null || v === false) continue;
     if (k === 'text') node.textContent = v;
-    else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
     else node.setAttribute(k, v === true ? '' : v);
   }
   for (const c of children) {
@@ -1379,7 +1328,7 @@ function applyBigger(on) {
 $('bigger').addEventListener('click', () => applyBigger(!document.documentElement.hasAttribute('data-bigger')));
 (function initPrefs() {
   let saved = null, big = '';
-  try { saved = localStorage.getItem(LANG_KEY); big = localStorage.getItem(BIGGER_KEY); } catch { /* ignore */ }
+  try { saved = localStorage.getItem(LANG_KEY); big = localStorage.getItem(BIGGER_KEY); localStorage.removeItem('surya-audit-queued-readings'); } catch { /* ignore */ }  // the offline queue of earlier versions is gone: its leftovers must not stay in the browser
   // First visit, nothing chosen yet: follow the browser's language when it is Hindi or Punjabi, else English.
   const nav = String(navigator.language || '').toLowerCase();
   applyLang(saved || (nav.startsWith('hi') ? 'hi' : nav.startsWith('pa') ? 'pa' : 'en'), false, false);
@@ -1504,52 +1453,6 @@ async function busy(button, fn) {
   finally { if (button) button.disabled = false; site.classList.remove('busy'); }
 }
 
-// ---------- motion helpers (all of them do nothing under prefers-reduced-motion) ----------
-function countUp(node, from, to, ms) {
-  if (calm() || from === to) { node.textContent = `${to}%`; return; }
-  const start = performance.now();
-  const step = (now) => {
-    const k = Math.min(1, (now - start) / (ms || 800));
-    const eased = 1 - Math.pow(1 - k, 3);
-    node.textContent = `${Math.round(from + (to - from) * eased)}%`;
-    if (k < 1 && node.isConnected) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
-
-function confetti(anchor) {
-  if (calm()) return;
-  const r = anchor ? anchor.getBoundingClientRect() : null;
-  const layer = el('div', { class: 'confetti', 'aria-hidden': 'true' });
-  layer.style.left = `${r ? r.left + r.width / 2 : window.innerWidth / 2}px`;
-  layer.style.top = `${r ? r.top + Math.min(r.height, 120) / 2 : window.innerHeight / 3}px`;
-  const colors = ['var(--accent)', 'var(--series)', 'var(--good)', 'var(--ink-2)'];
-  for (let i = 0; i < 28; i++) {
-    const piece = el('i');
-    const angle = (i / 28) * Math.PI * 2;
-    const dist = 56 + (i % 5) * 18;
-    piece.style.setProperty('--x', `${Math.round(Math.cos(angle) * dist)}px`);
-    piece.style.setProperty('--y', `${Math.round(Math.sin(angle) * dist - 36)}px`);
-    piece.style.setProperty('--r', `${(i * 47) % 360}deg`);
-    piece.style.background = colors[i % colors.length];
-    layer.append(piece);
-  }
-  document.body.append(layer);
-  setTimeout(() => layer.remove(), 1300);
-}
-
-function revealPanel(name) {
-  if (state.seenTabs.has(name)) return;
-  state.seenTabs.add(name);
-  if (calm()) return;
-  $(`panel-${name}`).querySelectorAll(':scope > .card').forEach((card, k) => {
-    card.style.setProperty('--k', k);
-    card.classList.remove('reveal');
-    void card.offsetWidth;
-    card.classList.add('reveal');
-  });
-}
-
 // ---------- tabs: ARIA tablist, roving tabindex, URL hash, Back button ----------
 const tablist = $('tablist');
 const tabButton = (name) => $(`tab-${name}`);
@@ -1569,9 +1472,7 @@ function showTab(name, force) {
     b.setAttribute('aria-selected', String(on));
     b.tabIndex = on ? 0 : -1;
   }
-  tablist.style.setProperty('--i', String(TABS.indexOf(name)));
   state.tab = name;
-  if (name !== 'why') stopReplay(false);
   const swap = () => { for (const t of TABS) $(`panel-${t}`).hidden = t !== name; onTabShown(name); };
   const animate = !calm() && from !== name && !$('site').hidden;
   if (animate && document.startViewTransition) {
@@ -1600,7 +1501,6 @@ function goTo(name, focusTab) {
 }
 
 function onTabShown(name) {
-  revealPanel(name);
   if (name === 'why' && state.audit) drawTimelineChart();
 }
 
@@ -1642,9 +1542,7 @@ function markDraftStale() { if (state.draft) $('draft-stale').hidden = false; }
 
 function showSetup(message) {
   state.id = null; state.audit = null;
-  state.prevOutcomes = null; state.prevSteps = {}; state.heroValue = 0; state.heroFrac = 0;
-  state.seenTabs = new Set(); state.chartPlayed = false; state.tiltAuto = null;
-  stopReplay(false);
+  state.prevSteps = {}; state.chartPlayed = false; state.tiltAuto = null;
   resetDraft();
   clearPhoto();
   $('reading-form').reset();
@@ -1755,59 +1653,6 @@ $('switch').addEventListener('click', () => {
 });
 
 // ---------- readings ----------
-// ---------- offline queue: a reading that cannot reach the server waits in this browser ----------
-function queuedFor(site) { return (jsonGet(QUEUE_KEY) || []).filter((q) => q && q.site === site && q.body); }
-function queued() { return queuedFor(state.id); }
-function setQueue(site, items) {
-  const others = (jsonGet(QUEUE_KEY) || []).filter((q) => q && q.site !== site);
-  jsonSet(QUEUE_KEY, [...others, ...items]);
-  if (site === state.id) renderQueue();
-}
-function renderQueue() {
-  const box = $('queue');
-  box.replaceChildren();
-  const items = queued();
-  box.hidden = !items.length;
-  if (!items.length) return;
-  box.append(el('span', { class: 'chip queued', role: 'status' }, icon('clock'),
-    tf(items.length > 1 ? 'queuedMany' : 'queuedOne', { n: items.length, dates: items.map((q) => fmtDate(q.body.date, true)).join(', ') })),
-    el('button', { type: 'button', class: 'link', id: 'queue-now', text: t('tryNow'), onclick: () => flushQueue() }));
-}
-// Sends the queue for the plant that is open now. A reading the server refuses outright (a 4xx other than
-// 429) is dropped with its message; on no response, 429 or 5xx the rest stays queued for next time.
-function flushQueue() {
-  if (state.flushing) return state.flushing;
-  const site = state.id;
-  if (!site || !queuedFor(site).length) return Promise.resolve();
-  state.flushing = (async () => {
-    let audit = null;
-    let sent = 0;
-    const drop = (q) => setQueue(site, queuedFor(site).filter((x) => x.body.date !== q.body.date));
-    try {
-      if (state.saving) await state.saving.catch(() => {});
-      // One item at a time from the live queue, so readings queued meanwhile are neither lost nor reverted.
-      for (let q = queuedFor(site)[0]; q; q = queuedFor(site)[0]) {
-        try {
-          audit = await api('POST', `/api/sites/${encodeURIComponent(site)}/readings`, q.body);
-          sent += 1;
-          drop(q);
-        } catch (e) {
-          const refused = e.status && e.status < 500 && e.status !== 429;
-          if (!refused) break;  // no response, 429 or 5xx: leave the queue as it is for next time
-          drop(q);
-          if (state.id === site) showError(`${fmtDate(q.body.date)}: ${e.message}`);
-        }
-      }
-    } finally {
-      state.flushing = null;
-      if (state.id === site) renderQueue();
-      if (audit && state.id === site) { render(audit); markDraftStale(); say(sent === 1 ? t('savedQueuedOne') : tf('savedQueuedMany', { n: sent })); }
-    }
-  })();
-  return state.flushing;
-}
-window.addEventListener('online', () => { if (state.id) flushQueue(); });
-
 $('reading-form').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const f = ev.target;
@@ -1815,28 +1660,12 @@ $('reading-form').addEventListener('submit', async (ev) => {
   applyDateKind();  // Today / Yesterday follow midnight even in a tab that was left open
   const body = { date: f.date.value, kwh: Number(f.kwh.value), kind: f.kind.value };
   const saved = state.audit && state.audit.timeline.find((p) => p.date === body.date);
-  const waiting = queued().find((q) => q.body.date === body.date);
   if (saved && !confirm(tf('replaceSaved', { date: fmtDate(body.date), kwh: kwh(saved.kwh), u: units() }))) return;
-  if (!saved && waiting && !confirm(tf('replaceWaiting', { date: fmtDate(body.date), kwh: kwh(waiting.body.kwh), u: units() }))) return;
   const button = f.querySelector('button[type=submit]');
   button.disabled = true; showError('');
   try {
-    if (state.flushing) await state.flushing.catch(() => {});  // never race a queue flush
     let audit;
-    try {
-      state.saving = api('POST', `/api/sites/${encodeURIComponent(site)}/readings`, body);
-      audit = await state.saving;
-    } catch (e) {
-      if (e.status) { showError(e.message); return; }  // the server answered: a real problem with the values
-      // No answer at all: keep the reading here and send it when the connection is back.
-      setQueue(site, [...queuedFor(site).filter((q) => q.body.date !== body.date), { site, body }]);
-      setKwh('');
-      clearPhoto();
-      say(tf('offlineKept', { date: fmtDate(body.date) }));
-      return;
-    } finally {
-      state.saving = null;
-    }
+    try { audit = await api('POST', `/api/sites/${encodeURIComponent(site)}/readings`, body); } catch (e) { showError(e.message); return; }  // nothing was saved: the values stay in the form for another try
     if (state.id !== site) return;  // the owner moved to another plant meanwhile
     setKwh('');
     clearPhoto();
@@ -2029,11 +1858,6 @@ $('download-btn').addEventListener('click', () => {
 
 // ---------- rendering ----------
 function render(audit) {
-  // Celebrate only a suggestion that flips to "came back" while the owner is here, never old data.
-  const before = state.prevOutcomes;
-  const newlyRecovered = before ? audit.actions.filter((x) => x.verification.outcome === 'recovered'
-    && !x.verification.provisional && before[x.id] && before[x.id] !== 'recovered') : [];
-  state.prevOutcomes = Object.fromEntries(audit.actions.map((x) => [x.id, x.verification.outcome]));
   state.audit = audit;
   $('setup').hidden = true;
   $('skeleton').hidden = true;
@@ -2049,14 +1873,7 @@ function render(audit) {
   renderEscalation(audit);
   renderSources(audit);
   renderImpact(audit);
-  renderQueue();
   syncDate();
-  if (newlyRecovered.length) {
-    const card = document.querySelector(`[data-action-id="${CSS.escape(newlyRecovered[0].id)}"]`);
-    const visible = [card, $('headline'), document.querySelector('[role="tabpanel"]:not([hidden]) > .card')]
-      .find((n) => n && !n.closest('[hidden]'));
-    confetti(visible);
-  }
 }
 
 // Today / Yesterday / Other date. The date input stays the value the reading is saved with; the chips fill it
@@ -2136,22 +1953,14 @@ function confidence(level) {
   return el('span', { class: 'conf' }, dots, t(`conf_${level}`));
 }
 
-// Ring gauge: the arc's stroke-dashoffset eases from the last value shown to this one.
+// Ring gauge: the arc shows the reading's share of the usual level.
 function gauge(frac, dip) {
   const R = 52;
   const C = 2 * Math.PI * R;
   const root = svg('svg', { class: 'gauge', viewBox: '0 0 128 128', 'aria-hidden': 'true' });
   root.append(svg('circle', { class: 'gauge-track', cx: 64, cy: 64, r: R }));
-  const arc = svg('circle', { class: dip ? 'gauge-arc dip' : 'gauge-arc', cx: 64, cy: 64, r: R,
-    'stroke-dasharray': C.toFixed(2), transform: 'rotate(-90 64 64)' });
-  const target = C * (1 - Math.max(0, Math.min(1, frac)));
-  if (calm()) {
-    arc.style.strokeDashoffset = target.toFixed(2);
-  } else {
-    arc.style.strokeDashoffset = (C * (1 - state.heroFrac)).toFixed(2);
-    nextFrame(() => { arc.style.strokeDashoffset = target.toFixed(2); });
-  }
-  root.append(arc);
+  root.append(svg('circle', { class: dip ? 'gauge-arc dip' : 'gauge-arc', cx: 64, cy: 64, r: R,
+    'stroke-dasharray': C.toFixed(2), 'stroke-dashoffset': (C * (1 - Math.max(0, Math.min(1, frac)))).toFixed(2), transform: 'rotate(-90 64 64)' }));
   return root;
 }
 
@@ -2237,12 +2046,7 @@ function renderHeadline(a) {
     ring.append(el('span', { class: 'ring-num', text: '–' }));
   } else {
     const frac = Math.max(0, Math.min(1, last.relative));
-    ring.append(gauge(frac, last.flagged));
-    const num = el('span', { class: 'ring-num', 'aria-hidden': 'true' });
-    ring.append(num);
-    countUp(num, state.heroValue, value);
-    state.heroValue = value;
-    state.heroFrac = frac;
+    ring.append(gauge(frac, last.flagged), el('span', { class: 'ring-num', 'aria-hidden': 'true', text: `${value}%` }));
   }
   box.append(
     el('div', { class: 'hero' }, ring,
@@ -2409,7 +2213,7 @@ function renderActions(a) {
   for (const action of items) {
     const v = action.verification;
     const sug = srvProps(action.suggestion);
-    const li = el('li', { class: 'action', 'data-testid': `action-${action.kind}`, 'data-action-id': action.id },
+    const li = el('li', { class: 'action', 'data-testid': `action-${action.kind}` },
       el('div', { class: 'action-head' }, pictogram(action.kind), el('h3', { text: ACTIONS[action.kind] || action.kind })),
       el('p', sug),
       sug['data-srv'] && sug['data-srv'] !== 'translated' ? el('p', { class: 'note', text: t('inEnglish') }) : null,
@@ -2460,16 +2264,12 @@ function renderTimeline(a) {
   const learnt = a.baseline.learnt;
   $('tl-sub').textContent = (!tl.length ? t('tlEmpty') : learnt ? t('tlSubUsual') : t('tlSubEstimate'))
     + (tl.length > CHART_MAX ? ` ${tf('tlShowing', { n: CHART_MAX, total: tl.length })}` : '');
-  const shown = Math.min(tl.length, CHART_MAX);
-  $('replay').hidden = !(a.synthetic && shown > 1);
-  if (!state.replay) $('replay-btn').textContent = tf('replay', { n: shown });
   if (state.tab === 'why') drawTimelineChart();
   renderLegend(tl, a);
   renderTable(tl);
 }
 
 function drawTimelineChart() {
-  if (state.replay) return;
   const a = state.audit;
   const animate = !state.chartPlayed && !calm();
   if (a.timeline.length) state.chartPlayed = true;
@@ -2538,11 +2338,11 @@ function pointState(p) {
   return '';
 }
 
-// Draws the bars; returns reveal(i) so the replay can bring bars in one day at a time.
+// Draws the bars.
 function drawChart(box, points, actions, flagBelow, opts) {
   const o = opts || {};
   box.replaceChildren();
-  if (!points.length) return { reveal() {} };
+  if (!points.length) return;
   const W = Math.max(280, Math.round(box.clientWidth || 600));
   state.chartWidth = W;
   const H = 220;
@@ -2569,7 +2369,7 @@ function drawChart(box, points, actions, flagBelow, opts) {
     const v = p.relative || 0;
     const x = m.l + i * slot + (slot - bw) / 2;
     const h = Math.max(2, y(0) - y(v));
-    const cls = ['bar', pointState(p), p.weather_known ? '' : 'unknown', o.hold ? 'hold' : ''].filter(Boolean).join(' ');
+    const cls = ['bar', pointState(p), p.weather_known ? '' : 'unknown'].filter(Boolean).join(' ');
     const bar = svg('path', { class: cls, d: barPath(x, y(0) - h, bw, h, 4), 'data-dip': String(p.flagged) });
     bar.style.setProperty('--d', String(i));
     bars.push(bar);
@@ -2635,51 +2435,7 @@ function drawChart(box, points, actions, flagBelow, opts) {
     if (ev.key === 'ArrowRight') { ev.preventDefault(); show(Math.min(points.length - 1, current + 1)); }
     if (ev.key === 'Escape') hide();
   });
-  return {
-    reveal(i) {
-      const bar = bars[i];
-      if (!bar) return;
-      bar.classList.remove('hold');
-      if (!calm()) bar.classList.add('pop');
-    },
-  };
 }
-
-// ---------- replay: the synthetic scenario's days appear one by one ----------
-function stopReplay(finished) {
-  if (!state.replay) return;
-  clearInterval(state.replay);
-  state.replay = null;
-  const a = state.audit;
-  if (!a) return;
-  $('replay-btn').textContent = tf('replay', { n: Math.min(a.timeline.length, CHART_MAX) });
-  if (finished) {
-    const shown = a.timeline.slice(-CHART_MAX);
-    $('replay-caption').textContent = tf('replayDone', { n: shown.length, dips: shown.filter((p) => p.flagged).length });
-  } else {
-    $('replay-caption').textContent = '';
-    if (state.tab === 'why') {
-      drawChart($('chart'), a.timeline.slice(-CHART_MAX), a.actions, a.flag_below, {});
-      drawKwhChart($('kwh-chart'), a.timeline.slice(-CHART_MAX), a);
-    }
-  }
-}
-
-$('replay-btn').addEventListener('click', () => {
-  if (state.replay) { stopReplay(false); return; }
-  const a = state.audit;
-  const points = a.timeline.slice(-CHART_MAX);
-  const chart = drawChart($('chart'), points, a.actions, a.flag_below, { hold: true });
-  $('replay-btn').textContent = t('stopReplay');
-  let i = 0;
-  state.replay = setInterval(() => {
-    if (i >= points.length) { stopReplay(true); return; }
-    chart.reveal(i);
-    const p = points[i];
-    $('replay-caption').textContent = `${tf('dayOf', { i: i + 1, n: points.length })} · ${fmtDate(p.date)}: ${p.relative == null ? '–' : pctText(p)}${p.flagged ? ` (${t('noteDip')})` : ''}`;
-    i += 1;
-  }, 110);
-});
 
 function renderLegend(tl, a) {
   const legend = $('legend');
@@ -2762,7 +2518,7 @@ new ResizeObserver(() => {
   cancelAnimationFrame(resizeFrame);
   resizeFrame = requestAnimationFrame(() => {
     const box = $('chart');
-    if (!state.audit || state.replay || state.tab !== 'why' || $('site').hidden) return;
+    if (!state.audit || state.tab !== 'why' || $('site').hidden) return;
     if (Math.abs(Math.round(box.clientWidth) - state.chartWidth) < 2) return;
     drawChart(box, state.audit.timeline.slice(-CHART_MAX), state.audit.actions, state.audit.flag_below, {});
     drawKwhChart($('kwh-chart'), state.audit.timeline.slice(-CHART_MAX), state.audit);
@@ -2774,7 +2530,6 @@ async function load(id) {
   const audit = await api('GET', `/api/sites/${encodeURIComponent(id)}/audit`);
   state.id = id;
   render(audit);
-  if (navigator.onLine) flushQueue();  // readings queued while offline, if any
   const tab = tabFromHash();
   if (!tab) history.replaceState(null, '', `${location.pathname}${location.search}#today`);
   showTab(tab || 'today', true);
