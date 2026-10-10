@@ -73,7 +73,7 @@ dependencies) does this:
 4. It shapes every run again with the pruned font and exits non-zero unless the glyphs, clusters, advances and offsets
    are identical to the full font's.
 
-Result: Devanagari 129 of 845 glyphs, 12,228 bytes (was 29,037 with 496 glyphs); Gurmukhi 83 of 282 glyphs, 6,360 bytes
+Result: Devanagari 129 of 845 glyphs, 12,228 bytes (was 29,036 with 496 glyphs); Gurmukhi 83 of 282 glyphs, 6,360 bytes
 (was 9,384). They are inlined as base64 `@font-face` data URLs, which needs `font-src data:` in the CSP.
 `tests/test_loop.py` fails while the page has a word that is not in the runs files, so a new Hindi or Punjabi word
 cannot ship with a font that cannot shape it.

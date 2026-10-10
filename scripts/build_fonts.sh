@@ -34,7 +34,7 @@ for name, rng in (("deva", r"U\+0900-097F"), ("guru", r"U\+0A00-0A7F")):
     page, n = pattern.subn(lambda m: m.group(1) + b64, page)
     if n != 1:
         sys.exit(f"expected one @font-face rule for {name}, found {n}")
-    print(f"{name}.woff2: {len(b64) * 3 // 4} bytes inlined")
+    print(f"{name}.woff2: {len(base64.b64decode(b64))} bytes inlined")
 open(path, "w", encoding="utf-8", newline="").write(page)
 PYEOF
 echo "done: $PAGE is $(wc -c < "$PAGE") bytes"
