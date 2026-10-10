@@ -246,7 +246,7 @@ def test_spacing_is_on_the_scale_radii_are_two_and_there_are_no_shadows_or_amber
                 off_scale += [f"{selector}: {prop} {n}px" for n in re.findall(r"-?[0-9.]+(?=px)", value) if abs(float(n)) not in SPACING_SCALE]
         radii |= {v.strip() for v in re.findall(r"border-radius\s*:\s*([^;]+)", body)}
         shadows += [f"{selector}: {v.strip()}" for v in re.findall(r"box-shadow\s*:\s*([^;]+)", body)]
-        amber_text += [f"{selector}: {v}" for v in re.findall(r"(?<![-\w])color\s*:\s*(var\(--accent\)[^;]*)", body)]
+        amber_text += [f"{selector}: {v}" for v in re.findall(r"(?<![-\w])color\s*:\s*((?:var\(--accent\)|#eda100|color-mix\([^;]*--accent)[^;]*)", body)]
     assert off_scale == []
     assert radii <= {"var(--r)", "var(--pill)", "50%", "0", "0 var(--r) var(--r) 0"}, radii
     assert shadows == [] and amber_text == []
@@ -257,7 +257,8 @@ def test_the_mono_face_is_for_latin_metadata_and_is_switched_off_in_hindi_and_pu
     page face under :lang(hi) and :lang(pa)."""
     mono = [sel for sel, body in rules(STYLE) if re.search(r"font-family:[^;]*--mono", body) and sel not in (":root", "textarea")]
     assert mono, "no mono rule found: the lint is not looking at the stylesheet"
-    reset = " ".join(sel for sel, body in rules(STYLE) if ":lang(hi)" in sel and "font-family: inherit" in body)
+    reset = {part.strip() for sel, body in rules(STYLE) if ":lang(hi)" in sel and "font-family: inherit" in body
+             for part in re.sub(r":lang\((?:hi|pa)\)|:is\(|\)", " ", sel).split(",")}
     for group in mono:
         for part in (s.strip() for s in group.split(",")):
             assert part in reset, f"{part} keeps the mono face in Hindi and Punjabi"
