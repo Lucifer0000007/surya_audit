@@ -41,6 +41,12 @@ async function openTab(page, name) {
   await expect(page.getByRole('tab', { name, exact: true })).toHaveAttribute('aria-selected', 'true');
 }
 
+// The reading date: Today and Yesterday are chips; any other date comes from the field "Other date" shows.
+async function setReadingDate(page, iso) {
+  await page.getByText('Other date', { exact: true }).click();
+  await page.getByLabel('Date', { exact: true }).fill(iso);
+}
+
 // Walks the three-step setup wizard with the synthetic site's values (no loss given, so sample=true).
 async function setupPlant(page) {
   await page.getByLabel('Latitude').fill('26.85');
@@ -152,7 +158,7 @@ test('owner sets up a plant and types a reading', async ({ page }, testInfo) => 
   await expect(page.getByRole('tab', { name: 'Today', exact: true })).toHaveAttribute('aria-selected', 'true');
 
   await openTab(page, 'Log');
-  await page.getByLabel('Date').first().fill('2026-09-01');
+  await setReadingDate(page, '2026-09-01');
   await page.getByLabel('Energy produced (kWh)').fill('11.5');
   await page.getByRole('button', { name: 'Save reading' }).click();
   await expect(page.getByTestId('headline')).toContainText('Still learning this plant');
@@ -179,7 +185,7 @@ test('owner sets up a plant and types a reading', async ({ page }, testInfo) => 
 test('photo reading falls back to typing when it is unavailable', async ({ page, request }) => {
   const id = await createSite(request);
   await page.goto(`/?site=${id}#log`);
-  await expect(page.getByText('Your photo is sent to Google Gemini to read the numbers.')).toBeVisible();
+  await expect(page.getByText('Surya Audit does not keep your photo; Google Gemini reads it under Google’s own terms.')).toBeVisible();
   await page.locator('#photo').setInputFiles({ name: 'meter.png', mimeType: 'image/png', buffer: Buffer.from(TINY_PNG, 'base64') });
   await expect(page.locator('#photo-note')).toContainText('type the reading by hand');
   await expect(page.locator('#photo-note')).toContainText('The photo was not saved.');
@@ -188,7 +194,7 @@ test('photo reading falls back to typing when it is unavailable', async ({ page,
   await openTab(page, 'Why');
   await expect(page.locator('#chart path.bar')).toHaveCount(0);
   await openTab(page, 'Log');
-  await page.getByLabel('Date').first().fill('2026-09-02');
+  await setReadingDate(page, '2026-09-02');
   await page.getByLabel('Energy produced (kWh)').fill('10.2');
   await page.getByRole('button', { name: 'Save reading' }).click();
   await expect(page.locator('#photo-review')).toBeHidden();
@@ -432,14 +438,14 @@ test('offline: a reading waits in this browser and is saved when the connection 
   await postRows(request, id, syntheticRows().slice(0, 2));
   await page.goto(`/?site=${id}#log`);
   await context.setOffline(true);
-  await page.getByLabel('Date').first().fill('2026-08-20');
+  await setReadingDate(page, '2026-08-20');
   await page.getByLabel('Energy produced (kWh)').fill('9.9');
   await page.getByRole('button', { name: 'Save reading' }).click();
   await expect(page.locator('#queue')).toContainText('Offline: 1 reading will be saved when you are connected');
   await expect(page.locator('#status')).toContainText('will be saved when you are connected');
   // Queued items keep the overwrite confirmation.
   page.once('dialog', (dialog) => { expect(dialog.message()).toContain('waiting to be saved'); dialog.accept(); });
-  await page.getByLabel('Date').first().fill('2026-08-20');
+  await setReadingDate(page, '2026-08-20');
   await page.getByLabel('Energy produced (kWh)').fill('10.1');
   await page.getByRole('button', { name: 'Save reading' }).click();
   await expect(page.locator('#queue')).toContainText('1 reading');
@@ -465,9 +471,12 @@ test('languages: Hindi and Punjabi interface, units not kWh, fonts inline, hones
   const outside = [];
   page.on('request', (req) => { if (!req.url().startsWith(baseURL)) outside.push(req.url()); });
 
+  await page.evaluate(() => say('Saved the reading.'));
   await page.getByRole('button', { name: 'हिन्दी' }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'hi');
+  await expect(page.locator('#status')).toHaveText('');  // a status written in English does not linger on a Hindi page
   await expect(page.getByRole('tab', { name: 'आज', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('headline')).toContainText('3 अक्तू॰ 2026');  // months come from the translations, not the browser
   await expect(page.getByTestId('light')).toContainText('सुझाव देखें');  // the fault day: well below usual
   await expect(page.getByTestId('light')).toContainText('निदान नहीं');
   await expect(page.getByTestId('headline')).toContainText('यूनिट');
@@ -497,12 +506,12 @@ test('languages: Hindi and Punjabi interface, units not kWh, fonts inline, hones
     await page.keyboard.press('Enter');
     await expectNoSideScroll(page);
   }
-  // Server-written detail stays English and the page says so; the suggestion names are translated.
+  // The suggestion's own sentence is translated too, with nothing left marked as English.
   await page.getByRole('tab', { name: 'ਹੱਲ', exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('action-check_inverter')).toContainText('ਇਨਵਰਟਰ ਜਾਂਚੋ');
-  await expect(page.getByTestId('action-check_inverter')).toContainText('ਅੰਗਰੇਜ਼ੀ ਵਿੱਚ');
-  await expect(page.getByTestId('action-check_inverter').locator('p[lang="en"]')).toHaveCount(1);  // the English suggestion is marked for screen readers
+  await expect(page.getByTestId('action-check_inverter')).toContainText('ਇਨਵਰਟਰ ਦੀ ਸਕ੍ਰੀਨ ਜਾਂ ਐਪ ਵਿੱਚ ਐਰਰ ਕੋਡ ਵੇਖੋ');
+  await expect(page.getByTestId('action-check_inverter').locator('[lang="en"]')).toHaveCount(0);
   await expect(page.getByTestId('action-check_inverter').getByRole('button', { name: 'ਮਨਜ਼ੂਰ' })).toBeVisible();
   // The Report tab's own callouts and status are translated; the draft itself stays English.
   await page.getByRole('tab', { name: 'ਸ਼ਿਕਾਇਤ', exact: true }).focus();
@@ -511,6 +520,10 @@ test('languages: Hindi and Punjabi interface, units not kWh, fonts inline, hones
   await expect(page.locator('#draft-out')).toContainText('ਕੁਝ ਭੇਜਿਆ ਨਹੀਂ ਗਿਆ।');
   await expect(page.locator('#status')).toHaveText('ਖਰੜਾ ਤਿਆਰ। ਕੁਝ ਭੇਜਿਆ ਨਹੀਂ ਗਿਆ।');
   await expect(page.locator('#draft-text')).toHaveValue(/OWNER TO FILL/);
+  await expect(page.getByText('ਸ਼ਿਕਾਇਤ ਦਾ ਖਰੜਾ (ਅੰਗਰੇਜ਼ੀ ਵਿੱਚ)')).toBeVisible();  // the draft is labelled as English
+  expect(await page.locator('#categories').getAttribute('lang')).toBeNull();  // its lead and note are Punjabi; only the category names are English
+  await expect(page.locator('#categories span[lang="en"]')).toHaveCount(1);
+  await expect(page.locator('#categories')).toContainText('ਨਮੂਨਾ (SAMPLE)');
 
   // The choice is remembered, and English comes back.
   await page.reload();
@@ -622,7 +635,7 @@ test('setup wizard: three steps, big choices, tilt from latitude, same API call'
   await expect(page.getByLabel('Panel tilt (degrees)')).toHaveValue('27');
   await page.getByLabel('Plant size (kW)').fill('3');
   await page.getByRole('radio', { name: 'South-west' }).check();
-  await expect(page.locator('.big-choice label.checked')).toHaveText('South-west');  // visible without :has() too
+  await expect(page.locator('#wiz-2 .big-choice label.checked')).toHaveText('South-west');  // visible without :has() too
   await page.getByRole('button', { name: 'Next' }).click();
   await expect(page.getByText('Do you know the system loss?')).toBeVisible();
   await page.getByRole('button', { name: 'Back' }).click();
@@ -677,4 +690,339 @@ test('accessibility basics: 48px targets, bigger text, photo-first log, mic and 
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('light').getByRole('button', { name: 'Read aloud' })).toBeVisible({ visible: hasVoice });
   await expectNoSideScroll(page);
+});
+
+// ---------- phase 9: UI polish ----------
+
+test('flags: one strip above the tabs names each flag; the explanations sit behind it with their wording unchanged', async ({ page, request }) => {
+  const id = await createSite(request);  // synthetic, no loss given: both flags apply
+  await postRows(request, id, syntheticRows().slice(0, 3));
+  await page.goto(`/?site=${id}`);
+  const strip = page.getByTestId('flags');
+  await expect(strip.locator('summary')).toContainText('Synthetic data');
+  await expect(strip.locator('summary')).toContainText('Sample values in use');
+  await expect(strip.locator('.flag.synthetic')).toBeVisible();  // the synthetic flag keeps its amber warning style
+  expect((await strip.locator('summary').boundingBox()).height).toBeGreaterThanOrEqual(48);
+  // Collapsed: the explanations are not shown, and the flags themselves are.
+  await expect(strip).not.toHaveAttribute('open', '');
+  await expect(strip.getByText('They do not describe a real plant.')).toBeHidden();
+  await strip.locator('summary').click();
+  await expect(strip.getByText('This plant and its readings are made up for a demo. They do not describe a real plant.')).toBeVisible();
+  await expect(strip.getByText('No system loss was given, so a SAMPLE value of 14% is assumed. It is a placeholder, not a measurement.')).toBeVisible();
+  // Above the tabs on every tab, and the open state survives a re-render.
+  for (const name of TAB_NAMES) {
+    await openTab(page, name);
+    expect(await page.evaluate(() => Boolean(document.getElementById('banners').compareDocumentPosition(document.getElementById('tablist')) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
+    await expect(strip.locator('summary')).toBeVisible();
+  }
+  await expect(strip).toHaveAttribute('open', '');
+  // A plant that is neither synthetic nor sample shows no strip at all.
+  const real = await request.post('/api/sites', { data: { lat: 26.85, lon: 80.95, kw: 3, tilt: 20, azimuth: 180, loss_pct: 14 } });
+  await page.goto(`/?site=${(await real.json()).id}`);
+  await expect(page.getByTestId('flags')).toHaveCount(0);
+});
+
+test('Log: Save stays aria-disabled until there is a value; tapping it goes to the field and the hint says why', async ({ page, request }) => {
+  const id = await createSite(request);
+  const posted = [];
+  page.on('request', (req) => { if (req.method() === 'POST' && req.url().includes('/readings')) posted.push(req.url()); });
+  await page.goto(`/?site=${id}#log`);
+  const save = page.getByRole('button', { name: 'Save reading' });
+  const kwhField = page.getByLabel('Energy produced (kWh)', { exact: true });
+  await expect(save).toBeVisible();  // the page has finished loading
+  await expect(save).toHaveAttribute('aria-disabled', 'true');
+  expect(await save.getAttribute('disabled')).toBeNull();  // aria-disabled, never the disabled attribute
+  await expect(save).toHaveAttribute('aria-describedby', 'save-hint');
+  await expect(page.locator('#save-hint')).toBeVisible();
+  await save.dispatchEvent('click');  // Playwright treats aria-disabled as not actionable; a real tap goes through
+  await expect(kwhField).toBeFocused();
+  await kwhField.press('Enter');  // Enter in the empty field does not save either
+  expect(posted).toEqual([]);
+  await kwhField.fill('12.4');
+  await expect(save).toHaveAttribute('aria-disabled', 'false');
+  await expect(page.locator('#save-hint')).toBeHidden();
+  expect(await save.getAttribute('aria-describedby')).toBeNull();
+  await kwhField.fill('-3');  // not a valid reading
+  await expect(save).toHaveAttribute('aria-disabled', 'true');
+  await kwhField.fill('');
+  await expect(save).toHaveAttribute('aria-disabled', 'true');
+  // The only solid primary on the Log tab is Save; the photo zone is outlined.
+  const zone = await page.locator('#photo-pick').evaluate((n) => { const s = getComputedStyle(n); return { bg: s.backgroundColor, border: s.borderTopStyle }; });
+  expect(zone.border).toBe('dashed');
+  expect(zone.bg).toBe('rgba(0, 0, 0, 0)');
+  await kwhField.fill('12.4');
+  const primary = await save.evaluate((n) => getComputedStyle(n).backgroundColor);
+  expect(primary).not.toBe('rgba(0, 0, 0, 0)');
+});
+
+test('Log: the kWh field has a placeholder, a decimal keyboard, no spinners and a units label', async ({ page, request }) => {
+  const id = await createSite(request);
+  await page.goto(`/?site=${id}#log`);
+  const field = page.getByLabel('Energy produced (kWh)', { exact: true });
+  await expect(field).toHaveAttribute('placeholder', 'e.g. 12.4…');
+  await expect(field).toHaveAttribute('inputmode', 'decimal');
+  await expect(field).toHaveCSS('appearance', 'textfield');  // no spinner buttons
+  await expect(page.locator('#reading-form')).toHaveAttribute('autocomplete', 'off');
+  await expect(page.locator('.with-mic .unit')).toHaveText('units');
+  await page.getByRole('button', { name: 'हिन्दी' }).click();
+  await expect(page.locator('.with-mic .unit')).toHaveText('यूनिट');
+  await expect(page.locator('#kwh-input')).toHaveAttribute('placeholder', 'जैसे 12.4…');
+});
+
+test('Log: Today and Yesterday chips, Other date, and the overwrite confirmation', async ({ page, request }) => {
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows().slice(0, 2));
+  await page.goto(`/?site=${id}#log`);
+  const today = await page.evaluate(() => isoDaysAgo(0));
+  const yesterday = await page.evaluate(() => isoDaysAgo(1));
+  const dateValue = () => page.evaluate(() => document.querySelector('#reading-form [name=date]').value);
+  await expect(page.getByRole('radio', { name: 'Today' })).toBeChecked();
+  expect(await dateValue()).toBe(today);
+  // Each chip carries its date, so "Yesterday" can never be mistaken for another day.
+  await expect(page.locator('.chips label').nth(0)).toContainText(await page.evaluate(() => fmtDate(isoDaysAgo(0), true)));
+  await expect(page.locator('.chips label').nth(1)).toContainText(await page.evaluate(() => fmtDate(isoDaysAgo(1), true)));
+  await expect(page.locator('#date-other')).toBeHidden();
+  await page.getByText('Yesterday', { exact: true }).click();
+  expect(await dateValue()).toBe(yesterday);
+  await page.getByText('Other date', { exact: true }).click();
+  await expect(page.locator('#date-other')).toBeVisible();
+  await page.getByLabel('Date', { exact: true }).fill('2026-08-20');
+  await expect(page.locator('#date-shown')).toHaveText('Reading for 20 Aug 2026');
+  await page.getByLabel('Energy produced (kWh)', { exact: true }).fill('9.9');
+  await page.getByRole('button', { name: 'Save reading' }).click();
+  await expect(page.locator('#status')).toContainText('Saved the reading for 20 Aug 2026');
+  // The same date again asks before it replaces.
+  let asked = '';
+  page.once('dialog', (dialog) => { asked = dialog.message(); dialog.accept(); });
+  await page.getByLabel('Energy produced (kWh)', { exact: true }).fill('10.5');
+  await page.getByRole('button', { name: 'Save reading' }).click();
+  await expect(page.locator('#status')).toContainText('Saved the reading for 20 Aug 2026');
+  expect(asked).toContain('already saved');
+  // A date read from a photo picks the chip that matches it; any other date opens Other date.
+  await page.evaluate((d) => setReadingDate(d), today);
+  await expect(page.getByRole('radio', { name: 'Today' })).toBeChecked();
+  await page.evaluate((d) => setReadingDate(d), yesterday);
+  await expect(page.getByRole('radio', { name: 'Yesterday' })).toBeChecked();
+  await page.evaluate(() => setReadingDate('2026-09-09'));
+  await expect(page.getByRole('radio', { name: 'Other date' })).toBeChecked();
+  await expect(page.getByLabel('Date', { exact: true })).toHaveValue('2026-09-09');
+});
+
+test('Log: the drop zone takes a dropped screenshot', async ({ page, request }) => {
+  const id = await createSite(request);
+  await page.goto(`/?site=${id}#log`);
+  const data = await page.evaluateHandle((b64) => {
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const dt = new DataTransfer();
+    dt.items.add(new File([bytes], 'screenshot.png', { type: 'image/png' }));
+    return dt;
+  }, TINY_PNG);
+  const zone = page.locator('#photo-pick');
+  await zone.dispatchEvent('dragover', { dataTransfer: data });
+  await expect(zone).toHaveClass(/over/);
+  await zone.dispatchEvent('drop', { dataTransfer: data });
+  await expect(zone).not.toHaveClass(/over/);
+  await expect(page.locator('#photo-review')).toBeVisible();
+  await expect(page.locator('#photo-note')).toContainText('type the reading by hand');  // no key offline: the same fallback as a picked photo
+});
+
+test('first visit follows the browser language when it is Hindi or Punjabi; a choice made later wins and is the only one remembered', async ({ browser, baseURL, request }) => {
+  const id = await createSite(request);
+  for (const [locale, expected] of [['hi-IN', 'hi'], ['pa-IN', 'pa'], ['fr-FR', 'en']]) {
+    const context = await browser.newContext({ locale, baseURL });
+    const page = await context.newPage();
+    await page.goto(`/?site=${id}`);
+    await expect(page.locator('html')).toHaveAttribute('lang', expected);
+    expect(await page.evaluate(() => localStorage.getItem('surya-audit-lang'))).toBeNull();  // a default is not a choice
+    await page.getByRole('button', { name: 'English' }).click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    expect(await page.evaluate(() => localStorage.getItem('surya-audit-lang'))).toBe('en');
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await context.close();
+  }
+});
+
+test('type and layout: nothing under 13px, help text 15px and scaled by Bigger text, A+ has a tooltip, a skip link, theme colours', async ({ page, request }) => {
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows());
+  const small = () => page.evaluate(() => {
+    const out = [];
+    for (const n of document.querySelectorAll('body *')) {
+      if (n.closest('[hidden], script, style') || !n.getClientRects().length) continue;
+      if (!Array.from(n.childNodes).some((c) => c.nodeType === 3 && c.textContent.trim())) continue;
+      const px = parseFloat(getComputedStyle(n).fontSize);
+      if (px < 13) out.push(`${px}px ${n.tagName} "${n.textContent.trim().slice(0, 24)}"`);
+    }
+    return out;
+  });
+  for (const lng of ['en', 'hi', 'pa']) {
+    await page.goto('/');
+    await page.evaluate((l) => localStorage.setItem('surya-audit-lang', l), lng);
+    for (const tab of ['today', 'log', 'fix', 'why', 'report']) {
+      await page.goto(`/?site=${id}#${tab}`);
+      await expect(page.locator(`#panel-${tab}`)).toBeVisible();
+      if (tab === 'why') await page.locator('#chart svg').waitFor();
+      expect(await small(), `${lng}/${tab}`).toEqual([]);
+    }
+  }
+  // Help text is 15px, and Bigger text scales it with everything else (rem units follow the root size).
+  await page.goto('/');  // a full load: the language is read from storage when the page starts
+  await page.evaluate(() => localStorage.setItem('surya-audit-lang', 'en'));
+  await page.goto(`/?site=${id}#log`);
+  const help = () => page.locator('#log .note').first().evaluate((n) => parseFloat(getComputedStyle(n).fontSize));
+  expect(await help()).toBe(15);
+  await page.getByRole('button', { name: 'Bigger text' }).click();
+  expect(await help()).toBeGreaterThan(17);
+  await page.getByRole('button', { name: 'Bigger text' }).click();
+  // A+ has an aria-label and a tooltip, in every language.
+  const bigger = page.locator('#bigger');
+  await expect(bigger).toHaveAttribute('aria-label', 'A+ Bigger text');  // starts with the visible text
+  await expect(bigger).toHaveAttribute('title', 'Bigger text');
+  await page.getByRole('button', { name: 'हिन्दी' }).click();
+  await expect(bigger).toHaveAttribute('title', 'बड़े अक्षर');
+  await expect(bigger).toHaveAttribute('aria-label', 'A+ बड़े अक्षर');
+  // The skip link is the first stop and moves focus to the content.
+  await page.getByRole('button', { name: 'English' }).click();
+  await page.reload();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('.skip')).toBeFocused();
+  expect((await page.locator('.skip').boundingBox()).y).toBeGreaterThanOrEqual(0);
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#main')).toBeFocused();
+  // Light and dark theme colours, brand names left alone by translators, thumbnail size, no autocomplete on forms.
+  await expect(page.locator('meta[name="theme-color"]')).toHaveCount(2);
+  expect(await page.locator('meta[name="theme-color"][media*="dark"]').getAttribute('content')).toBe('#0f0f0e');
+  expect(await page.locator('.brand span').getAttribute('translate')).toBe('no');
+  expect(await page.locator('#draft-text').getAttribute('translate')).toBe('no');
+  expect(await page.locator('#photo-thumb').getAttribute('width')).toBe('72');
+  for (const f of ['#setup-form', '#reading-form', '#assume-form']) expect(await page.locator(f).getAttribute('autocomplete')).toBe('off');
+});
+
+test('desktop backdrop: from 1100px the column sits on a darker backdrop; phones and tablets keep a plain page', async ({ page, request }) => {
+  const id = await createSite(request);
+  await page.goto(`/?site=${id}`);
+  for (const [width, backdrop] of [[1280, true], [1099, false], [393, false]]) {
+    await page.setViewportSize({ width, height: 800 });
+    const image = await page.evaluate(() => getComputedStyle(document.body).backgroundImage);
+    expect(image.includes('linear-gradient'), `${width}px`).toBe(backdrop);
+  }
+});
+
+test('no English left in Hindi and Punjabi: known audit sentences are translated, anything else is marked lang="en" and counted', async ({ page, request }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'the language check does not depend on the viewport');
+  test.setTimeout(240_000);
+  const rows = syntheticRows();
+  const scale = (rs, f) => rs.map((r, i) => ({ ...r, kwh: (Number(r.kwh) * f(i)).toFixed(1) }));
+  const LOW = 0.70 / 0.92;
+  const approve = async (id, kind, on) => {
+    const audit = await (await request.get(`/api/sites/${id}/audit`)).json();
+    const act = audit.actions.find((a) => a.kind === kind && a.status === 'proposed');
+    expect(act, `a proposed ${kind} to approve`).toBeTruthy();
+    expect((await request.post(`/api/sites/${id}/actions/${act.id}/approve`, { data: { approved_on: on } })).ok()).toBeTruthy();
+  };
+  const later = (n) => ({ date: `2026-10-0${3 + n}`, kwh: '5.0', kind: 'daily' });  // after the recorded weather: not published yet
+  const stages = [];  // [site id, stage name]: each is scanned in Hindi and Punjabi on Fix, Why and Report
+  const snap = (id, name) => stages.push([id, name]);
+
+  // A new plant: too few readings to judge, then a usual level not learnt yet, then a healthy plant.
+  let id = await createSite(request);
+  await postRows(request, id, rows.slice(0, 2)); snap(id, 'two readings');
+  await postRows(request, id, rows.slice(2, 5)); snap(id, 'five readings');
+  await postRows(request, id, rows.slice(5, 20)); snap(id, 'healthy');
+  // The synthetic fault, then the suggestion approved with readings whose weather is not published yet.
+  await postRows(request, id, rows.slice(20)); snap(id, 'fault');
+  await approve(id, 'check_inverter', rows[rows.length - 1].date);
+  await postRows(request, id, [later(1)]); snap(id, 'verification pending');
+  await postRows(request, id, [later(2), later(3)]); snap(id, 'verdict provisional, waiting for weather');
+  // A plant low since day one, an inspection approved, readings still low: the complaint is suggested.
+  id = await createSite(request);
+  await postRows(request, id, scale(rows.slice(0, 21), () => LOW)); snap(id, 'low since the start');
+  await approve(id, 'request_inspection', rows[20].date);
+  await postRows(request, id, scale(rows.slice(21, 24), () => LOW)); snap(id, 'inspection did not help');
+  // Low at first, then back to normal.
+  id = await createSite(request);
+  await postRows(request, id, scale(rows.slice(0, 14), () => LOW));
+  await postRows(request, id, rows.slice(14, 30)); snap(id, 'low then normal');
+  // A slow slide, a clean, and output back; and a clean that did not help.
+  const slide = (i) => (i < 12 ? 1 : Math.max(0.45, 1 - 0.02 * (i - 11)));
+  id = await createSite(request);
+  await postRows(request, id, scale(rows.slice(0, 30), slide)); snap(id, 'dust');
+  await approve(id, 'clean_panels', rows[29].date);
+  await postRows(request, id, rows.slice(30, 34)); snap(id, 'clean worked');
+  id = await createSite(request);
+  await postRows(request, id, scale(rows.slice(0, 30), slide));
+  await approve(id, 'clean_panels', rows[29].date);
+  await postRows(request, id, scale(rows.slice(30, 36), () => 0.5)); snap(id, 'clean did not help');
+
+  const found = { translated: 0, english: new Set(), unknown: new Set(), leftovers: new Set() };
+  let scans = 0;
+  const scan = async (lng, siteId, tab, label) => {
+    await page.goto(`/?site=${siteId}&scan=${++scans}#${tab}`);  // a new URL each time: always a fresh load of the plant
+    await expect(page.locator(`#panel-${tab}`)).toBeVisible();
+    if (tab === 'report') { await page.locator('#draft-btn').click(); await expect(page.locator('#draft-out')).toBeVisible(); }
+    const result = await page.evaluate(() => {
+      document.querySelectorAll('details').forEach((d) => { d.open = true; });
+      const shown = (n) => n.getClientRects().length > 0 && !n.closest('[hidden]');
+      const keep = /^(Surya|Audit|SAMPLE|synthetic|SYNTHETIC|WhatsApp|JSON|PVGIS|NASA|POWER|MNRE|JRC|EU|Google|Gemini|Chrome|kW|kWh|kg|CO|OWNER|TO|FILL|lifetime|latitude|longitude|EN|English)$/;  // brand and source names, units, and labels kept verbatim
+      const latin = (s) => (s.match(/[A-Za-z]{2,}/g) || []).filter((w) => !keep.test(w));
+      const srv = Array.from(document.querySelectorAll('[data-srv]')).filter(shown).map((n) => [n.dataset.srv, n.textContent.trim()]);
+      const left = [];
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        const p = n.parentElement;
+        if (!p || !shown(p) || p.closest('[lang="en"], script, style, svg, textarea, #status, .tip')) continue;
+        const words = latin(n.textContent);
+        if (words.length) left.push(`${words.join(' ')} :: ${n.textContent.trim().slice(0, 60)}`);
+      }
+      for (const n of document.querySelectorAll('[aria-label], [title], [placeholder], img[alt]')) {
+        if (!shown(n) || n.closest('[lang="en"]')) continue;
+        for (const a of ['aria-label', 'title', 'placeholder', 'alt']) {
+          const v = n.getAttribute(a);
+          if (v && latin(v).length) left.push(`${a}="${v}"`);
+        }
+      }
+      return { srv, left };
+    });
+    for (const [kind, text] of result.srv) {
+      if (kind === 'translated') { found.translated += 1; expect(text, 'a translation with a hole').not.toMatch(/undefined|NaN|\{\d\}/); }
+      else if (kind === 'english') found.english.add(text);
+      else found.unknown.add(text);
+    }
+    for (const l of result.left) found.leftovers.add(`${lng}/${tab}/${label}: ${l}`);
+  };
+  for (const lng of ['hi', 'pa']) {
+    await page.goto('/');
+    await page.evaluate((l) => localStorage.setItem('surya-audit-lang', l), lng);
+    for (const tab of ['today', 'log']) await scan(lng, stages[stages.length - 1][0], tab, 'chrome');
+    for (const [siteId, name] of stages) for (const tab of ['fix', 'why', 'report']) await scan(lng, siteId, tab, name);
+  }
+  testInfo.annotations.push({ type: 'english-fallback', description: `${found.english.size} distinct server sentence(s) shown in English with lang="en"` });
+  await testInfo.attach('english-fallbacks.json', { body: JSON.stringify([...found.english], null, 2), contentType: 'application/json' });
+  console.log(`translated server sentences shown: ${found.translated}; distinct English fallbacks: ${found.english.size}`);
+  expect(found.translated, 'the scenarios reached the translated sentences').toBeGreaterThan(40);
+  expect([...found.unknown], 'a sentence the table knows but has no translation for').toEqual([]);
+  expect([...found.leftovers], 'English left on a Hindi or Punjabi page').toEqual([]);
+});
+
+test('a photo note and an error do not linger in the old language after a switch', async ({ page, request }) => {
+  const id = await createSite(request);
+  await page.goto(`/?site=${id}#log`);
+  await page.locator('#photo').setInputFiles({ name: 'meter.png', mimeType: 'image/png', buffer: Buffer.from(TINY_PNG, 'base64') });
+  await expect(page.locator('#photo-note')).toContainText('type the reading by hand');
+  await page.getByRole('button', { name: 'हिन्दी' }).click();
+  await expect(page.locator('#photo-note')).toHaveText('');
+  await expect(page.locator('#photo-review')).toBeVisible();  // the photo itself stays for the owner to discard
+});
+
+test('Today and Yesterday follow midnight in a tab that was left open', async ({ page, request }) => {
+  const id = await createSite(request);
+  await page.clock.install({ time: new Date('2026-10-10T23:50:00') });
+  await page.goto(`/?site=${id}#log`);
+  await expect(page.locator('#date-shown')).toHaveText('Reading for 10 Oct 2026');
+  await page.clock.setFixedTime(new Date('2026-10-11T00:10:00'));  // the tab is still open after midnight
+  await page.getByLabel('Energy produced (kWh)', { exact: true }).fill('9.5');
+  const posted = page.waitForRequest((req) => req.method() === 'POST' && req.url().includes('/readings'));
+  await page.getByRole('button', { name: 'Save reading' }).click();
+  expect((await posted).postDataJSON().date).toBe('2026-10-11');  // the new day, not the stale 10 Oct
 });

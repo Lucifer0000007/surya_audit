@@ -336,21 +336,19 @@ def test_page_is_served_self_contained(client):
     assert "default-src 'none'" in csp and "connect-src 'self'" in csp
     assert "manifest-src data:" in csp and "font-src data:" in csp  # the inline manifest and fonts; no remote origin anywhere
     assert "http" not in csp.replace("'self'", "")
-    assert len(resp.content) < 250 * 1024, len(resp.content)  # CLAUDE.md: under 250 KB, inlined fonts included
+    assert len(resp.content) < 250_000, len(resp.content)  # CLAUDE.md: under 250 KB (read as 250,000 bytes), inlined fonts included
 
 
 def test_indic_font_subsets_cover_the_page():
-    # The Hindi and Punjabi fonts are subset to the characters the page uses (fixtures/fonts/*.txt record
-    # them). A character outside the lists would render in the device font, or as a box where there is
-    # none. `bash scripts/build_fonts.sh` rebuilds the subsets and the lists together.
+    # The Hindi and Punjabi fonts hold only the glyphs for the words the page writes: scripts/subset_fonts.py shapes
+    # each word with HarfBuzz and keeps what that needs (fixtures/fonts/*.runs.txt list those words). A word the fonts
+    # were not built from could render with broken conjuncts or boxes. `bash scripts/build_fonts.sh` rebuilds both.
     page = (FIX.parent / "app" / "index.html").read_text(encoding="utf-8")
     assert page.count("data:font/woff2;base64,") == 2
-    used = {c for c in page if "\u0900" <= c <= "\u097f" or "\u0a00" <= c <= "\u0a7f"}
-    covered = set()
-    for name in ("deva", "guru"):
-        covered |= set((FIX / "fonts" / f"{name}.txt").read_text(encoding="utf-8"))
-    missing = sorted(used - covered)
-    assert not missing, f"run `bash scripts/build_fonts.sh`: the inlined fonts lack {missing}"
+    for name, pattern in (("deva", "[ऀ-ॿ꣠-ꣿ]+"), ("guru", "[਀-੿]+")):
+        built = set((FIX / "fonts" / f"{name}.runs.txt").read_text(encoding="utf-8").split())
+        missing = sorted(set(re.findall(pattern, page)) - built)
+        assert not missing, f"run `bash scripts/build_fonts.sh`: the {name} font was not built for {missing[:8]}"
 
 
 def test_audit_carries_what_the_page_needs(client, rows):
