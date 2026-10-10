@@ -2,7 +2,7 @@
 # scripts/check_frozen.py compares each with the commit in docs/FROZEN_SHA, and scripts/verify.sh fails on any difference
 # (working tree, staged and untracked files all count).
 #
-# FROZEN_SHA f54a173 is the last DEPLOYED code: the 238,373-byte page in that commit is byte-identical to the one the live
+# FROZEN_SHA (v3: 66b7280, which after f54a173 only adds two log lines to LOOP_LOG.md and logs no photo or key content) follows the last DEPLOYED code f54a173: the 238,373-byte page in that commit is byte-identical to the one the live
 # stack served after the Phase 8 deploy (LOOP_LOG.md), and 66b7280 after it only adds log lines. It is the user's call to
 # change it; the surface work (app/index.html, e2e/, docs/, fixtures/fonts/) is outside this list on purpose.
 #
@@ -27,8 +27,6 @@ fixtures/synthetic_site.json
 # Dependencies (Python and npm) and the test harness; CLAUDE.md holds the scope, the approved dependencies and the rules
 pyproject.toml
 uv.lock
-package.json
-package-lock.json
 tests/conftest.py
 CLAUDE.md
 # tests/test_loop.py is guarded inside scripts/check_frozen.py: only its two page tests may change.
@@ -37,3 +35,5 @@ CLAUDE.md
 .claude/hooks/
 .claude/agents/
 .claude/commands/
+
+# package.json and package-lock.json are open since master prompt v3 approves axe-core as a pinned dev dependency.

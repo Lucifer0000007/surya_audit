@@ -43,6 +43,7 @@
   body { margin: 0; background: var(--canvas); color: var(--text); font-family: "Surya Indic", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 1rem; line-height: 1.5; font-synthesis: none; }
   :lang(hi), :lang(pa) { line-height: 1.65; letter-spacing: 0; text-transform: none; }
   #retry { padding: 0 16px; }
+  button:not(.secondary, .link, .speak, .mic, .share, .bigger, [role="tab"], .lang *), a.button:not(.secondary, .share) { min-height: 56px; }
   .wrap { max-width: 760px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)); }
   main.wrap { padding: 0; }  /* the column has no gutter of its own: every band and section carries its own */
   #setup { margin: 24px 16px; }
@@ -102,6 +103,7 @@
   @media (max-width: 719.98px) {
     body.has-tabs { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
     html { scroll-padding-top: 8px; scroll-padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+    body { font-size: 1.125rem; }
     .tabs { position: fixed; top: auto; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--hairline); border-bottom: 0; padding: 0 4px env(safe-area-inset-bottom); }
     [role="tablist"] { padding: 0; }
     [role="tab"] { flex-direction: column; gap: 4px; min-height: 64px; padding: 8px 4px; font-size: 0.875rem; }
@@ -351,7 +353,7 @@
 <header class="topbar">
  <div class="wrap">
   <h1 class="brand">
-   <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="#eda100"/><g stroke="#eda100" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg>
+   <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg>
    <span translate="no">Surya Audit</span>
   </h1>
   <p class="tagline" data-i18n="tagline"></p>

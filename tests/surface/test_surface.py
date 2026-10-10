@@ -11,7 +11,7 @@ from pathlib import Path
 
 from app import expected
 
-PAGE = (Path(__file__).resolve().parent.parent / "app" / "index.html").read_text(encoding="utf-8")
+PAGE = (Path(__file__).resolve().parent.parent.parent / "app" / "index.html").read_text(encoding="utf-8")
 STYLE = re.search(r"<style>(.*?)</style>", PAGE, re.S).group(1)
 REST = PAGE.replace(STYLE, "")  # the markup and the script
 
@@ -122,7 +122,7 @@ def test_the_complaint_categories_stay_labelled_sample_in_the_page():
     assert "SAMPLE: category names are unverified" in PAGE
 
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 STR = r"""('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|null)"""
 
 

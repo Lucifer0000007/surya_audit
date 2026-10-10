@@ -66,3 +66,11 @@ Routes and response shapes are frozen during the UI phases (5-8), so these wait 
   images. The page would then add "Delete this plant's data from the server" beside "Forget this plant on this device",
   with a confirmation that says the plant's link stops working. Not built: it needs a route and a test, and the routes
   are frozen.
+
+- **Serve the page compressed** (v3 Step 1). `app/index.html` is 249,563 bytes raw; gzip -9 gives 82,059 bytes and brotli 71,013 (measured
+  2026-10-10 with Node's zlib). The app served locally answers a request that accepts gzip and br with no `Content-Encoding` header, so
+  the page travels at its raw size. Proposed: compress the page response (in the handler, or in a layer in front of it) and send
+  `Content-Encoding` with `Vary: Accept-Encoding`. It would cut the bytes sent by about two thirds (the time saved was not measured).
+  Measured with Chromium on the offline app: 500 kbit/s each way, 400 ms latency, 4x CPU slowdown, 375 px phone emulation, no console
+  error: Today is usable (the headline number shown) after 5.9 s, Log (the energy field shown) after 6.4 s; DOMContentLoaded at 4.4 s.
+  Not measured: the deployed stack (the live URL is not used for the app flow).

@@ -1307,3 +1307,24 @@ test('print: the Report alone, in light, with the flags and the honesty line, an
   const pdf = await page.pdf({ format: 'A4', margin: { top: '14mm', bottom: '14mm', left: '14mm', right: '14mm' } });
   expect((pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length, 'one page').toBe(1);
 });
+
+test('v3 type and touch sizes on a phone: body 18 px, primary controls 56 px or more, the rest 48 px or more, the wordmark takes the text colour', async ({ page, request }) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  const id = await createSite(request);
+  await postRows(request, id, syntheticRows());
+  await page.goto(`/?site=${id}#fix`);
+  await expect(page.locator('#action-list .approve-btn:not(.secondary)')).toBeVisible();
+  const px = (sel, prop) => page.locator(sel).first().evaluate((n, p) => parseFloat(getComputedStyle(n)[p]), prop);
+  expect(await px('body', 'fontSize')).toBe(18);
+  expect(await px('#action-list .approve-btn:not(.secondary)', 'height')).toBeGreaterThanOrEqual(56);
+  expect(await px('#action-list .approve-btn.secondary', 'height')).toBeGreaterThanOrEqual(48);
+  expect(await px('#action-list .speak', 'height')).toBeGreaterThanOrEqual(48);
+  await page.goto(`/?site=${id}&v=3#log`);
+  await expect(page.locator('#panel-log')).toBeVisible();
+  expect(await px('#save-btn', 'height')).toBeGreaterThanOrEqual(56);
+  for (const sel of ['#kwh-input', '#photo-pick', '[role=tab]', '.lang button']) expect(await px(sel, 'height'), sel).toBeGreaterThanOrEqual(48);
+  // The wordmark sun is inline SVG drawn in currentColor: no colour of its own.
+  const mark = await page.locator('.brand svg').evaluate((n) => ({ html: n.outerHTML, fill: getComputedStyle(n.querySelector('circle')).fill, ink: getComputedStyle(n).color }));
+  expect(mark.html).not.toMatch(/#[0-9a-f]{3,6}/i);
+  expect(mark.fill).toBe(mark.ink);
+});
