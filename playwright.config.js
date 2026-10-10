@@ -11,7 +11,7 @@ module.exports = defineConfig({
   reporter: 'line',
   timeout: 60_000,
   fullyParallel: false,
-  workers: 1,
+  workers: 2,  // two files at a time: the full run must stay inside verify.sh's 300 s limit
   use: { baseURL: process.env.BASE_URL, trace: 'off' },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
