@@ -25,6 +25,14 @@ from a source, it says so. Vendor pages are labelled as such.
   weighted average emission factor of the grid, FY 2025-26, **0.675 tCO2/MWh including imports** (0.678 excluding),
   = 1189.04 Mt CO2 / 1761.28 BU net generation. Earlier years: FY 2023-24 0.727, FY 2024-25 0.710.
   PDF https://cea.nic.in/api/cdm-report-version/view-pdf/en/82, XLSX .../83, retrieved 2026-10-08.
+- Re-checked 2026-10-10 for the page's "CEA database version" and "factor type" labels: the User Guide PDF (35 pages) and the
+  workbook (dated 2026-08-01, Results sheet) both open at the links above and give the figures quoted; the same URLs for the
+  next two document numbers (.../84, .../85) return nothing, so Version 22.0 is the newest this route reaches. The CEA
+  baseline page itself is an application that asks for a login, so it could not be read as a page from here: if a newer
+  version exists, the owner can type its factor into the editable field, and the page labels the number an assumption.
+- Factor type used: the weighted average grid emission rate (including renewables and captive plants), including imports,
+  FY 2025-26. The same Results sheet also has simple operating margin, build margin and combined margin rows; they are
+  different measures from the weighted average and are not used here.
 
 ## Water per panel cleaning (default 4 litres per panel)
 

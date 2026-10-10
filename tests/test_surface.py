@@ -44,3 +44,12 @@ def test_no_text_in_the_page_is_set_under_14px():
     shorthand = [v.strip() for v in re.findall(r"(?:^|[;{\s])font\s*:\s*([^;}\"']*)", css + REST)]
     assert [v for v in shorthand if v not in ("inherit", "initial", "unset", "revert")] == [], "the font shorthand sets a size this lint cannot see: use font-family and font-size"
     assert re.findall(r"style\.font\s*=|setProperty\(\s*['\"]font['\"]", REST) == [], "a script sets the font shorthand: use font-size in rem or px"
+
+
+def test_the_page_uses_the_user_wording_for_co2_and_never_shows_litres():
+    """The impact strip says "avoided grid CO2", never "emissions saved" or "CO2 lost", and shows "cleanings avoided", never
+    litres of water (no sourced figure exists for them)."""
+    lowered = PAGE.lower()
+    for banned in ("emissions saved", "co₂ lost", "co2 lost", "lost co", "litre", "liter", "लीटर", "ਲੀਟਰ"):
+        assert banned not in lowered, banned
+    assert "avoided grid CO₂" in PAGE and "Cleanings avoided" in PAGE

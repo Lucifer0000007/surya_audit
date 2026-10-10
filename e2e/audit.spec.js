@@ -342,30 +342,41 @@ test('impact strip: sourced editable assumptions, payback only for dust, water, 
   await expect(impact).toBeVisible();
   await expect(impact).toContainText('What the dips cost');
   await expect(impact.locator('.tag').first()).toHaveText('estimate');
-  await expect(impact).toContainText('Units lost in the dips');
+  await expect(impact).toContainText('Output shortfall in the dips');
   await expect(impact).toContainText('flagged as dips');
-  await expect(impact).toContainText('at Rs 7 per unit');
-  await expect(impact).toContainText('at 0.675 kg per unit');
+  await expect(impact).toContainText('at Rs 7 per unit (assumption)');
+  // The CO2 line says what the shortfall would have displaced, at the factor in use, labelled an assumption.
+  await expect(impact).toContainText('it would have displaced about');
+  await expect(impact).toContainText('kg of avoided grid CO₂ at 0.675 kg per unit (assumption).');
+  for (const word of [/litre/i, /emissions saved/i, /CO₂ lost/i, /lost CO/i]) await expect(impact).not.toContainText(word);
   // Dust is suspected but no day has crossed the dip line yet: the clean's cost is shown, no payback invented.
   await expect(impact).toContainText('0 flagged as dips');
   await expect(impact).toContainText('A clean costs about');
   await expect(impact).toContainText('no daily loss to set against it');
   await expect(impact).toContainText('not a promise');
   await expect(impact).not.toContainText('n/a');
-  await expect(impact).toContainText('less than that schedule');
+  await expect(impact).toContainText('Cleanings avoided: 1 a month. A fixed schedule of 2 a month (assumption) against 1 that the audit suggests now.');
   // Every default is labelled an assumption and has a source link with a retrieval date.
   await impact.getByText('How we calculated this').click();
   await expect(impact.locator('label .tag')).toHaveCount(6);
-  await expect(impact).toContainText('retrieved 2026-10-08');
-  await expect(impact.locator('#assume-sources a')).toHaveCount(8);  // every quoted figure links to its document
-  await expect(impact).toContainText('CEA');
+  await expect(impact).toContainText('each with the date it was retrieved');
+  await expect(impact.locator('#assume-sources li')).toHaveCount(4);
+  await expect(impact.locator('#assume-sources li').nth(0)).toContainText('Retrieved 2026-10-08.');
+  await expect(impact.locator('#assume-sources li').nth(1)).toContainText('version 22.0 (workbook dated 2026-08-01)');
+  await expect(impact.locator('#assume-sources li').nth(1)).toContainText('Retrieved 2026-10-10.');
+  await expect(impact.locator('#assume-sources a')).toHaveCount(7);  // every quoted figure links to its document
+  // The factor's origin is an editable label, not buried: CEA database version and factor type, with defaults.
+  await expect(impact.getByLabel('CEA CO₂ Baseline Database version')).toHaveValue('22.0');
+  await expect(impact.getByLabel('Factor type (margin type)')).toHaveValue('weighted average, including imports, FY 2025-26');
+  await expect(impact).not.toContainText('Water per panel');
+  await expect(impact).not.toContainText('Panels on the roof');
   // After the fault: 5 flagged dips carry a real loss; dust is no longer supported, so no payback line.
   await postRows(request, id, rows.slice(42));
   await page.reload();
   await expect(page.getByTestId('impact')).toBeVisible();
   await expect(page.getByTestId('impact')).toContainText('5 flagged as dips');
   await expect(page.getByTestId('impact')).not.toContainText('pays back');
-  await expect(page.getByTestId('impact')).toContainText('none suggested by the audit yet');
+  await expect(page.getByTestId('impact')).toContainText('Cleanings avoided: 2 a month. A fixed schedule of 2 a month (assumption) against 0 that the audit suggests now.');
   // Editing the tariff doubles the rupee figure; reset restores the default.
   const money = () => page.getByTestId('impact').locator('.stat').nth(1).locator('.value').textContent();
   const before = Number((await money()).replace(/[^0-9]/g, ''));
@@ -373,7 +384,7 @@ test('impact strip: sourced editable assumptions, payback only for dust, water, 
   await page.getByTestId('impact').getByText('How we calculated this').click();
   await page.getByTestId('impact').getByLabel(/Tariff, Rs per unit/).fill('14');
   await page.getByRole('button', { name: 'Use these values' }).click();
-  await expect(page.getByTestId('impact')).toContainText('at Rs 14 per unit');
+  await expect(page.getByTestId('impact')).toContainText('at Rs 14 per unit (assumption)');
   const after = Number((await money()).replace(/[^0-9]/g, ''));
   expect(Math.abs(after - 2 * before)).toBeLessThanOrEqual(1);
   await page.reload();
@@ -381,6 +392,17 @@ test('impact strip: sourced editable assumptions, payback only for dust, water, 
   await page.getByTestId('impact').getByText('How we calculated this').click();
   await page.getByRole('button', { name: 'Reset to defaults' }).click();
   await expect(page.getByTestId('impact')).toContainText('at Rs 7 per unit');
+
+  // An empty emission factor means no CO2 figure at all, said plainly; the shortfall in kWh stays.
+  await page.getByTestId('impact').getByLabel(/Emission factor, kg CO₂ per unit/).fill('');
+  await page.getByRole('button', { name: 'Use these values' }).click();
+  await expect(page.locator('#co2-line')).toHaveText('No CO₂ figure: no emission factor is set. Add one under “How we calculated this”.');
+  await expect(page.getByTestId('impact').locator('.stat').nth(0).locator('.value')).not.toHaveText('0 kWh');
+  await page.reload();
+  await expect(page.locator('#co2-line')).toContainText('No CO₂ figure');  // an empty factor is remembered as empty, not as zero
+  await page.getByTestId('impact').locator('summary').click();
+  await page.getByRole('button', { name: 'Reset to defaults' }).click();
+  await expect(page.locator('#co2-line')).toContainText('avoided grid CO₂ at 0.675 kg per unit (assumption)');
 
   // Why: the kWh chart has both series and marks the 5 dips.
   await openTab(page, 'Why');
@@ -928,7 +950,7 @@ test('no English left in Hindi and Punjabi: known audit sentences are translated
     const result = await page.evaluate(() => {
       document.querySelectorAll('details').forEach((d) => { d.open = true; });
       const shown = (n) => n.getClientRects().length > 0 && !n.closest('[hidden]');
-      const keep = /^(Surya|Audit|SAMPLE|synthetic|SYNTHETIC|WhatsApp|JSON|PVGIS|NASA|POWER|MNRE|JRC|EU|Google|Gemini|Chrome|kW|kWh|kg|CO|OWNER|TO|FILL|lifetime|latitude|longitude|EN|English)$/;  // brand and source names, units, and labels kept verbatim
+      const keep = /^(Surya|Audit|SAMPLE|synthetic|SYNTHETIC|WhatsApp|JSON|PVGIS|NASA|POWER|MNRE|JRC|CEA|EU|Google|Gemini|Chrome|kW|kWh|kg|CO|OWNER|TO|FILL|lifetime|latitude|longitude|EN|English)$/;  // brand and source names, units, and labels kept verbatim
       const latin = (s) => (s.match(/[A-Za-z]{2,}/g) || []).filter((w) => !keep.test(w));
       const srv = Array.from(document.querySelectorAll('[data-srv]')).filter(shown).map((n) => [n.dataset.srv, n.textContent.trim()]);
       const left = [];
