@@ -347,3 +347,248 @@ logic, not real-world accuracy. Thresholds unvalidated."
   (about plus or minus 12 points near 50 %).
 
 Synthetic data. Validates the logic, not real-world accuracy. Thresholds unvalidated.
+
+## Harness decisions (written before the first run)
+
+Written after reading only the shapes of the site document and the reading rows (app/main.py, app/store.py,
+app/expected.py function bodies, and the output keys and cause names of app/audit.py), and before any
+engine result on generated plants was seen. No threshold value was read. The harness is `scripts/backtest.py`.
+A `--check` run (generator bounds, and one call to the engine whose result is discarded) was done before this
+section was written; it prints no engine result.
+
+1. Ranked cause list. The output field is `hypotheses` of `audit.compute(site)` after the LAST reading of the
+   plant (what the owner sees at the end of the series). The engine's four names map to the spec's:
+   `soiling` = soiling, `sudden_fault` = sudden_fault, `low_from_day_one` = low_from_start,
+   `weather_noise` = weather_or_noise. "Top-1" is `hypotheses[0]`; "top-3" is `hypotheses[:3]`; the confidence
+   is that entry's `confidence`.
+
+2. Suggestion-level. A cause is suggestion-level if the engine's own public function `audit.update_actions`
+   proposes an action for it, run on a copy of the site with no earlier actions after the last reading. That
+   is the engine's own definition of "surfaced to the owner as something to act on". If the top-ranked cause has
+   no action (weather_noise) or is below the engine's own proposal level, nothing is proposed and the plant is
+   "no suggestion-level cause". No threshold is read or restated by the harness. Consequence for the spec's
+   single matrix: the spec's top-1 matrix has a "none = no suggestion-level cause" column that mixes two
+   questions (what ranked first; was anything suggested). The harness reports them as two matrices: Matrix 1,
+   ranked top-1 (columns: the four causes, plus error); Matrix 2, suggestion-level (columns: the three hardware
+   causes, none, error). Scoring is exactly the spec's: class a is correct only if Matrix 2 says none; classes
+   b, c, d, e are correct if the ranked top-1 is the true cause (Matrix 1); the strict secondary rate (ranked
+   top-1 correct and suggested) is also reported for b, c, d. False alarms (classes a and e) use Matrix 2.
+
+3. Weather feed units. The engine's feed is NASA POWER `ALLSKY_SFC_SW_DWN` (kWh/m2/day) per day, divided by the
+   site's monthly climatology to get the weather index. The harness builds, per plant:
+   - daily irradiance = `k_obs[t] * H(date)` (H linearly interpolated, as in the spec), passed through the
+     engine's own `expected.expected_for_period` so the index and expected kWh are computed by engine code;
+   - the climatology stand-in `climatology_ghi[m] = H_table[m] * kmean[m]` (the mean irradiance of the same
+     SAMPLE table);
+   - the PVGIS stand-in `pvgis_e_d[m] = kW * O * H_table[m] * 0.78 * kmean[m]` (the monthly mean daily kWh of a
+     nominal-PR plant under the month's climatological weather; not interpolated; uses the nominal PR 0.78,
+     not the plant's own PR_norm, because the engine does not know the plant's true PR);
+   - all readings `kind = "daily"`, `weather_known = true`, `loss_pct = 14.0` (the engine's own default), the
+     site `synthetic = true`, `sample = true`.
+   Both stand-ins come from the generator's own table, so the engine's expectation is unrealistically well
+   matched to the generator's climate; real PVGIS and POWER differ from any plant in ways this does not model.
+
+4. Spec ambiguity resolved before the run (dust start dates). Section 3(b) says both "start uniform from 15 Oct to
+   5 Jun minus N days" and "the window ends on or before 20 Jun". The harness uses the explicit end rule: the
+   start is uniform over all start days from 15 Oct 2025 such that the last reading is on or before 20 Jun 2026.
+
+5. Plants that fail to run through the engine are counted as error rows (shown in the matrices and counted as
+   incorrect in the accuracy rates). The seeds are the spec's: seed = class base + index (1001..1060 for a,
+   2001..2060 for b, and so on). Spec hash recorded below is the SHA-256 of the spec text before this section.
+
+## Results (v1 seeds)
+
+**Synthetic data. Validates the logic, not real-world accuracy. Thresholds unvalidated.**
+
+- Run date: 2026-10-10 (IST), v1 generator, spec seeds 1001-6060, 360 plants, no seed offset.
+- Reproduce, from the repo root, with the project's venv, offline (the weather feed is built by the harness, no
+  PVGIS or NASA call and no env var needed): `.venv/Scripts/python.exe scripts/backtest.py`
+  (generator-only checks, no engine result: `.venv/Scripts/python.exe scripts/backtest.py --check`).
+  The output below is that command's stdout, unedited, apart from this heading.
+- Hashes (first 16 hex of SHA-256): spec text before "Harness decisions" 40b27b61381f7ac6 (equal to the
+  committed spec); `scripts/backtest.py` 0a99add95357c66a (uncommitted when run; repo HEAD 75bc89c).
+- One earlier full run crashed in the report printing (a list-plus-tuple TypeError in the table header code)
+  after the engine had run on all plants and before anything was printed; no number from it was seen. The report
+  code was fixed (`list(HARDWARE)`); the generator and the harness decisions were not touched, and the run below is
+  the first that produced numbers. The script hash above is the one after that fix.
+- Engine error rows: 0 of 360.
+
+scripts/backtest.py sha256 0a99add95357c66a; spec (text before 'Harness decisions') sha256 40b27b61381f7ac6; repo HEAD 75bc89c
+
+**Synthetic data. Validates the logic, not real-world accuracy. Thresholds unvalidated.**
+
+Plants: 360 (a: 60, b: 60, c: 60, d: 60, e1: 60, e2: 60); seed offset 0 (v1); engine errors: 0.
+
+#### Matrix 1: ranked top-1 cause (rows true class, columns the engine's first-ranked cause, counts)
+
+| true \ engine top-1 | soiling | sudden_fault | low_from_start | weather_or_noise | error | n |
+|---|---|---|---|---|---|---|
+| a (no_issue) | 12 | 0 | 0 | 48 | 0 | 60 |
+| b | 42 | 14 | 0 | 4 | 0 | 60 |
+| c | 14 | 45 | 0 | 1 | 0 | 60 |
+| d | 6 | 0 | 38 | 16 | 0 | 60 |
+| e1 | 8 | 0 | 0 | 52 | 0 | 60 |
+| e2 | 9 | 2 | 0 | 49 | 0 | 60 |
+| e | 17 | 2 | 0 | 101 | 0 | 120 |
+
+#### Matrix 2: suggestion-level cause (the engine proposed an action for its top cause; none = no suggestion)
+
+| true \ suggestion-level | soiling | sudden_fault | low_from_start | none | error | n |
+|---|---|---|---|---|---|---|
+| a (no_issue) | 12 | 0 | 0 | 48 | 0 | 60 |
+| b | 42 | 1 | 0 | 17 | 0 | 60 |
+| c | 14 | 22 | 0 | 24 | 0 | 60 |
+| d | 6 | 0 | 38 | 16 | 0 | 60 |
+| e1 | 8 | 0 | 0 | 52 | 0 | 60 |
+| e2 | 9 | 0 | 0 | 51 | 0 | 60 |
+| e | 17 | 0 | 0 | 103 | 0 | 120 |
+
+#### Top-1 accuracy per class
+
+Scoring: class a correct iff the engine reports no suggestion-level cause (matrix 2); classes b, c, d, e correct iff the ranked top-1 is the true cause (matrix 1). Errors count as incorrect.
+
+| class | n | correct | top-1 accuracy |
+|---|---|---|---|
+| a | 60 | 48 | 48/60 = 80.0% (95% Wilson 68.2-88.2%) |
+| b | 60 | 42 | 42/60 = 70.0% (95% Wilson 57.5-80.1%) |
+| c | 60 | 45 | 45/60 = 75.0% (95% Wilson 62.8-84.2%) |
+| d | 60 | 38 | 38/60 = 63.3% (95% Wilson 50.7-74.4%) |
+| e1 | 60 | 52 | 52/60 = 86.7% (95% Wilson 75.8-93.1%) |
+| e2 | 60 | 49 | 49/60 = 81.7% (95% Wilson 70.1-89.4%) |
+| e | 120 | 101 | 101/120 = 84.2% (95% Wilson 76.6-89.6%) |
+
+Secondary, stricter: ranked top-1 correct AND suggestion-level (the owner would actually be offered the right action).
+
+| class | n | correct and suggested | rate |
+|---|---|---|---|
+| b | 60 | 42 | 42/60 = 70.0% (95% Wilson 57.5-80.1%) |
+| c | 60 | 22 | 22/60 = 36.7% (95% Wilson 25.6-49.3%) |
+| d | 60 | 38 | 38/60 = 63.3% (95% Wilson 50.7-74.4%) |
+
+#### Top-3 hit rate (true cause among the engine's first three ranked causes; n/a for class a)
+
+| class | n | hits | top-3 |
+|---|---|---|---|
+| b | 60 | 60 | 60/60 = 100.0% (95% Wilson 94.0-100.0%) |
+| c | 60 | 60 | 60/60 = 100.0% (95% Wilson 94.0-100.0%) |
+| d | 60 | 41 | 41/60 = 68.3% (95% Wilson 55.8-78.7%) |
+| e1 | 60 | 58 | 58/60 = 96.7% (95% Wilson 88.6-99.1%) |
+| e2 | 60 | 52 | 52/60 = 86.7% (95% Wilson 75.8-93.1%) |
+| e | 120 | 110 | 110/120 = 91.7% (95% Wilson 85.3-95.4%) |
+
+#### Dust predicted as weather, and weather predicted as dust (reported separately)
+
+- Dust predicted as weather (class b plants whose ranked top-1 is weather_or_noise): 4/60 = 6.7% (95% Wilson 2.6-15.9%)
+
+- Weather predicted as dust (class e plants whose ranked top-1 is soiling):
+
+| class | n | top-1 soiling | rate |
+|---|---|---|---|
+| e1 | 60 | 8 | 8/60 = 13.3% (95% Wilson 6.9-24.2%) |
+| e2 | 60 | 9 | 9/60 = 15.0% (95% Wilson 8.1-26.1%) |
+| e | 120 | 17 | 17/120 = 14.2% (95% Wilson 9.0-21.5%) |
+
+#### False-alarm rate (the engine reports a suggestion-level hardware cause on a plant with healthy hardware)
+
+| class | n | false alarms | rate | by suggested cause |
+|---|---|---|---|---|
+| a | 60 | 12 | 12/60 = 20.0% (95% Wilson 11.8-31.8%) | soiling 12, sudden_fault 0, low_from_start 0 |
+| e1 | 60 | 8 | 8/60 = 13.3% (95% Wilson 6.9-24.2%) | soiling 8, sudden_fault 0, low_from_start 0 |
+| e2 | 60 | 9 | 9/60 = 15.0% (95% Wilson 8.1-26.1%) | soiling 9, sudden_fault 0, low_from_start 0 |
+| e | 120 | 17 | 17/120 = 14.2% (95% Wilson 9.0-21.5%) | soiling 17, sudden_fault 0, low_from_start 0 |
+| a + e | 180 | 29 | 29/180 = 16.1% (95% Wilson 11.5-22.2%) | soiling 29, sudden_fault 0, low_from_start 0 |
+
+#### Confidence calibration (confidence of the ranked top-1 versus whether the plant is scored correct)
+
+| top-1 confidence | plants | scored correct | share correct |
+|---|---|---|---|
+| low | 46 | 26 | 26/46 = 56.5% (95% Wilson 42.2-69.8%) |
+| medium | 71 | 56 | 56/71 = 78.9% (95% Wilson 68.0-86.8%) |
+| high | 243 | 192 | 192/243 = 79.0% (95% Wilson 73.5-83.7%) |
+
+Same, by true class and confidence (correct / plants):
+
+| class | low | medium | high |
+|---|---|---|---|
+| a | 0/0 | 14/18 | 34/42 |
+| b | 0/16 | 12/13 | 30/31 |
+| c | 23/24 | 0/5 | 22/31 |
+| d | 0/1 | 13/16 | 25/43 |
+| e1 | 2/2 | 9/11 | 41/47 |
+| e2 | 1/3 | 8/8 | 40/49 |
+| e | 3/5 | 17/19 | 81/96 |
+
+#### Pre-declared breakdowns (terciles of the 60 plants by the hidden parameter; top-1 scored as above)
+
+Class b by soiling rate r (per day):
+
+| tercile | range | n | correct | top-1 |
+|---|---|---|---|---|
+| low | 0.0015 to 0.0031 | 20 | 11 | 11/20 = 55.0% (95% Wilson 34.2-74.2%) |
+| middle | 0.0031 to 0.0042 | 20 | 12 | 12/20 = 60.0% (95% Wilson 38.7-78.1%) |
+| high | 0.0042 to 0.0060 | 20 | 19 | 19/20 = 95.0% (95% Wilson 76.4-99.1%) |
+
+Class c by step size f:
+
+| tercile | range | n | correct | top-1 |
+|---|---|---|---|---|
+| low | 0.1209 to 0.2451 | 20 | 16 | 16/20 = 80.0% (95% Wilson 58.4-91.9%) |
+| middle | 0.2476 to 0.4112 | 20 | 17 | 17/20 = 85.0% (95% Wilson 64.0-94.8%) |
+| high | 0.4192 to 0.6609 | 20 | 12 | 12/20 = 60.0% (95% Wilson 38.7-78.1%) |
+
+Class d by low-from-start loss L:
+
+| tercile | range | n | correct | top-1 |
+|---|---|---|---|---|
+| low | 0.1215 to 0.2016 | 20 | 3 | 3/20 = 15.0% (95% Wilson 5.2-36.0%) |
+| middle | 0.2063 to 0.2744 | 20 | 15 | 15/20 = 75.0% (95% Wilson 53.1-88.8%) |
+| high | 0.2846 to 0.3477 | 20 | 20 | 20/20 = 100.0% (95% Wilson 83.9-100.0%) |
+
+Class e1 by spell placement:
+
+| placement | n | top-1 weather_or_noise | rate | suggestion-level hardware cause |
+|---|---|---|---|---|
+| end-anchored | 33 | 26 | 26/33 = 78.8% (95% Wilson 62.2-89.3%) | 7 |
+| interior | 27 | 26 | 26/27 = 96.3% (95% Wilson 81.7-99.3%) | 1 |
+
+**Synthetic data. Validates the logic, not real-world accuracy. Thresholds unvalidated.**
+
+
+### Known limitations of these results
+
+Weak results, stated as measured:
+
+- Sudden fault: the ranked top-1 is right for 45/60 plants (75.0%), but the engine proposed the right action for
+  only 22/60 (36.7%). Of the 45, 23 had low confidence and no suggestion. 14/60 faults were ranked soiling first,
+  and 24/60 faults ended with no suggestion at all. In the highest step-size tercile (f 0.42 to 0.66) top-1 was
+  12/20 (60%), lower than the middle and low terciles.
+- Low since day one: top-1 38/60 (63.3%), top-3 41/60 (68.3%). In the lowest-loss tercile (L 0.12 to 0.20)
+  top-1 was 3/20 (15%); 16/60 of the class were ranked weather_or_noise first and 6/60 soiling first.
+- Dust: top-1 42/60 (70.0%). In the two lower soiling-rate terciles it was 11/20 and 12/20. 16 class b plants had a
+  "low" top-1 confidence and none of the 16 was correct (class b, low: 0/16).
+  17/60 dust plants ended with no suggestion. 14/60 dust plants were ranked sudden_fault first.
+- False alarms: 12/60 healthy class a plants (20.0%) got a suggestion-level cause, all "soiling". Across classes a
+  and e, 29/180 (16.1%) got a suggestion-level hardware cause, all 29 "soiling". Weather predicted as dust:
+  17/120 class e plants (14.2%). End-anchored dull spells (the hard case) were ranked weather_or_noise first only
+  26/33 times (78.8%), and 7 of them got a suggestion-level hardware cause.
+- Confidence does not separate right from wrong above "low": 78.9% of medium and 79.0% of high top-1 plants were
+  scored correct (56/71 and 192/243); class d with high confidence was 25/43 (58%) and class c with high confidence
+  22/31 (71%).
+- Top-3 hit rates of 100% for dust and for sudden fault say little: the engine ranks four causes, so top-3 misses
+  a plant only if its true cause is ranked last.
+
+Limits of the method (see also section 6 of the spec):
+
+- Single synthetic Lucknow-like site, one generator written by the same authors who wrote the engine under test; the
+  engine's expectation stand-ins (PVGIS and POWER climatology) were built from the generator's own SAMPLE table,
+  which a real PVGIS or POWER feed would not match. That favours the engine; it is not a measure of real accuracy.
+- The generator's healthy-plant mean specific yield (section 2.2 check, `--check`) came out 0 to 7% below the
+  spec's Y_typ in nine months and 2 to 8% above it in July, August and September (for example March 4.46 vs 4.64, October 3.91 vs 4.09, November 3.39 vs 3.65). This is
+  a consequence of the spec's orientation factor and the clip of the cloud deficit at zero, not corrected, and means
+  the healthy generator plants sit a few percent below the PVGIS stand-in. It may contribute to the soiling false
+  alarms and has not been tested as a cause.
+- The scoring rule is the harness's reading of the spec's "none" column (two matrices). The results under another
+  reading would differ for classes b, c and d.
+- Intervals are wide at n = 60 per class (the tercile and placement breakdowns, n = 20 to 33, are wider still) and
+  nothing here was corrected for multiple comparisons.
+- Seeds are fixed and the generator is frozen; this is one draw of 360 plants and the numbers move with the seed set.
