@@ -74,3 +74,21 @@ Routes and response shapes are frozen during the UI phases (5-8), so these wait 
   Measured with Chromium on the offline app: 500 kbit/s each way, 400 ms latency, 4x CPU slowdown, 375 px phone emulation, no console
   error: Today is usable (the headline number shown) after 5.9 s, Log (the energy field shown) after 6.4 s; DOMContentLoaded at 4.4 s.
   Not measured: the deployed stack (the live URL is not used for the app flow).
+
+## Performance proposals (master prompt v4). Nothing here is implemented; the numbers are in docs/PERF_BASELINE.md
+
+- **Compression for the page and the audit JSON.** API Gateway HTTP APIs do not compress responses by themselves. The options are to
+  compress in the Lambda handler (gzip or brotli, with `Content-Encoding` and `Vary: Accept-Encoding`) or to put CloudFront in front,
+  which compresses for you. At commit `35ef6f3` the page is 263,472 bytes raw and 86,466 bytes gzip -9 (measured with `gzip -9`); the
+  uncompressed transfer is most of the load time at 2 Mbps in `docs/PERF_BASELINE.md`.
+- **ETag with `Cache-Control: no-cache` on the page.** Today the page is sent in full on every visit. With an ETag the browser asks
+  "has it changed?" and gets a 304 with no body. Needs a change to `app/main.py` (protected).
+- **CloudFront in front of the API** (the owner's decision, not made here): compression, caching of the page at the edge, and a lower
+  latency for users far from `ap-south-1`.
+- **A smaller audit payload, only if measurements show it matters.** The audit response carries the whole timeline each time; it was not
+  measured on its own, and the page keeps the last one on the device so the first draw does not wait for it.
+- **Read the Lambda Init Duration from the CloudWatch `REPORT` lines** to separate a cold start from the request time. Not read here:
+  the deployed stack is not used for the app flow.
+- **Codes and parameters for server sentences** (see the Phase 9 entry above): the page now draws a saved audit that was written in
+  an earlier language; the sentences it translates are matched on exact English patterns, so a new server wording stays English until
+  it is added to the table.

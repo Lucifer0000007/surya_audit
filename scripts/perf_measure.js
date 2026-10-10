@@ -43,6 +43,7 @@ async function makePlant() {
 async function once(browser, id, profile) {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 800 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
+  if (process.env.LANG_PREF) await page.addInitScript((l) => localStorage.setItem('surya-audit-lang', l), process.env.LANG_PREF);  // hi or pa
   await page.addInitScript(() => {
     window.__perf = { fcp: null, lcp: null, cls: 0, longs: [], drawn: null, mark: 0 };
     new PerformanceObserver((l) => { for (const e of l.getEntries()) if (e.name === 'first-contentful-paint') window.__perf.fcp = e.startTime; }).observe({ type: 'paint', buffered: true });
@@ -64,6 +65,7 @@ async function once(browser, id, profile) {
   await page.goto(`${BASE}/?site=${id}`, { waitUntil: 'load' });
   await page.waitForSelector('#headline .ring', { timeout: 60000 });
   await page.waitForTimeout(1500);  // let late paints and shifts land
+  const fontsMs = await page.evaluate(async () => { const t0 = performance.now(); await document.fonts.ready; return performance.now() - t0 + t0; });
   const nav = await page.evaluate(() => {
     const n = performance.getEntriesByType('navigation')[0];
     return { dcl: n.domContentLoadedEventEnd, load: n.loadEventEnd, decoded: n.decodedBodySize, encoded: n.encodedBodySize };
@@ -79,7 +81,7 @@ async function once(browser, id, profile) {
   await page.waitForTimeout(500);
   const after = await page.evaluate(() => window.__perf.longs.map(([, d]) => d));
   await ctx.close();
-  return { fcp: base.fcp, lcp: base.lcp, cls: base.cls, tbt, tabsRespond: nav.dcl, auditDrawn: base.drawn, tabSwitchMs: switchMs, tabSwitchLong: after.length ? Math.max(...after) : 0, load: nav.load, encoded: nav.encoded, decoded: nav.decoded };
+  return { fcp: base.fcp, lcp: base.lcp, cls: base.cls, tbt, tabsRespond: nav.dcl, auditDrawn: base.drawn, tabSwitchMs: switchMs, tabSwitchLong: after.length ? Math.max(...after) : 0, fontsReady: fontsMs, load: nav.load, encoded: nav.encoded, decoded: nav.decoded };
 }
 
 const median = (xs) => { const v = xs.filter((x) => x != null).sort((a, b) => a - b); return v.length ? v[Math.floor(v.length / 2)] : null; };
@@ -88,7 +90,9 @@ const median = (xs) => { const v = xs.filter((x) => x != null).sort((a, b) => a 
   const id = await makePlant();
   const browser = await chromium.launch();
   const out = {};
+  const only = (process.env.PROFILES || '').split(',').filter(Boolean);
   for (const [name, profile] of Object.entries(PROFILES)) {
+    if (only.length && !only.includes(name)) continue;
     const runs = [];
     for (let i = 0; i < RUNS; i++) runs.push(await once(browser, id, profile));
     out[name] = {};
