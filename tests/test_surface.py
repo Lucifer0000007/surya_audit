@@ -121,12 +121,18 @@ def test_the_complaint_categories_stay_labelled_sample_in_the_page():
 
 
 ROOT = Path(__file__).resolve().parent.parent
-EN_TABLE = re.search(r"\n  en: \{\n(.*?)\n  \},?\n", PAGE, re.S).group(1)
+STR = r"""('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|null)"""
+
+
+def cells(key):
+    """The three strings of a translation key, [English, Hindi, Punjabi] (None where the page has none)."""
+    m = re.search(r"^  " + key + r": \[" + STR + ", " + STR + ", " + STR + r"\],$", PAGE, re.M)
+    return [None if c == "null" else c[1:-1] for c in m.groups()]
 
 
 def english(key):
-    """The English text of a translation key (the markup is empty: the script writes it from this table)."""
-    return re.search(r"(?<![A-Za-z])" + key + r": '((?:[^'\\]|\\.)*)'", EN_TABLE).group(1)
+    """The English text of a translation key (the markup is empty: the script writes it from the table)."""
+    return cells(key)[0]
 
 
 def test_how_it_runs_names_only_what_the_infrastructure_code_defines():
@@ -215,13 +221,8 @@ def test_how_it_runs_says_the_same_in_hindi_and_punjabi():
     """The translated lines carry the same hour and no Latin word except the service and source names."""
     names = {"Lambda", "FastAPI", "API", "Gateway", "HTTP", "DynamoDB", "EventBridge", "Scheduler", "Parameter", "Store", "SecureString",
              "IAM", "CloudWatch", "Logs", "Gemini", "Google", "NASA", "POWER", "PVGIS", "AWS", "Region"}
-    for lang in ("hi", "pa"):
-        table = re.search(r"\n  " + lang + r": \{\n(.*?)\n  \},?(?=\n)", PAGE, re.S).group(1)
-
-        def row(key):
-            return re.search(r"(?<![A-Za-z])" + key + r": '((?:[^'\\]|\\.)*)'", table).group(1)
-
-        assert "09:00" in row("run3"), lang
+    for index, lang in ((1, "hi"), (2, "pa")):
+        assert "09:00" in cells("run3")[index], lang
         for key in ["awsLine", *[f"run{n}" for n in range(1, 7)]]:
-            extra = set(re.findall(r"[A-Za-z]{2,}", row(key))) - names
+            extra = set(re.findall(r"[A-Za-z]{2,}", cells(key)[index])) - names
             assert not extra, (lang, key, extra)
