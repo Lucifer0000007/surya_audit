@@ -1377,8 +1377,10 @@ function stopSpeaking() {
   if (speakingButton) { speakingButton.setAttribute('aria-pressed', 'false'); speakingButton.querySelector('span').textContent = t('readAloud'); speakingButton = null; }
 }
 // parts: [{ text, lang }]: each part is spoken by a voice for its own language; a part with no voice here is skipped.
+let voiceDrawn = false;  // whether the last draw had a voice for the language, so late voices redraw only when that changes
 function speakButton(partsFn) {
-  if (!('speechSynthesis' in window) || !voiceFor(SPEECH_LANG[lang])) return null;
+  voiceDrawn = 'speechSynthesis' in window && Boolean(voiceFor(SPEECH_LANG[lang]));
+  if (!voiceDrawn) return null;
   const b = el('button', { type: 'button', class: 'secondary speak', 'aria-pressed': 'false' },
     svg('svg', { width: 20, height: 20, viewBox: '0 0 24 24', 'aria-hidden': 'true', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }),
     el('span', { text: t('readAloud') }));
@@ -1403,8 +1405,10 @@ function speakButton(partsFn) {
   return b;
 }
 if ('speechSynthesis' in window) idle(() => {
-  speechSynthesis.addEventListener('voiceschanged', () => { if (state.audit) render(state.audit); });
-  if (state.audit && speechSynthesis.getVoices().length) render(state.audit);  // the voices may have arrived before this ran
+  // A redraw rebuilds the cards (and drops a date being edited), so it happens only when a voice for this language has just appeared or gone.
+  const redrawForVoices = () => { if (state.audit && Boolean(voiceFor(SPEECH_LANG[lang])) !== voiceDrawn) render(state.audit); };
+  speechSynthesis.addEventListener('voiceschanged', redrawForVoices);
+  redrawForVoices();  // the voices may have arrived before this ran
 });
 
 idle(function initMic() {

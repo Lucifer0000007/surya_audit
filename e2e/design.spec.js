@@ -192,3 +192,15 @@ test('new user: set up the plant in 6 taps or fewer, then log the first reading 
   expect(taps, 'taps from Today to the updated result').toBeLessThanOrEqual(6);
   console.log(`WALKTHROUGH setup=${setup} first-reading-to-result=${taps}`);
 });
+
+test('late voices do not redraw the Fix cards under the owner (a date being edited or a focused Approve button stays)', async ({ page, request }) => {
+  const id = await plant(request);
+  await page.goto(`/?site=${id}#fix`);
+  const input = page.locator('#panel-fix .action input[type=date]').first();
+  await expect(input).toBeVisible();
+  await page.waitForTimeout(500);  // the idle set-up has run
+  await input.evaluate((n) => { n.dataset.mark = 'mine'; });
+  await page.evaluate(() => { speechSynthesis.dispatchEvent(new Event('voiceschanged')); });
+  await page.waitForTimeout(300);
+  await expect(page.locator('#panel-fix .action input[type=date][data-mark=mine]').first(), 'the same card is still there').toBeVisible();
+});
