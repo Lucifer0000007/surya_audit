@@ -197,8 +197,10 @@
   .big-choice { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
   .big-choice label { position: relative; display: grid; place-items: center; gap: 4px; min-height: 64px; padding: 8px; border: 1px solid var(--control); border-radius: var(--r); color: var(--text); font-weight: 600; cursor: pointer; text-align: center; }
   .big-choice input { position: absolute; top: 0; left: 0; width: 1px; height: 1px; min-height: 0; margin: 0; padding: 0; opacity: 0; }  /* in the corner: never over the label's text */
-  .big-choice label:has(input:checked), .big-choice label.checked { border-color: var(--text); background: var(--text); color: var(--canvas); }
-  .big-choice label:has(input:focus-visible), .big-choice label.focus { outline: 2px solid var(--text); outline-offset: 2px; }
+  .big-choice label.checked { border-color: var(--text); background: var(--text); color: var(--canvas); }
+  .big-choice label:has(input:checked) { border-color: var(--text); background: var(--text); color: var(--canvas); }
+  .big-choice label.focus { outline: 2px solid var(--text); outline-offset: 2px; }
+  .big-choice label:has(input:focus-visible) { outline: 2px solid var(--text); outline-offset: 2px; }
   .datepick { display: grid; gap: 8px; min-width: 0; margin: 0; padding: 0; border: 0; }
   .datepick legend { margin-bottom: 8px; padding: 0; color: var(--text-2); font-size: 0.9375rem; font-weight: 500; }
   .big-choice.chips { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -1247,7 +1249,7 @@ const ASSUME_SOURCES = [
 ];
 const QUEUE_KEY = 'surya-audit-queued-readings';
 const state = {
-  id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, photoFill: null, flushing: null, saving: null, replay: null, cached: null, rev: 0, review: new Set(),
+  id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, photoFill: null, flushing: null, saving: null, replay: null, cached: null, rev: 0, nav: 0, review: new Set(),
   tab: 'today', seenTabs: new Set(), chartPlayed: false, chartWidth: 0, tiltAuto: null,
   prevOutcomes: null, prevSteps: {}, heroValue: 0, heroFrac: 0,
 };
@@ -1293,7 +1295,12 @@ function icon(kind) {
 function storeGet() { try { return localStorage.getItem(STORE_KEY); } catch { return null; } }
 function jsonGet(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
 function jsonSet(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* per-viewer convenience only */ } }
-const rupees = (v) => `\u20b9${Math.round(v).toLocaleString('en-IN')}`;
+// One formatter each, built once: toLocaleString with options builds a new ICU formatter on every call (a table of 365 rows calls it ~1000 times).
+const NF = new Intl.NumberFormat('en-IN');
+const NF1 = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 1 });
+const DF_SHORT = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' });
+const DF_LONG = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+const rupees = (v) => `\u20b9${NF.format(Math.round(v))}`;
 
 // The level a point was judged against, in kWh: expected output x the baseline of its segment (earlier ones end at `until`).
 function usualKwh(p, a) {
@@ -1305,7 +1312,7 @@ function storeSet(v) { try { localStorage.setItem(STORE_KEY, v); } catch { /* pe
 function storeClear() { try { localStorage.removeItem(STORE_KEY); } catch { /* ignore */ } }
 
 const pct = (v) => `${Math.round(v * 100)}%`;
-const kwh = (v) => (Math.round(v * 10) / 10).toLocaleString('en-IN', { maximumFractionDigits: 1 });
+const kwh = (v) => NF1.format(Math.round(v * 10) / 10);
 const units = () => t('units');  // "kWh" in English, "units" in Hindi and Punjabi
 function fmtDate(iso, short) {
   if (lang !== 'en') {
@@ -1313,7 +1320,7 @@ function fmtDate(iso, short) {
     return `${d} ${t('months').split(',')[m - 1]}${short ? '' : ` ${y}`}`;
   }
   const d = new Date(`${iso}T00:00:00`);
-  return d.toLocaleDateString('en-IN', short ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' });
+  return (short ? DF_SHORT : DF_LONG).format(d);
 }
 function isoDaysAgo(n) {
   const d = new Date();
@@ -1503,13 +1510,13 @@ async function api(method, path, body, opts) {
 
 async function busy(button, fn, pending) {
   const site = $('panels');  // not #site: its dimming would put the fixed desktop tab bar behind the header
-  const was = button ? button.textContent : '';
-  if (button) { button.disabled = true; if (pending) button.textContent = t(pending); }
+  const was = button ? [...button.childNodes] : [];
+  if (button) { button.disabled = true; if (pending) button.replaceChildren(t(pending)); }
   site.classList.add('busy');
   showError('');
   try { return await fn(); }
   catch (e) { showError(e.message); return null; }
-  finally { if (button) { button.disabled = false; if (pending && button.isConnected) button.textContent = was; } site.classList.remove('busy'); }
+  finally { if (button) { button.disabled = false; if (pending && button.isConnected) button.replaceChildren(...was); } site.classList.remove('busy'); }
 }
 
 // tabs: ARIA tablist, roving tabindex, URL hash, Back button
@@ -1649,6 +1656,7 @@ function markDraftStale() { if (state.draft) $('draft-stale').hidden = false; }
 
 function showSetup(message) {
   document.body.classList.add('ready');
+  state.nav += 1;  // a load still on its way is for a plant that was just forgotten or left
   state.id = null; state.audit = null; state.cached = null;
   $('saved-note').hidden = true;
   clearImport();
@@ -1747,7 +1755,7 @@ $('setup-form').addEventListener('submit', async (ev) => {
   button.disabled = true; showError('');
   try {
     say(t('fetching'));
-    const site = await api('POST', '/api/sites', body);
+    const site = await api('POST', '/api/sites', body, { timeoutMs: 28000 });  // the server makes two upstream calls: do not give up before it does
     storeSet(site.id);
     history.replaceState(null, '', location.pathname);
     await load(site.id);
@@ -1836,10 +1844,11 @@ $('reading-form').addEventListener('submit', async (ev) => {
 });
 
 // ---------- offline queue: a reading that cannot reach the server waits in this browser ----------
-function queuedFor(site) { return (jsonGet(QUEUE_KEY) || []).filter((q) => q && q.site === site && q.body); }
+const queueAll = () => { const all = jsonGet(QUEUE_KEY); return Array.isArray(all) ? all : []; };
+function queuedFor(site) { return queueAll().filter((q) => q && q.site === site && q.body); }
 function queued() { return queuedFor(state.id); }
 function setQueue(site, items) {
-  const others = (jsonGet(QUEUE_KEY) || []).filter((q) => q && q.site !== site);
+  const others = queueAll().filter((q) => q && q.site !== site);
   const all = [...others, ...items];
   if (all.length) jsonSet(QUEUE_KEY, all); else try { localStorage.removeItem(QUEUE_KEY); } catch { /* ignore */ }  // an empty queue leaves no key
   if (site === state.id) renderQueue();
@@ -1895,7 +1904,7 @@ function flushQueue(manual) {
           held.set(day, q.body.kwh);
           drop(day);  // removed only now, after the server confirmed it
         } catch (e) {
-          if (!(e.status && e.status < 500 && e.status !== 429)) break;  // no response, 429 or 5xx: leave the queue as it is for next time
+          if (!(e.status && e.status < 500 && e.status !== 429 && e.status !== 409)) break;  // no response, 429 or 5xx: leave the queue as it is for next time
           setQueue(site, queuedFor(site).map((x) => (x.body.date === day ? { ...x, refused: e.message } : x)));  // kept, marked, and not re-sent by itself
           if (state.id === site) showError(`${fmtDate(day)}: ${e.message}`);
         }
@@ -2568,7 +2577,7 @@ function renderImpact(a) {
     el('div', { class: 'stat' }, el('span', { class: 'label', text: t('worth') }), el('span', { class: 'value', text: rupees(money) }), el('span', { class: 'sub', text: tf('atTariff', { n: A.tariff }) })));
   // Avoided grid CO2: only with an emission factor, and always worded as what the shortfall would have displaced.
   $('co2-line').textContent = A.co2 == null ? t('noFactor')
-    : tf('co2Line', { y: (w.lost * A.co2).toLocaleString('en-IN', { maximumFractionDigits: 1 }), f: A.co2 });
+    : tf('co2Line', { y: NF1.format(w.lost * A.co2), f: A.co2 });
 
   // Cleaning payback, only while dust is a possible cause the audit still supports.
   const roi = $('roi');
@@ -2800,7 +2809,7 @@ function drawChart(box, points, actions, flagBelow, opts) {
   const m = { t: 14, r: 8, b: 26, l: 40 };
   const pw = W - m.l - m.r;
   const ph = H - m.t - m.b;
-  const top = Math.max(1.25, ...points.map((p) => p.relative || 0));
+  const top = Math.min(3, Math.max(1.25, ...points.map((p) => p.relative || 0)));  // capped: a near-zero baseline gives ratios in the hundreds and would draw a thousand gridlines
   const ymax = Math.ceil(top / 0.25) * 0.25;
   const y = (v) => m.t + ph * (1 - Math.min(v, ymax) / ymax);
   const slot = pw / points.length;
@@ -2851,6 +2860,7 @@ function drawChart(box, points, actions, flagBelow, opts) {
   let current = -1;
   function show(i) {
     if (i < 0 || i >= points.length) return;
+    if (i === current && !tip.hidden) return;  // pointermove fires many times over one bar: no layout work for the same bar
     if (current >= 0) bars[current].classList.remove('active');
     current = i;
     bars[i].classList.add('active');
@@ -3024,7 +3034,9 @@ new ResizeObserver(() => {
 // start
 async function load(id) {
   const rev = state.rev;
+  const nav = state.nav;
   const audit = await api('GET', `/api/sites/${encodeURIComponent(id)}/audit`);
+  if (state.nav !== nav) return;  // Forget or Set up again happened while this read was on its way
   if (state.id === id && state.rev !== rev) return;  // a save or an approval drew a newer result while this read was on its way
   if (state.id !== id) clearImport();
   state.id = id;
