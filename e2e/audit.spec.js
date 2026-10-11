@@ -354,7 +354,7 @@ test('impact strip: sourced editable assumptions, payback only for dust, water, 
   await expect(impact).toContainText('at Rs 7 per unit (assumption)');
   // The CO2 line says what the shortfall would have displaced, at the factor in use, labelled an assumption.
   await expect(impact).toContainText('it would have displaced about');
-  await expect(impact).toContainText('kg of avoided grid CO₂ at 0.675 kg per unit (assumption).');
+  await expect(impact).toContainText('kg of avoided grid CO₂ at 0.71 kg per unit (assumption).');
   for (const word of [/litre/i, /emissions saved/i, /CO₂ lost/i, /lost CO/i]) await expect(impact).not.toContainText(word);
   // Dust is suspected but no day has crossed the dip line yet: the clean's cost is shown, no payback invented.
   await expect(impact).toContainText('0 flagged as dips');
@@ -369,12 +369,12 @@ test('impact strip: sourced editable assumptions, payback only for dust, water, 
   await expect(impact).toContainText('each with the date it was retrieved');
   await expect(impact.locator('#assume-sources li')).toHaveCount(4);
   await expect(impact.locator('#assume-sources li').nth(0)).toContainText('Retrieved 2026-10-08.');
-  await expect(impact.locator('#assume-sources li').nth(1)).toContainText('version 22.0 (workbook dated 2026-08-01)');
-  await expect(impact.locator('#assume-sources li').nth(1)).toContainText('Retrieved 2026-10-10.');
-  await expect(impact.locator('#assume-sources a')).toHaveCount(7);  // every quoted figure links to its document
+  await expect(impact.locator('#assume-sources li').nth(1)).toContainText('version 21.0, FY 2024-25');
+  await expect(impact.locator('#assume-sources li').nth(1)).toContainText('Not retrieved from CEA: the figure was supplied by the project owner on 2026-10-11');
+  await expect(impact.locator('#assume-sources a')).toHaveCount(6);  // every quoted figure links to its document
   // The factor's origin is an editable label, not buried: CEA database version and factor type, with defaults.
-  await expect(impact.getByLabel('CEA CO₂ Baseline Database version')).toHaveValue('22.0');
-  await expect(impact.getByLabel('Factor type (margin type)')).toHaveValue('weighted average, including imports, FY 2025-26');
+  await expect(impact.getByLabel('CEA CO₂ Baseline Database version')).toHaveValue('21.0');
+  await expect(impact.getByLabel('Factor type (margin type)')).toHaveValue('weighted average incl. RES, FY 2024-25 (provisional)');
   await expect(impact).not.toContainText('Water per panel');
   await expect(impact).not.toContainText('Panels on the roof');
   // After the fault: 5 flagged dips carry a real loss; dust is no longer supported, so no payback line.
@@ -409,7 +409,7 @@ test('impact strip: sourced editable assumptions, payback only for dust, water, 
   await expect(page.locator('#co2-line')).toContainText('No CO₂ figure');  // an empty factor is remembered as empty, not as zero
   await page.getByTestId('impact').locator('summary').click();
   await page.getByRole('button', { name: 'Reset to defaults' }).click();
-  await expect(page.locator('#co2-line')).toContainText('avoided grid CO₂ at 0.675 kg per unit (assumption)');
+  await expect(page.locator('#co2-line')).toContainText('avoided grid CO₂ at 0.71 kg per unit (assumption)');
 
   // Why: the kWh chart has both series and marks the 5 dips.
   await openTab(page, 'Why');
@@ -1159,7 +1159,7 @@ test('impact: the CO2 figure is the shortfall times the factor, follows an edite
   const y = async () => Number((await page.locator('#co2-line').innerText()).match(/about ([0-9.,]+) kg/)[1].replace(/,/g, ''));
   const lost = await shortfall();
   expect(lost).toBeGreaterThan(5);
-  expect(Math.abs((await y()) - lost * 0.675)).toBeLessThanOrEqual(0.2);
+  expect(Math.abs((await y()) - lost * 0.71)).toBeLessThanOrEqual(0.2);
   await impact.getByText('How we calculated this').click();
   await impact.getByLabel(/Emission factor, kg CO₂ per unit/).fill('0.9');
   await page.getByRole('button', { name: 'Use these values' }).click();
@@ -1168,7 +1168,7 @@ test('impact: the CO2 figure is the shortfall times the factor, follows an edite
   await expect(impact.getByLabel('CEA CO₂ Baseline Database version')).toHaveValue('');
   await expect(impact.getByLabel('Factor type (margin type)')).toHaveValue('');
   await page.getByRole('button', { name: 'Reset to defaults' }).click();
-  await expect(impact.getByLabel('CEA CO₂ Baseline Database version')).toHaveValue('22.0');
+  await expect(impact.getByLabel('CEA CO₂ Baseline Database version')).toHaveValue('21.0');
   // A plant with no dips and an emptied factor: no CO2 figure, the kWh stat stays.
   const calm = await createSite(request);
   await postRows(request, calm, syntheticRows().slice(0, 20));
@@ -1188,7 +1188,7 @@ test('impact: stored assumptions that are not usable fall back to the sourced de
     await page.evaluate((v) => localStorage.setItem('surya-audit-assumptions', v), bad);
     await page.goto(`/?site=${id}&bad=${encodeURIComponent(bad)}`);
     await expect(page.getByTestId('impact'), bad).toContainText('at Rs 7 per unit (assumption)');
-    await expect(page.locator('#co2-line'), bad).toContainText('at 0.675 kg per unit (assumption)');
+    await expect(page.locator('#co2-line'), bad).toContainText('at 0.71 kg per unit (assumption)');
   }
 });
 
@@ -1400,7 +1400,14 @@ test('page height at 375 px stays under 8 screens on every tab, in English, Hind
   for (const [key, h] of Object.entries(heights)) expect(h, `${key} is ${(h / 667).toFixed(1)} screens`).toBeLessThan(8 * 667);
 });
 
-test('offline: a busy server leaves waiting readings queued, a refusal drops them with its message, and an empty queue leaves no key', async ({ page, request }) => {
+// Try now, and wait until the one request it makes has been answered (a route changed before that would let it through).
+async function tryNow(page) {
+  const answered = page.waitForResponse((r) => r.url().endsWith('/readings') && r.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Try now' }).click();
+  await answered.catch(() => {});
+}
+
+test('offline: a busy server leaves waiting readings queued, a refusal keeps them for review with its message, and an empty queue leaves no key', async ({ page, request }) => {
   const id = await createSite(request);
   await postRows(request, id, syntheticRows().slice(0, 2));
   await page.goto(`/?site=${id}#log`);
@@ -1417,20 +1424,25 @@ test('offline: a busy server leaves waiting readings queued, a refusal drops the
   // 5xx: nothing is dropped.
   await page.unroute('**/readings');
   await page.route('**/readings', (route) => route.fulfill({ status: 503, contentType: 'application/json', body: '{}' }));
-  await page.getByRole('button', { name: 'Try now' }).click();
+  await tryNow(page);
   await expect(page.locator('#queue')).toContainText('2 readings');
   expect(await stored()).toEqual(['2026-08-20', '2026-08-21']);
   // 429: the same.
   await page.unroute('**/readings');
   await page.route('**/readings', (route) => route.fulfill({ status: 429, contentType: 'application/json', body: '{}' }));
-  await page.getByRole('button', { name: 'Try now' }).click();
+  await tryNow(page);
   await expect(page.locator('#queue')).toContainText('2 readings');
-  // A refusal (422) drops the reading with the server's message; the key is removed once the queue is empty.
+  // A refusal (422) keeps the reading too (removed only on success), shows the server's message and asks for a review.
   await page.unroute('**/readings');
   await page.route('**/readings', (route) => route.fulfill({ status: 422, contentType: 'application/json', body: JSON.stringify({ detail: 'That value is not possible.' }) }));
-  await page.getByRole('button', { name: 'Try now' }).click();
-  await expect(page.locator('#queue')).toBeHidden();
+  await tryNow(page);
+  await expect(page.locator('#queue')).toContainText('2 readings waiting, review');
   await expect(page.locator('#error')).toContainText('That value is not possible.');
+  expect(await stored()).toEqual(['2026-08-20', '2026-08-21']);
+  // Once the server accepts them they go, and an empty queue leaves no key.
+  await page.unroute('**/readings');
+  await tryNow(page);
+  await expect(page.locator('#queue')).toBeHidden();
   expect(await page.evaluate(() => localStorage.getItem('surya-audit-queued-readings'))).toBeNull();
 });
 

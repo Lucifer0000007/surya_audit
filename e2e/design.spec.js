@@ -111,9 +111,9 @@ test('Fix on a phone: each suggestion is a card, the progress comes after the Ap
     expect(found.close, `${width}px: controls closer than 8 px`).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${width}px: sideways scroll`).toBeLessThanOrEqual(0);
   }
-  const card = await page.locator('#panel-fix .action').first().evaluate((n) => { const s = getComputedStyle(n); return { shadow: s.boxShadow, radius: s.borderTopLeftRadius }; });
-  expect(card.shadow).not.toBe('none');
-  expect(card.radius).toBe('6px');
+  const card = page.locator('#panel-fix .action').first();
+  await expect(card).toHaveCSS('border-top-left-radius', '6px');  // retried: the card can be re-drawn while the page settles
+  await expect(card).not.toHaveCSS('box-shadow', 'none');
   const y = await page.locator('#panel-fix .action').first().evaluate((n) => [n.querySelector('.approve-btn'), n.querySelector('.steps')].map((x) => x.getBoundingClientRect().top));
   expect(y[0], 'Approve comes before the progress steps').toBeLessThan(y[1]);
 });

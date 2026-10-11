@@ -1004,6 +1004,10 @@ const L = {
   queuedOne: ['Offline: 1 reading will be saved when you are connected ({dates}).', 'ऑफ़लाइन: 1 रीडिंग कनेक्शन आने पर सेव होगी ({dates})।', 'ਆਫ਼ਲਾਈਨ: 1 ਰੀਡਿੰਗ ਕਨੈਕਸ਼ਨ ਆਉਣ ਉੱਤੇ ਸੇਵ ਹੋਵੇਗੀ ({dates})।'],
   queuedMany: ['Offline: {n} readings will be saved when you are connected ({dates}).', 'ऑफ़लाइन: {n} रीडिंग कनेक्शन आने पर सेव होंगी ({dates})।', 'ਆਫ਼ਲਾਈਨ: {n} ਰੀਡਿੰਗਾਂ ਕਨੈਕਸ਼ਨ ਆਉਣ ਉੱਤੇ ਸੇਵ ਹੋਣਗੀਆਂ ({dates})।'],
   tryNow: ['Try now', 'अभी भेजें', 'ਹੁਣੇ ਭੇਜੋ'],
+  queuedReview: ['{n} readings waiting, review', '{n} रीडिंग इंतज़ार में हैं, देखें', '{n} ਰੀਡਿੰਗਾਂ ਉਡੀਕ ਵਿੱਚ ਹਨ, ਵੇਖੋ'],
+  queuedReviewOne: ['1 reading waiting, review', '1 रीडिंग इंतज़ार में है, देखें', '1 ਰੀਡਿੰਗ ਉਡੀਕ ਵਿੱਚ ਹੈ, ਵੇਖੋ'],
+  forgetQueue: ["{n} readings haven't been saved yet. Forgetting will delete them from this device.", '{n} रीडिंग अभी सेव नहीं हुई हैं। भूलने पर वे इस डिवाइस से मिट जाएँगी।', '{n} ਰੀਡਿੰਗਾਂ ਹਾਲੇ ਸੇਵ ਨਹੀਂ ਹੋਈਆਂ। ਭੁੱਲਣ ਨਾਲ ਉਹ ਇਸ ਡਿਵਾਈਸ ਤੋਂ ਮਿਟ ਜਾਣਗੀਆਂ।'],
+  forgetQueueOne: ["1 reading hasn't been saved yet. Forgetting will delete it from this device.", '1 रीडिंग अभी सेव नहीं हुई है। भूलने पर वह इस डिवाइस से मिट जाएगी।', '1 ਰੀਡਿੰਗ ਹਾਲੇ ਸੇਵ ਨਹੀਂ ਹੋਈ। ਭੁੱਲਣ ਨਾਲ ਉਹ ਇਸ ਡਿਵਾਈਸ ਤੋਂ ਮਿਟ ਜਾਵੇਗੀ।'],
   savedQueuedOne: ['Saved the waiting reading.', 'इंतज़ार कर रही रीडिंग सेव हो गई।', 'ਉਡੀਕ ਵਾਲੀ ਰੀਡਿੰਗ ਸੇਵ ਹੋ ਗਈ।'],
   savedQueuedMany: ['Saved {n} waiting readings.', 'इंतज़ार कर रही {n} रीडिंग सेव हो गईं।', 'ਉਡੀਕ ਵਾਲੀਆਂ {n} ਰੀਡਿੰਗਾਂ ਸੇਵ ਹੋ ਗਈਆਂ।'],
   replay: ['Replay the {n} days', '{n} दिन दोबारा देखें', '{n} ਦਿਨ ਦੁਬਾਰਾ ਵੇਖੋ'],
@@ -1232,18 +1236,18 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // Editable assumptions behind the impact strip: sourced defaults (SOURCES.md), labelled assumptions, edits kept in this browser only.
 const ASSUME_KEY = 'surya-audit-assumptions';
-// CO2 factor: CEA weighted average grid emission rate, FY 2025-26, including imports; the version and type are labels only.
-const ASSUME_DEFAULTS = { tariff: 7, co2: 0.675, cea_version: '22.0', factor_type: 'weighted average, including imports, FY 2025-26', clean_cost_per_kw: 150, cleans_per_month: 2 };
+// CO2 factor: CEA weighted average grid emission rate incl. RES, FY 2024-25, database v21.0, provisional (not verified here); the version and type are labels only.
+const ASSUME_DEFAULTS = { tariff: 7, co2: 0.710, cea_version: '21.0', factor_type: 'weighted average incl. RES, FY 2024-25 (provisional)', clean_cost_per_kw: 150, cleans_per_month: 2 };
 const ASSUME_TEXT = ['cea_version', 'factor_type'];
 const ASSUME_SOURCES = [
   { text: 'Rs 7 per unit: CEA, Electricity Tariff & Duty & Average Rates of Electricity Supply in India, March 2026, Table 1(b): Rs 7.06/kWh all-in for an urban Uttar Pradesh home using 200 units a month (Rs 2.20 to 11.37 across India\u2019s utilities). Enter your own bill rate if you are elsewhere. Retrieved 2026-10-08.', urls: [['CEA', 'https://cea.nic.in/api/dashboardReports/view-pdf/en/a6bd09cf-72e4-4a30-8a37-a648ca22eaa6']] },
-  { text: '0.675 kg CO\u2082 per unit: CEA, CO\u2082 Baseline Database for the Indian Power Sector, version 22.0 (workbook dated 2026-08-01), Results sheet: weighted average grid emission rate (including renewables and captive plants), including imports, FY 2025-26, 0.675 tCO\u2082/MWh (0.678 excluding imports). The same version and year, including imports: combined margin 0.705, simple operating margin 0.963 and build margin 0.446 tCO\u2082/MWh; the factor type above says which one is in use. Retrieved 2026-10-10. The CEA baseline page needs a login and could not be opened, so a version newer than 22.0 is not ruled out.', urls: [['CEA database workbook', 'https://cea.nic.in/api/cdm-report-version/view-pdf/en/83'], ['CEA user guide', 'https://cea.nic.in/api/cdm-report-version/view-pdf/en/82']] },
+  { text: '0.710 kg CO\u2082 per unit (provisional, not retrieved): CEA, CO\u2082 Baseline Database for the Indian Power Sector, version 21.0, FY 2024-25, weighted average grid emission rate including RES, 0.710 tCO\u2082/MWh. Not retrieved from CEA: the figure was supplied by the project owner on 2026-10-11, and we could not open the CEA document to confirm it, and a newer version is not ruled out: enter the latest factor from cea.nic.in if you have it. The factor type above says which measure is in use.', urls: [['CEA', 'https://cea.nic.in/']] },
   { text: 'Rs 150 per kW per clean: CEEW, Maximising Rooftop Solar Performance by Enabling a Robust O&M Ecosystem (June 2026): cleaning alone costs Rs 100 to 200 per kW per visit; CEEW assumes Rs 150. A vendor\u2019s own packages run about Rs 390 to 450 a visit for plants up to 3.25 kWp. Retrieved 2026-10-08.', urls: [['CEEW', 'https://www.ceew.in/sites/default/files/ceew-oandm-ecosystem-for-rts-web-ready-file.pdf'], ['vendor page', 'https://www.solarsquare.in/blog/solar-panel-cleaning-pricing-in-india/']] },
   { text: 'Fixed schedule of 2 cleans a month: BHEL\u2019s rooftop O&M specification says panels are "cleaned at least once every fifteen days", and a Roorkee field study found monthly soiling losses of 1 to 1.5% with weekly cleaning, 2.5% biweekly, 5% every four weeks. Retrieved 2026-10-08.', urls: [['BHEL', 'https://tenders.bhel.com/sites/default/files/TS-2021-11-01-04%3A22%3A11.pdf'], ['Roorkee study', 'https://www.nature.com/articles/s41598-026-45485-2']] },
 ];
 const QUEUE_KEY = 'surya-audit-queued-readings';
 const state = {
-  id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, photoFill: null, flushing: null, saving: null, replay: null, cached: null, rev: 0,
+  id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, photoFill: null, flushing: null, saving: null, replay: null, cached: null, rev: 0, review: new Set(),
   tab: 'today', seenTabs: new Set(), chartPlayed: false, chartWidth: 0, tiltAuto: null,
   prevOutcomes: null, prevSteps: {}, heroValue: 0, heroFrac: 0,
 };
@@ -1758,7 +1762,10 @@ $('switch').addEventListener('click', () => {
 });
 // Forget the plant on this device: this browser's memory of it (the plant, the assumptions) goes; the server keeps the readings.
 $('forget').addEventListener('click', () => {
-  if (!confirm(tf('forgetConfirm', { link: `${location.origin}/?site=${state.id}` }))) return;
+  const waiting = queuedFor(state.id).length;
+  const unsaved = waiting ? `\n\n${tf(waiting > 1 ? 'forgetQueue' : 'forgetQueueOne', { n: waiting })}` : '';
+  if (!confirm(tf('forgetConfirm', { link: `${location.origin}/?site=${state.id}` }) + unsaved)) return;
+  if (waiting) setQueue(state.id, []);  // confirmed: they are deleted from this device
   if (storeGet() === state.id) storeClear();  // another remembered plant is not this one's to forget
   lastClear(state.id);
   try { localStorage.removeItem(ASSUME_KEY); } catch { /* ignore */ }
@@ -1839,37 +1846,59 @@ function renderQueue() {
   const items = queued();
   box.hidden = !items.length;
   if (!items.length) return;
+  const review = items.filter((q) => q.refused || state.review.has(`${q.site}|${q.body.date}`)).length;  // held back: the server has that day, or refused it
   box.append(el('span', { class: 'chip queued', role: 'status' }, icon('clock'),
-    tf(items.length > 1 ? 'queuedMany' : 'queuedOne', { n: items.length, dates: items.map((q) => fmtDate(q.body.date, true)).join(', ') })),
-    el('button', { type: 'button', class: 'link', id: 'queue-now', text: t('tryNow'), onclick: () => flushQueue() }));
+    review ? tf(review > 1 ? 'queuedReview' : 'queuedReviewOne', { n: review })
+      : tf(items.length > 1 ? 'queuedMany' : 'queuedOne', { n: items.length, dates: items.map((q) => fmtDate(q.body.date, true)).join(', ') })),
+    el('button', { type: 'button', class: 'link', id: 'queue-now', text: t('tryNow'), onclick: () => flushQueue(true) }));
 }
-// Sends the queue for the plant that is open now. A reading the server refuses outright (a 4xx other than
-// 429) is dropped with its message; on no response, 429 or 5xx the rest stays queued for next time.
-function flushQueue() {
+// The ONE exception to "a write is never sent twice by the page": waiting readings are sent when the browser says it is online, when a plant
+// loads, or when the owner taps Try now. No timers. One reading at a time, each removed only after the server confirms it. A reading for a day the
+// server already holds is never sent by itself: it stays queued ("N readings waiting, review"), and Try now asks the overwrite question first.
+// A reading the server refuses stays queued too (with its message) until the owner discards it by forgetting the plant or replaces it by saving that day.
+function flushQueue(manual) {
   if (state.flushing) return state.flushing;
   const site = state.id;
   if (!site || !queuedFor(site).length) return Promise.resolve();
   state.flushing = (async () => {
     let audit = null;
     let sent = 0;
-    const drop = (q) => setQueue(site, queuedFor(site).filter((x) => x.body.date !== q.body.date));
+    const review = new Set();
+    let heard = false;
     try {
       if (state.saving) await state.saving.catch(() => {});
-      // One item at a time from the live queue, so readings queued meanwhile are neither lost nor reverted.
-      for (let q = queuedFor(site)[0]; q; q = queuedFor(site)[0]) {
+      let held;  // what the server has now: day -> kWh
+      let current;
+      try {
+        current = await api('GET', `/api/sites/${encodeURIComponent(site)}/audit`);
+        held = new Map(current.timeline.map((x) => [x.date, x.kwh]));
+        heard = true;
+      } catch { return; }  // no answer: leave the queue, and what it shows, as it is
+      const drop = (day) => setQueue(site, queuedFor(site).filter((x) => x.body.date !== day));
+      const tried = new Set();
+      const next = () => queuedFor(site).find((x) => !tried.has(x.body.date));
+      for (let q = next(); q; q = next()) {
+        const day = q.body.date;
+        tried.add(day);
+        if (held.has(day) && Math.abs(held.get(day) - q.body.kwh) < 0.0005) {  // it landed earlier and only the answer was lost: nothing to send
+          drop(day); sent += 1; audit = audit || current; continue;
+        }
+        if (q.refused && !manual) { review.add(`${site}|${day}`); continue; }  // the server refused it before: not sent again by itself
+        if (held.has(day) && (!manual || !confirm(tf('replaceSaved', { date: fmtDate(day), kwh: kwh(held.get(day)), u: units() })))) { review.add(`${site}|${day}`); continue; }
         try {
           audit = await api('POST', `/api/sites/${encodeURIComponent(site)}/readings`, q.body);
           sent += 1;
-          drop(q);
+          held.set(day, q.body.kwh);
+          drop(day);  // removed only now, after the server confirmed it
         } catch (e) {
-          const refused = e.status && e.status < 500 && e.status !== 429;
-          if (!refused) break;  // no response, 429 or 5xx: leave the queue as it is for next time
-          drop(q);
-          if (state.id === site) showError(`${fmtDate(q.body.date)}: ${e.message}`);
+          if (!(e.status && e.status < 500 && e.status !== 429)) break;  // no response, 429 or 5xx: leave the queue as it is for next time
+          setQueue(site, queuedFor(site).map((x) => (x.body.date === day ? { ...x, refused: e.message } : x)));  // kept, marked, and not re-sent by itself
+          if (state.id === site) showError(`${fmtDate(day)}: ${e.message}`);
         }
       }
     } finally {
       state.flushing = null;
+      if (heard) state.review = new Set([...state.review].filter((k) => !k.startsWith(`${site}|`)).concat([...review]));
       if (state.id === site) renderQueue();
       if (audit && state.id === site) { render(audit); markDraftStale(); say(sent === 1 ? t('savedQueuedOne') : tf('savedQueuedMany', { n: sent })); }
     }
@@ -2489,6 +2518,7 @@ function assumptions() {
   const raw = jsonGet(ASSUME_KEY);
   const saved = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
   const out = { ...ASSUME_DEFAULTS };
+  if (saved.cea_version === '22.0' && saved.co2 === 0.675) { delete saved.co2; delete saved.cea_version; delete saved.factor_type; }  // the earlier default, not an edit
   for (const k of Object.keys(ASSUME_DEFAULTS)) {
     if (!(k in saved)) continue;
     if (ASSUME_TEXT.includes(k)) { if (typeof saved[k] === 'string') out[k] = saved[k].slice(0, 80); continue; }
