@@ -5,7 +5,7 @@
 #   bash scripts/demo_online.sh            # starts on port 8124, prints the demo link, Ctrl-C stops it
 #   PORT=9000 bash scripts/demo_online.sh
 #
-# Photo reading (Gemini) is on only if GEMINI_API_KEY is already set in YOUR shell; the key is never printed or written anywhere.
+# Photo reading (Gemini) is on only if GEMINI_API_KEY is set in YOUR shell or in a local .env file (a line GEMINI_API_KEY=...); the key is never printed or written anywhere.
 # Data is in memory: stopping the server forgets the plant. Nothing here touches AWS or any deployed URL.
 set -u
 cd "$(dirname "$0")/.."
@@ -15,7 +15,9 @@ PY=.venv/Scripts/python.exe
 [ -x "$PY" ] || { echo "no .venv: run 'uv sync' first" >&2; exit 1; }
 
 unset PVGIS_MODE IRRADIANCE_MODE SITES_TABLE GEMINI_KEY_PARAM   # live weather, in-memory store, no deployed parameters
-if [ -n "${GEMINI_API_KEY:-}" ]; then PHOTO="on (key found in this shell)"; else PHOTO="OFF (no GEMINI_API_KEY in this shell: type readings by hand)"; fi
+# No key in this shell: use the one in a local .env file, if there is one (git-ignored; this script never prints or copies it).
+if [ -z "${GEMINI_API_KEY:-}" ] && [ -f .env ]; then set -a; . ./.env; set +a; KEYSRC="the .env file"; else KEYSRC="this shell"; fi
+if [ -n "${GEMINI_API_KEY:-}" ]; then PHOTO="on (key found in $KEYSRC)"; else PHOTO="OFF (no GEMINI_API_KEY in this shell or in .env: type readings by hand)"; fi
 
 "$PY" -m uvicorn app.main:app --host 127.0.0.1 --port "$PORT" > .demo-online.log 2>&1 &
 SERVER=$!
