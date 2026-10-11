@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Online test mode for the demo plant: the LOCAL app with LIVE PVGIS and NASA POWER (no recorded fixtures) and a synthetic demo plant whose
+# readings are shifted so the last one is yesterday (India time). The plant is labelled synthetic, as always.
+#
+#   bash scripts/demo_online.sh            # starts on port 8124, prints the demo link, Ctrl-C stops it
+#   PORT=9000 bash scripts/demo_online.sh
+#
+# Photo reading (Gemini) is on only if GEMINI_API_KEY is already set in YOUR shell; the key is never printed or written anywhere.
+# Data is in memory: stopping the server forgets the plant. Nothing here touches AWS or any deployed URL.
+set -u
+cd "$(dirname "$0")/.."
+PORT="${PORT:-8124}"
+PY=.venv/Scripts/python.exe
+[ -x "$PY" ] || PY=.venv/bin/python
+[ -x "$PY" ] || { echo "no .venv: run 'uv sync' first" >&2; exit 1; }
+
+unset PVGIS_MODE IRRADIANCE_MODE SITES_TABLE GEMINI_KEY_PARAM   # live weather, in-memory store, no deployed parameters
+if [ -n "${GEMINI_API_KEY:-}" ]; then PHOTO="on (key found in this shell)"; else PHOTO="OFF (no GEMINI_API_KEY in this shell: type readings by hand)"; fi
+
+"$PY" -m uvicorn app.main:app --host 127.0.0.1 --port "$PORT" > .demo-online.log 2>&1 &
+SERVER=$!
+trap 'kill "$SERVER" 2>/dev/null; wait "$SERVER" 2>/dev/null' EXIT INT TERM
+for _ in $(seq 1 40); do curl -s -m 2 "http://127.0.0.1:$PORT/health" > /dev/null && break; sleep 0.5; done
+curl -s -m 2 "http://127.0.0.1:$PORT/health" > /dev/null || { echo "server did not start; see .demo-online.log" >&2; exit 1; }
+
+LINK=$(BASE="http://127.0.0.1:$PORT" "$PY" -I - <<'PY'
+import csv, json, os, urllib.request
+from datetime import date, datetime, timedelta, timezone
+
+BASE = os.environ["BASE"]
+IST = timezone(timedelta(hours=5, minutes=30))
+yesterday = datetime.now(IST).date() - timedelta(days=1)
+
+
+def post(path, body):
+    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode(), headers={"content-type": "application/json"})
+    with urllib.request.urlopen(req, timeout=120) as r:
+        return json.load(r)
+
+
+site = post("/api/sites", json.load(open("fixtures/synthetic_site.json", encoding="utf-8")))
+rows = list(csv.DictReader(open("fixtures/synthetic_site.csv", encoding="utf-8")))
+shift = yesterday - date.fromisoformat(rows[-1]["date"])  # the scenario ends inside its fault window; keep that, move it to yesterday
+for row in rows:
+    day = (date.fromisoformat(row["date"]) + shift).isoformat()
+    post(f"/api/sites/{site['id']}/readings", {"date": day, "kwh": float(row["kwh"]), "kind": row.get("kind") or "daily"})
+print(f"{BASE}/?site={site['id']}")
+PY
+)
+[ -n "$LINK" ] || { echo "could not load the demo plant; see .demo-online.log" >&2; exit 1; }
+echo
+echo "Online test mode (live PVGIS and NASA POWER, in-memory store, synthetic demo plant ending yesterday)"
+echo "  Demo plant:    $LINK"
+echo "  Fresh set-up:  http://127.0.0.1:$PORT/"
+echo "  Photo reading: $PHOTO"
+echo "  Ctrl-C stops the server and forgets the plant."
+wait "$SERVER"
