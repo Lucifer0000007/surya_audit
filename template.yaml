@@ -73,6 +73,11 @@ Resources:
           Type: HttpApi  # no Path or Method: every request goes to this function
           Properties:
             TimeoutInMillis: 29000
+            # A ceiling on the whole API (the routes are open, and /extract spends the Gemini key's quota): 10 requests a second, bursts of 20.
+            # API Gateway's default for an account is far higher. One person using the page makes a few requests a minute.
+            RouteSettings:
+              ThrottlingRateLimit: 10
+              ThrottlingBurstLimit: 20
 
   RefreshFunction:
     Type: AWS::Serverless::Function

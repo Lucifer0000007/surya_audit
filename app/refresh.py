@@ -28,15 +28,22 @@ def refresh_site(site: dict) -> bool:
 
 
 def handler(event: dict, context: object) -> dict:
-    refreshed = conflicts = 0
+    refreshed = conflicts = failed = 0
     for site_id in store.ids():
-        site = store.get(site_id)
-        if site is None or not refresh_site(site):
-            continue
+        # Stop with time to spare rather than being cut off in the middle of a write; the rest are picked up by the next run.
+        if hasattr(context, "get_remaining_time_in_millis") and context.get_remaining_time_in_millis() < 15_000:
+            log.warning("weather refresh: out of time, stopping early")
+            break
         try:
+            site = store.get(site_id)
+            if site is None or not refresh_site(site):
+                continue
             store.put(site)
             refreshed += 1
         except StoreConflict:
             conflicts += 1  # the owner saved meanwhile; the next run picks it up
-    log.info("weather refresh: %d sites refreshed, %d skipped after a concurrent save", refreshed, conflicts)
+        except Exception as e:  # one bad plant must not stop the others; the class only, never the plant's data
+            failed += 1
+            log.warning("weather refresh: one site failed (%s)", e.__class__.__name__)
+    log.info("weather refresh: %d sites refreshed, %d skipped after a concurrent save, %d failed", refreshed, conflicts, failed)
     return {"refreshed": refreshed, "conflicts": conflicts}

@@ -5,7 +5,7 @@ import binascii
 import logging
 import re
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Literal
 
@@ -14,16 +14,25 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from mangum import Mangum
 from pydantic import BaseModel, Field
+from starlette.middleware.gzip import GZipMiddleware
 
 from app import audit, clock, complaint, expected, extract
 from app.store import StoreConflict, make_store
 
 # Only the frozen routes: no /docs, /redoc or /openapi.json.
 app = FastAPI(title="Surya Audit", docs_url=None, redoc_url=None, openapi_url=None)
+# The page (about 290 KB) and the audit JSON (about 30 KB) compress about 3x and 10x: a large part of the wait on a 2 to 5 Mbps connection.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 store = make_store()
 log = logging.getLogger(__name__)
 # Anything shaped like a Google API key is cut out of logged error text.
-GOOGLE_KEY = re.compile(r"AIza[0-9A-Za-z_-]{20,}")
+# (the older "AIza" shape and the newer "AQ." shape)
+GOOGLE_KEY = re.compile(r"(?:AIza|AQ\.)[0-9A-Za-z_-]{20,}")
+SITE_ID = re.compile(r"[0-9a-f]{32}")  # what create_site makes: uuid4().hex
+# A plant keeps at most this many readings (one DynamoDB item holds about 1,150 at ~344 bytes each, 400 KB), and a reading may be at most this old:
+# NASA POWER is asked for every day between a reading and today, so a date from the year 1 would be a huge request and an overflow.
+MAX_READINGS = 900
+MAX_READING_AGE_DAYS = 400
 
 
 def _chain(e: BaseException | None, depth: int = 4):
@@ -76,6 +85,8 @@ PAGE_HEADERS = {
                                "base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
+    # the page uses the location, the microphone and the camera (or the photo picker) itself, and nothing else may
+    "Permissions-Policy": "geolocation=(self), microphone=(self), camera=(self)",
 }
 
 
@@ -116,8 +127,19 @@ def store_conflict(request: Request, exc: StoreConflict) -> JSONResponse:
     return JSONResponse(status_code=409, content={"detail": "This plant changed while you were saving. Please try again."})
 
 
+@app.middleware("http")
+async def api_headers(request: Request, call_next):
+    """Every response: nosniff and HSTS; API answers (they carry the plant's location) are never cached."""
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Strict-Transport-Security", "max-age=31536000")
+    if request.url.path.startswith("/api/"):
+        response.headers.setdefault("Cache-Control", "no-store")
+    return response
+
+
 def _site(site_id: str) -> dict:
-    site = store.get(site_id)
+    site = store.get(site_id) if SITE_ID.fullmatch(site_id) else None  # any other id cannot exist: no store call
     if site is None:
         raise HTTPException(404, "site not found")
     return site
@@ -196,12 +218,16 @@ def add_reading(site_id: str, body: ReadingIn) -> dict:
     site = _site(site_id)
     if body.date > clock.today():
         raise HTTPException(422, "reading date is in the future")
+    if body.date < clock.today() - timedelta(days=MAX_READING_AGE_DAYS):
+        raise HTTPException(422, f"reading date is more than {MAX_READING_AGE_DAYS} days ago")
     days = expected.DAYS[body.kind]
     if body.kwh > site["kw"] * 24 * days:
         raise HTTPException(422, f"{body.kwh} kWh is more than a {site['kw']} kW plant can produce in {days} day(s). "
                                  "For a meter's lifetime total, enter the difference between two readings.")
     iso = body.date.isoformat()
     site["readings"] = [r for r in site["readings"] if r["date"] != iso]
+    if len(site["readings"]) >= MAX_READINGS:
+        raise HTTPException(422, f"a plant keeps at most {MAX_READINGS} readings")
     # One weather call covers the new reading and any earlier ones whose weather was not published yet.
     ghi, source = expected.refresh_weather(site, [(body.date, days)])
     site["readings"].append({"date": iso, "kwh": body.kwh, "kind": body.kind,

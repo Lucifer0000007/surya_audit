@@ -21,6 +21,7 @@ PVGIS_MODE / IRRADIANCE_MODE = "fixture" reads the recorded responses in fixture
 (retrieved 2026-10-08 for lat 26.85, lon 80.95, 3 kW, tilt 20, south) instead of calling out.
 """
 
+import http.client
 import json
 import os
 import urllib.parse
@@ -31,6 +32,7 @@ from pathlib import Path
 from app import clock
 
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures"
+MAX_UPSTREAM_BYTES = 2_000_000  # PVGIS and POWER answers are a few KB to a few hundred KB
 PVGIS_URL = "https://re.jrc.ec.europa.eu/api/v5_3/PVcalc"
 POWER_DAILY_URL = "https://power.larc.nasa.gov/api/temporal/daily/point"
 POWER_CLIMATOLOGY_URL = "https://power.larc.nasa.gov/api/temporal/climatology/point"
@@ -57,8 +59,8 @@ def _get_json(url: str, params: dict) -> tuple[dict, dict]:
     try:
         # Short enough that two calls in a row fit in the 29 s the deployed function has.
         with urllib.request.urlopen(full, timeout=10) as resp:
-            data = json.load(resp)
-    except (OSError, ValueError) as e:
+            data = json.loads(resp.read(MAX_UPSTREAM_BYTES))  # bounded: a runaway answer cannot fill the function's memory
+    except (OSError, ValueError, http.client.HTTPException) as e:  # HTTPException: a cut-off body (IncompleteRead) is not an OSError
         raise UpstreamError(f"{url} failed: {e.__class__.__name__}") from e
     return data, {"url": full, "retrieved": clock.today().isoformat(), "fixture": False}
 
