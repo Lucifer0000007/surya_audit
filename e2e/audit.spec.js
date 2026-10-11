@@ -153,7 +153,7 @@ test('owner sets up a plant and types a reading', async ({ page }, testInfo) => 
   await setupPlant(page);
 
   // No loss given: the SAMPLE value is called out. This plant is not synthetic.
-  await expect(page.getByText('Sample values in use')).toBeVisible();
+  await expect(page.getByText('Sample values in use', { exact: true })).toBeVisible();
   await expect(page.getByText('Synthetic data', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('tab', { name: 'Today', exact: true })).toHaveAttribute('aria-selected', 'true');
 
@@ -269,7 +269,7 @@ test('tabs: ARIA, keyboard, URL hash, Back, reload and honesty flags on every ta
   for (const name of TAB_NAMES) {
     await openTab(page, name);
     await expect(page.getByText('Synthetic data', { exact: true })).toBeVisible();
-    await expect(page.getByText('Sample values in use')).toBeVisible();
+    await expect(page.getByText('Sample values in use', { exact: true })).toBeVisible();
     await expect(page.getByText('Possible causes with confidence levels, not a diagnosis.')).toBeVisible();
     await expect(page.locator('#sources')).toContainText('retrieved');
     await expectNoSideScroll(page);
@@ -514,9 +514,9 @@ test('languages: Hindi and Punjabi interface, units not kWh, fonts inline, hones
   await expect(page.locator('html')).toHaveAttribute('lang', 'hi');
   await expect(page.locator('#status')).toHaveText('');  // a status written in English does not linger on a Hindi page
   await expect(page.getByRole('tab', { name: 'आज', exact: true })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByTestId('headline')).toContainText('3 अक्तू॰ 2026');  // months come from the translations, not the browser
+  await expect(page.locator('#today-eyebrow')).toContainText('3 अक्तू॰ 2026');  // months come from the translations, not the browser
   await expect(page.getByTestId('light')).toContainText('सुझाव देखें');  // the fault day: well below usual
-  await expect(page.getByTestId('light')).toContainText('निदान नहीं');
+  await expect(page.locator('#hero')).toContainText('निदान नहीं');
   await expect(page.getByTestId('headline')).toContainText('यूनिट');
   await expect(page.getByTestId('headline')).not.toContainText('kWh');
   await expect(page.getByTestId('headline')).toContainText('अपेक्षित 15.1 यूनिट। गिरावट: सामान्य के 85% से नीचे।');  // Hindi word order and sentence stops
@@ -528,7 +528,7 @@ test('languages: Hindi and Punjabi interface, units not kWh, fonts inline, hones
   await expect(page.locator('footer')).toContainText('निदान नहीं');
   await expect(page.locator('footer')).toContainText('अप्रमाणित');
   // The honesty banners are translated but keep their labels; the SAMPLE word survives.
-  await expect(page.getByText('नकली (synthetic) डेटा')).toBeVisible();
+  await expect(page.getByText('नकली (synthetic) डेटा', { exact: true })).toBeVisible();
   await expect(page.locator('#banners')).toContainText('SAMPLE');
   expect(await page.evaluate(() => document.fonts.check('16px "Surya Indic"', 'सूर्य'))).toBe(true);
   await expectNoSideScroll(page);
@@ -536,7 +536,7 @@ test('languages: Hindi and Punjabi interface, units not kWh, fonts inline, hones
   await page.getByRole('button', { name: 'ਪੰਜਾਬੀ' }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'pa');
   await expect(page.getByRole('tab', { name: 'ਅੱਜ', exact: true })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByTestId('light')).toContainText('ਨਿਦਾਨ ਨਹੀਂ');
+  await expect(page.locator('#hero')).toContainText('ਨਿਦਾਨ ਨਹੀਂ');
   await expect(page.getByTestId('headline')).toContainText('ਯੂਨਿਟ');
   expect(await page.evaluate(() => document.fonts.check('16px "Surya Indic"', 'ਸੂਰਜ'))).toBe(true);
   for (const name of ['ਰੀਡਿੰਗ', 'ਹੱਲ', 'ਕਿਉਂ', 'ਸ਼ਿਕਾਇਤ']) {
@@ -593,7 +593,9 @@ test('traffic light: shape and sentence before numbers; learning, fine and bad s
   await postRows(request, id, rows.slice(20));
   await page.reload();
   await expect(light).toContainText('well below usual');
-  await expect(light).toContainText('A possible cause: Sudden fault (high confidence). A possible cause, not a diagnosis.');
+  await expect(page.locator('#hero')).toContainText('Top possible cause: Sudden fault');  // the cause is stated once, under the ring
+  await expect(page.locator('#hero')).toContainText('high confidence');
+  await expect(page.locator('#hero')).toContainText('A possible cause, not a diagnosis.');
   await expect(light.locator('.light')).toHaveClass(/bad/);
   expect(await light.locator('.light-icon path').count()).toBeGreaterThanOrEqual(2);  // cloud + exclamation: a different shape
 
@@ -626,7 +628,8 @@ test('traffic light: a steady but low plant is never called fine; the light name
   await page.goto(`/?site=${id}`);
   const light = page.getByTestId('light');
   await expect(light).toContainText('Near usual, but the audit points to a possible cause.');
-  await expect(light).toContainText('A possible cause: Low since the start (high confidence). A possible cause, not a diagnosis.');
+  await expect(page.locator('#hero')).toContainText('Top possible cause: Low since the start');
+  await expect(page.locator('#hero')).toContainText('A possible cause, not a diagnosis.');
   await expect(light).not.toContainText('looks fine');
   await expect(light.locator('.light')).toHaveClass(/cause/);
   expect(await light.locator('.light-icon path').count()).toBe(1);  // the half-covered sun: a third shape
@@ -683,7 +686,7 @@ test('setup wizard: three steps, big choices, tilt from latitude, same API call'
   await page.getByRole('button', { name: 'Start auditing' }).click();
   await expect(page.getByTestId('light')).toContainText('No readings yet');
   await expect(page.locator('#plant-summary')).toContainText('tilt 27° · facing south-west');
-  await expect(page.getByText('Sample values in use')).toBeVisible();
+  await expect(page.getByText('Sample values in use', { exact: true })).toBeVisible();
 });
 
 test('accessibility basics: 48px targets, bigger text, photo-first log, mic and read-aloud only when supported', async ({ page, request }) => {
@@ -727,7 +730,7 @@ test('accessibility basics: 48px targets, bigger text, photo-first log, mic and 
   const hasVoice = await page.evaluate(() => 'speechSynthesis' in window && speechSynthesis.getVoices().some((v) => v.lang.toLowerCase().startsWith('en')));
   await page.getByRole('tab', { name: 'Today', exact: true }).focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByTestId('light').getByRole('button', { name: 'Read aloud' })).toBeVisible({ visible: hasVoice });
+  await expect(page.locator('#hero').getByRole('button', { name: 'Read aloud' })).toBeVisible({ visible: hasVoice });
   await expectNoSideScroll(page);
 });
 
@@ -906,14 +909,14 @@ test('type and layout: nothing under 14px, help text 15px and scaled by Bigger t
       expect(await small(), `${lng}/${tab}`).toEqual([]);
     }
   }
-  // Help text is 15px, and Bigger text scales it with everything else (rem units follow the root size).
+  // Help text is the 14px caption, and Bigger text scales it with everything else (rem units follow the root size).
   await page.goto('/');  // a full load: the language is read from storage when the page starts
   await page.evaluate(() => localStorage.setItem('surya-audit-lang', 'en'));
   await page.goto(`/?site=${id}#log`);
   const help = () => page.locator('#log .note').first().evaluate((n) => parseFloat(getComputedStyle(n).fontSize));
-  expect(await help()).toBe(15);
+  expect(await help()).toBe(14);
   await page.getByRole('button', { name: 'Bigger text' }).click();
-  expect(await help()).toBeGreaterThan(17);
+  expect(await help()).toBeGreaterThan(16);
   await page.getByRole('button', { name: 'Bigger text' }).click();
   // A+ has an aria-label and a tooltip, in every language.
   const bigger = page.locator('#bigger');
@@ -939,13 +942,21 @@ test('type and layout: nothing under 14px, help text 15px and scaled by Bigger t
   for (const f of ['#setup-form', '#reading-form', '#assume-form']) expect(await page.locator(f).getAttribute('autocomplete')).toBe('off');
 });
 
-test('desktop backdrop: from 1100px the column sits on a darker backdrop; phones and tablets keep a plain page', async ({ page, request }) => {
+test('desktop: the page is the canvas edge to edge, the content column is at most 1040 px and sits in the middle, Today has two columns', async ({ page, request }) => {
   const id = await createSite(request);
+  await postRows(request, id, syntheticRows());
   await page.goto(`/?site=${id}`);
-  for (const [width, backdrop] of [[1280, true], [1099, false], [393, false]]) {
+  await expect(page.locator('#headline .ring')).toBeVisible();
+  for (const [width, columns] of [[1280, 2], [1099, 2], [393, 1]]) {
     await page.setViewportSize({ width, height: 800 });
-    const image = await page.evaluate(() => getComputedStyle(document.body).backgroundImage);
-    expect(image.includes('linear-gradient'), `${width}px`).toBe(backdrop);
+    const look = await page.evaluate(() => {
+      const left = document.querySelector('.today-left').getBoundingClientRect();
+      const right = document.querySelector('.today-right').getBoundingClientRect();
+      return { image: getComputedStyle(document.body).backgroundImage, today: document.querySelector('.today').getBoundingClientRect().width, side: right.left > left.right - 1 && Math.abs(right.top - left.top) < 8 };
+    });
+    expect(look.image, `${width}px: a plain canvas`).toBe('none');
+    expect(look.today, `${width}px: the column`).toBeLessThanOrEqual(1040);
+    expect(look.side, `${width}px: columns side by side`).toBe(columns === 2 && width >= 1024);
   }
 });
 
@@ -1254,8 +1265,8 @@ test('Why: the readings charts sit in a dark band, in light and in dark mode; th
     expect(causes.cls).toBe('section');
     expect(causes.bg, 'a plain section: the page canvas shows through').toBe('rgba(0, 0, 0, 0)');
   }
-  // Only two bands exist on the whole page: Today's hero and this chart.
-  expect(await page.locator('.band').evaluateAll((ns) => ns.map((n) => n.id))).toEqual(['hero', 'timeline']);
+  // Only one band exists on the whole page: this chart (Today's inverted block is the verdict card).
+  expect(await page.locator('.band').evaluateAll((ns) => ns.map((n) => n.id))).toEqual(['timeline']);
 });
 
 test('Report: a document; Draft is the one primary only when escalation is suggested, the rest are quiet', async ({ page, request }) => {
@@ -1344,7 +1355,7 @@ test('print: the Report alone, in light, with the flags and the honesty line, an
   expect((pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length, 'one page').toBe(1);
 });
 
-test('v3 type and touch sizes on a phone: body 18 px, primary controls 56 px or more, the rest 48 px or more, the wordmark takes the text colour', async ({ page, request }) => {
+test('v4 type and touch sizes on a phone: body 18 px, the main action 56 px or more, every other control 48 px or more, the sun is amber and the rays take the text colour', async ({ page, request }) => {
   await page.setViewportSize({ width: 375, height: 667 });
   const id = await createSite(request);
   await postRows(request, id, syntheticRows());
@@ -1352,17 +1363,18 @@ test('v3 type and touch sizes on a phone: body 18 px, primary controls 56 px or 
   await expect(page.locator('#action-list .approve-btn:not(.secondary)')).toBeVisible();
   const px = (sel, prop) => page.locator(sel).first().evaluate((n, p) => parseFloat(getComputedStyle(n)[p]), prop);
   expect(await px('body', 'fontSize')).toBe(18);
-  expect(await px('#action-list .approve-btn:not(.secondary)', 'height')).toBeGreaterThanOrEqual(56);
+  expect(await px('#action-list .approve-btn:not(.secondary)', 'height')).toBeGreaterThanOrEqual(48);  // v4: only the one main action of a screen is 56 px
   expect(await px('#action-list .approve-btn.secondary', 'height')).toBeGreaterThanOrEqual(48);
   expect(await px('#action-list .speak', 'height')).toBeGreaterThanOrEqual(48);
   await page.goto(`/?site=${id}&v=3#log`);
   await expect(page.locator('#panel-log')).toBeVisible();
-  expect(await px('#save-btn', 'height')).toBeGreaterThanOrEqual(64);  // the hero button keeps its 64 px
+  expect(await px('#save-btn', 'height')).toBeGreaterThanOrEqual(56);  // Save is the main action of Log
   for (const sel of ['#kwh-input', '#photo-pick', '[role=tab]', '.lang button']) expect(await px(sel, 'height'), sel).toBeGreaterThanOrEqual(48);
-  // The wordmark sun is inline SVG drawn in currentColor: no colour of its own.
-  const mark = await page.locator('.brand svg').evaluate((n) => ({ html: n.outerHTML, fill: getComputedStyle(n.querySelector('circle')).fill, ink: getComputedStyle(n).color }));
+  // The wordmark is inline SVG: the rays are drawn in currentColor, the sun takes the amber token (the one place amber is a mark).
+  const mark = await page.locator('.brand svg').evaluate((n) => ({ html: n.outerHTML, sun: getComputedStyle(n.querySelector('.sun')).fill, rays: getComputedStyle(n.querySelector('.rays')).stroke, ink: getComputedStyle(n).color }));
   expect(mark.html).not.toMatch(/#[0-9a-f]{3,6}/i);
-  expect(mark.fill).toBe(mark.ink);
+  expect(mark.rays).toBe(mark.ink);
+  expect(mark.sun).toBe('rgb(237, 161, 0)');
 });
 
 test('page height at 375 px stays under 8 screens on every tab, in English, Hindi and Punjabi', async ({ page, request }, testInfo) => {

@@ -168,3 +168,17 @@ test('a flaky network (3 in 10 reads fail, some are slow): the shell stays usabl
   expect(timeline.some((p) => Math.abs(p.kwh - 8.1) < 0.0005)).toBe(true);
   expect(errors).toEqual([]);
 });
+
+test('first visit: nothing shifts while the page loads (layout shift under 0.1), even when the audit is slow', async ({ page, request }) => {
+  await page.setViewportSize({ width: 375, height: 667 });  // a phone: the footer would be on the first screen
+  const id = await plant(request);
+  await page.addInitScript(() => {
+    window.__cls = 0;
+    new PerformanceObserver((list) => { for (const e of list.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; }).observe({ type: 'layout-shift', buffered: true });
+  });
+  await page.route('**/api/sites/*/audit', async (route) => { await new Promise((r) => setTimeout(r, 700)); await route.continue(); });
+  await page.goto(`/?site=${id}&cls=1`);
+  await expect(page.locator('#headline .ring')).toBeVisible();
+  await page.waitForTimeout(1500);  // late paints and the count-up
+  expect(await page.evaluate(() => window.__cls)).toBeLessThan(0.1);
+});

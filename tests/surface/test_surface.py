@@ -236,7 +236,7 @@ SPACING_PROPS = r"(?<![-\w])(padding(?:-[a-z]+)*|margin(?:-[a-z]+)*|gap|row-gap|
 
 
 def test_spacing_is_on_the_scale_radii_are_two_and_there_are_no_shadows_or_amber_text():
-    """Spacing only 4, 6, 8, 12, 16, 20, 24, 32, 40, 44, 48, 64 and 80 px; radii 6 px or a pill (a circle for dots); hairlines, not
+    """Spacing only 4, 6, 8, 12, 16, 20, 24, 32, 40, 44, 48, 64 and 80 px; radii 6 px or a pill (a circle for dots); hairlines and a ring token, not
     shadows; amber for backgrounds, borders and strokes, never as the colour of text. The visually hidden helper is exempt from the
     spacing rule: its -1px margin is the standard clip."""
     off_scale, radii, shadows, amber_text = [], set(), [], []
@@ -249,7 +249,11 @@ def test_spacing_is_on_the_scale_radii_are_two_and_there_are_no_shadows_or_amber
         amber_text += [f"{selector}: {v}" for v in re.findall(r"(?<![-\w])color\s*:\s*((?:var\(--accent\)|#eda100|color-mix\([^;]*--accent)[^;]*)", body)]
     assert off_scale == []
     assert radii <= {"var(--r)", "var(--pill)", "50%", "0", "0 var(--r) var(--r) 0"}, radii
-    assert shadows == [] and amber_text == []
+    # No drop shadows: the only box-shadow is the hairline ring token (0 0 0 1px at 8-14% plus a 2px gap in the canvas colour), or none.
+    ring_only = [x for x in shadows if x.split(": ", 1)[1] not in ("var(--ring)", "var(--verdict-ring)", "none")]
+    assert ring_only == [] and amber_text == []
+    for token in re.findall(r"--(?:ring|verdict-ring):\s*([^;]+);", STYLE):
+        assert re.fullmatch(r"(?:none|0 0 0 1px rgba\([0-9, .]+\)(?:, 0 0 0 2px var\(--(?:canvas|verdict-bg)\))?)", token.strip()), token
 
 
 def test_the_mono_face_is_for_latin_metadata_and_is_switched_off_in_hindi_and_punjabi():

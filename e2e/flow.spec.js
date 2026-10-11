@@ -87,7 +87,7 @@ test('phone flow: set up, read a photo, save, replace, approve, draft a complain
   await shot('wizard-3');
   await page.getByRole('button', { name: 'Start auditing' }).click();
   await expect(page.getByRole('tab', { name: 'Today', exact: true })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByText('Sample values in use')).toBeVisible();  // no system loss was given
+  await expect(page.getByText('Sample values in use', { exact: true })).toBeVisible();  // no system loss was given
   const ownLink = await page.locator('#plant-link').getAttribute('href');
   const ownId = new URL(ownLink, baseURL).searchParams.get('site');
   expect(ownId).toBeTruthy();
