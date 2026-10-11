@@ -143,3 +143,22 @@ test('Why: controls 48 px and 8 px apart, no sideways scroll from 320 px; on a d
   expect(box.radius).toBe('6px');
   expect(box.columns).toBe(2);
 });
+
+test('Report: the buttons under the draft stay quiet (Draft is the only primary, and only when escalation is suggested), controls are 48 px and 8 px apart, nothing scrolls sideways from 320 px', async ({ page, request }) => {
+  const id = await plant(request);
+  for (const width of [320, 375]) {
+    await page.setViewportSize({ width, height: 700 });
+    await page.goto(`/?site=${id}&w=${width}#report`);
+    await page.locator('#draft-btn').click();
+    await expect(page.locator('#draft-out')).toBeVisible();
+    const found = await page.evaluate(scan);
+    expect(found.small, `${width}px: controls under 48 px`).toEqual([]);
+    expect(found.close, `${width}px: controls closer than 8 px`).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${width}px: sideways scroll`).toBeLessThanOrEqual(0);
+  }
+  const look = await page.evaluate(() => ['#copy-btn', '#download-btn', '#share-draft'].map((s) => { const n = document.querySelector(s); return [getComputedStyle(n).backgroundColor !== 'rgba(0, 0, 0, 0)', Math.round(n.getBoundingClientRect().height)]; }));
+  expect(look.map((l) => l[0])).toEqual([false, false, false]);
+  expect(look.every((l) => l[1] >= 48)).toBe(true);
+  const gap = await page.evaluate(() => { const l = document.querySelector('#draft-out > label').getBoundingClientRect(), c = document.querySelector('#draft-out > .callout:not([hidden])').getBoundingClientRect(); return l.top - c.bottom; });
+  expect(gap, 'the label does not touch the notice above it').toBeGreaterThanOrEqual(8);
+});
