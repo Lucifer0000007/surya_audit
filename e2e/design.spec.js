@@ -159,6 +159,36 @@ test('Report: the buttons under the draft stay quiet (Draft is the only primary,
   const look = await page.evaluate(() => ['#copy-btn', '#download-btn', '#share-draft'].map((s) => { const n = document.querySelector(s); return [getComputedStyle(n).backgroundColor !== 'rgba(0, 0, 0, 0)', Math.round(n.getBoundingClientRect().height)]; }));
   expect(look.map((l) => l[0])).toEqual([false, false, false]);
   expect(look.every((l) => l[1] >= 48)).toBe(true);
+  await expect(page.locator('#share-draft')).toHaveAttribute('href', /^https:\/\/wa\.me\/\?text=/);  // a real link before any click
+  await page.fill('#draft-text', 'my edit');
+  await expect(page.locator('#share-draft')).toHaveAttribute('href', 'https://wa.me/?text=my%20edit');
   const gap = await page.evaluate(() => { const l = document.querySelector('#draft-out > label').getBoundingClientRect(), c = document.querySelector('#draft-out > .callout:not([hidden])').getBoundingClientRect(); return l.top - c.bottom; });
   expect(gap, 'the label does not touch the notice above it').toBeGreaterThanOrEqual(8);
+});
+
+// A new owner's walkthrough, counting every tap or field they must touch. More than 6 for one task is a flag.
+test('new user: set up the plant in 6 taps or fewer, then log the first reading in 3 and see the result in 4', async ({ page }) => {
+  let taps = 0;
+  const tap = async (locator) => { taps += 1; await locator.click(); };
+  const type = async (locator, text) => { taps += 1; await locator.fill(text); };
+  await page.goto('/');
+  await type(page.getByLabel('Latitude'), '26.85');
+  await type(page.getByLabel('Longitude'), '80.95');
+  await tap(page.getByRole('button', { name: 'Next' }));
+  await type(page.getByLabel('Plant size (kW)'), '3');
+  await tap(page.getByRole('button', { name: 'Next' }));
+  await tap(page.getByRole('button', { name: 'Start auditing' }));
+  const setup = taps;
+  expect(setup, 'taps to set up the plant').toBeLessThanOrEqual(6);
+  await expect(page.locator('#hero')).toBeVisible();
+  taps = 0;
+  await tap(page.locator('a.hero-btn', { hasText: 'Log a reading' }));
+  await type(page.locator('#kwh-input'), '12.4');
+  await tap(page.locator('#save-btn'));
+  await expect(page.locator('#status')).toContainText('Saved', { timeout: 15000 });  // Save stays on Log and says so
+  expect(taps, 'taps to log the first reading').toBeLessThanOrEqual(3);
+  await tap(page.getByRole('tab', { name: 'Today', exact: true }));  // and one more to see the updated result
+  await expect(page.locator('#hero')).toBeVisible();
+  expect(taps, 'taps from Today to the updated result').toBeLessThanOrEqual(6);
+  console.log(`WALKTHROUGH setup=${setup} first-reading-to-result=${taps}`);
 });

@@ -249,11 +249,11 @@ def test_spacing_is_on_the_scale_radii_are_two_and_there_are_no_shadows_or_amber
         amber_text += [f"{selector}: {v}" for v in re.findall(r"(?<![-\w])color\s*:\s*((?:var\(--accent\)|#eda100|color-mix\([^;]*--accent)[^;]*)", body)]
     assert off_scale == []
     assert radii <= {"var(--r)", "var(--pill)", "50%", "0", "0 var(--r) var(--r) 0"}, radii
-    # No drop shadows: the only box-shadow is the hairline ring token (0 0 0 1px at 8-14% plus a 2px gap in the canvas colour), or none.
+    # No drop shadows: the only box-shadow is the hairline ring token (0 0 0 1px at 8-14% plus a 2px gap in the canvas colour), or none; on the dark band a plain 1px ring in its own control colour (the canvas halo would show white).
     ring_only = [x for x in shadows if x.split(": ", 1)[1] not in ("var(--ring)", "var(--verdict-ring)", "none")]
     assert ring_only == [] and amber_text == []
     for token in re.findall(r"--(?:ring|verdict-ring):\s*([^;]+);", STYLE):
-        assert re.fullmatch(r"(?:none|0 0 0 1px rgba\([0-9, .]+\)(?:, 0 0 0 2px var\(--(?:canvas|verdict-bg)\))?)", token.strip()), token
+        assert re.fullmatch(r"(?:none|0 0 0 1px var\(--dk-control\)|0 0 0 1px rgba\([0-9, .]+\)(?:, 0 0 0 2px var\(--(?:canvas|verdict-bg)\))?)", token.strip()), token
 
 
 def test_the_mono_face_is_for_latin_metadata_and_is_switched_off_in_hindi_and_punjabi():

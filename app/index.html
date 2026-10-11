@@ -201,7 +201,8 @@
   .big-choice label:has(input:focus-visible), .big-choice label.focus { outline: 2px solid var(--text); outline-offset: 2px; }
   .datepick { display: grid; gap: 8px; min-width: 0; margin: 0; padding: 0; border: 0; }
   .datepick legend { margin-bottom: 8px; padding: 0; color: var(--text-2); font-size: 0.9375rem; font-weight: 500; }
-  .big-choice.chips { grid-template-columns: repeat(3, 1fr); }
+  .big-choice.chips { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .big-choice label { overflow-wrap: anywhere; }
   .big-choice.chips label { min-height: 48px; }
   .big-choice.chips.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
@@ -244,6 +245,7 @@
   .dots i { position: relative; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--text-2); display: block; }
   .dots i.on::after { content: ""; position: absolute; inset: -1.5px; border-radius: 50%; background: var(--text); animation: pop 240ms ease-out both; animation-delay: calc(150ms + var(--k, 0) * 130ms); }
   .conf { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; color: var(--text-2); font-weight: 500; white-space: nowrap; }
+  @media (max-width: 719.98px) { .cause-head .conf { white-space: normal; } }
   #today-actions { display: grid; gap: 12px; }
   #today-actions .share { justify-self: start; }
 
@@ -286,8 +288,8 @@
   .action-head { display: flex; gap: 12px; align-items: center; }
   .action-head .picto { min-width: 0; }
   .action-head .picto svg { width: 24px; height: 24px; }
-  .action .approve { display: flex; gap: 8px; align-items: end; }
-  .action .approve label { flex: 1 1 0; min-width: 0; }
+  .action .approve { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+  .action .approve label { flex: 1 1 140px; min-width: 0; }
   #draft-out:not([hidden]) { display: grid; gap: 16px; }
   #draft-out > label { margin-bottom: -8px; }
   .draft-actions { display: grid; gap: 8px; }
@@ -433,7 +435,8 @@
   @media (forced-colors: active) {
     :is(.card, .action, .verdict-card, .lang button, .prefs .bigger, .tag, .chip, button.secondary, .button.secondary, .speak, .share, .strip-body p, .photo-review, .saved-note, .loop li::before) { box-shadow: none; border: 1px solid CanvasText; }
     .action, .cause, .band, .tabs { border-color: CanvasText; }
-    .band { border: 1px solid CanvasText; }
+    .band, #panel-why > .band { border: 1px solid CanvasText; }
+    .big-choice label:has(input:checked), .big-choice label.checked { border-width: 3px; padding: 6px; forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: Highlight; }  /* the chosen chip: a thicker edge and the system highlight, not colour alone */
     .tab-indicator { background: Highlight; forced-color-adjust: none; }
   }
 </style>
@@ -2112,6 +2115,7 @@ $('draft-btn').addEventListener('click', async (ev) => {
   state.draft = draft;
   $('draft-stale').hidden = true;
   $('draft-text').value = draft.draft_text;
+  syncShare();
   renderCategories(draft);
   $('draft-out').hidden = false;
   const text = $('draft-text');
@@ -2143,8 +2147,11 @@ function verdictText(a) {
       : t('nothingStandsOut')];
   return lines.filter(Boolean).join('\n');
 }
+// The link carries the draft as soon as there is one, so a middle-click or "copy link" works too.
+function syncShare() { $('share-draft').href = whatsappHref($('draft-text').value || ''); }
+$('draft-text').addEventListener('input', syncShare);
 $('share-draft').addEventListener('click', (ev) => {
-  ev.currentTarget.href = whatsappHref($('draft-text').value || '');
+  syncShare();
   say(t('waOpened'));
 });
 
