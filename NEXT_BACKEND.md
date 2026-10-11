@@ -92,3 +92,14 @@ Routes and response shapes are frozen during the UI phases (5-8), so these wait 
 - **Codes and parameters for server sentences** (see the Phase 9 entry above): the page now draws a saved audit that was written in
   an earlier language; the sentences it translates are matched on exact English patterns, so a new server wording stays English until
   it is added to the table.
+
+## From the review of 2026-10-11 (see `docs/SECURITY_REVIEW.md`; none of these is done)
+- **CSP without `'unsafe-inline'` for scripts:** serve `script-src 'sha256-<hash of the one inline script>'`, computed when the page is read. Needs the CSP assertion in `tests/test_loop.py` updated, and a Playwright run.
+- **Least-privilege IAM:** `DynamoDBReadPolicy` plus one `PutItem` statement for the API function; Scan only for the refresh function; narrow `infra/boundary-policy.json` to match. Redeploy and watch for a rollback.
+- **Retention:** a `TimeToLiveSpecification` on an `expires_at` attribute that `store.put` refreshes (for example 180 days after the last write). It deletes owners' data after inactivity, so it is a decision, and the privacy band would have to say so.
+- **Weekly readings in the recovery check** (`_verify` in `app/audit.py`): a weekly reading dated after the approval covers days before it; require the whole week to be after the approval.
+- **Store `weather_source` once per POWER call** instead of in every reading (a shape change; the audit and the item both get smaller).
+- **Refresh order and size:** record `refreshed_at` per plant, refresh the oldest first, and skip readings that are still unknown after 30 days.
+- **Cache POWER daily values per container** (keep known values; keep "not published yet" for about an hour) so a bulk import is not one live call per row. **Run PVGIS and the POWER climatology in parallel** on plant creation.
+- **Build the Lambda package with hashes** (`--require-hashes`), and look at whether `strands-agents` needs its whole dependency set for one vision call.
+- **Today's date in India time on the page** (`Intl.DateTimeFormat` with `timeZone: 'Asia/Kolkata'`) for devices set to another time zone.

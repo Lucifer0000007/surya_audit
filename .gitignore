@@ -20,3 +20,4 @@ local_screens/
 .agents/
 # Local screenshot sets (before/after); a few compressed ones are committed under docs/
 screenshots/
+.demo-online.*

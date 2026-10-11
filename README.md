@@ -80,6 +80,14 @@ The `AppUrl` output is the page. To show the synthetic demo there: `uv run pytho
 
 Limits behind two settings: Lambda takes "6 MB each for request and response (synchronous)" (https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html), so the image cap is 4 MB before base64; the HTTP API "Maximum integration timeout" is 30 seconds (https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-quotas.html), so the API function has 29 s and each PVGIS or NASA POWER call 10 s. Both retrieved 2026-10-08.
 
+## Security and limits
+
+No accounts: a plant's private link (a 122-bit random id) is the only key, so keep it private. The API accepts a plant id only in that shape; a reading may be at most 400 days old and a plant keeps at most 900 readings; photos are capped at 4 MB, re-encoded on the phone (location data dropped) and never stored or logged; the API as a whole is throttled (10 requests a second, bursts of 20); answers carrying a plant's location are never cached; the page and the audit are gzip-compressed. The Gemini key is read from SSM Parameter Store (deployed) or `GEMINI_API_KEY` (local) and is cut out of any logged error. The review of 2026-10-11 and what it left undone: `docs/SECURITY_REVIEW.md` and `NEXT_BACKEND.md`.
+
+### Online test mode (local, live weather)
+
+`bash scripts/demo_online.sh` starts the app on port 8124 with live PVGIS and NASA POWER and a synthetic demo plant whose readings end yesterday. Photo reading is on if `GEMINI_API_KEY` is in your shell or in a git-ignored `.env`. Data is in memory.
+
 ## The page
 
 `GET /` serves one self-contained `app/index.html`: no external scripts, styles or fonts and a Content-Security-Policy that only allows calls back to the same server; its only two additions since the first version are `manifest-src data:` (the inline web-app manifest) and `font-src data:` (the inlined Hindi/Punjabi font subsets), both non-executable resources carried by the page itself, with no remote origin allowed anywhere. On it the owner sets up the plant, logs a reading (typed, or filled from a photo and then confirmed), sees each reading as a share of the plant's usual output with dips flagged, reads the ranked possible causes, approves suggestions, and drafts the complaint. The browser's `localStorage` holds only conveniences: the site id, the language, the text-size choice, the owner's edited assumptions, and readings queued while offline; `/?site=<id>` opens a specific site. That link is the only key to the plant: anyone who has it can see and change its readings, so keep it private and share evidence with Copy text, Download evidence or the WhatsApp draft instead.
