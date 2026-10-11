@@ -25,30 +25,7 @@ trap 'kill "$SERVER" 2>/dev/null; wait "$SERVER" 2>/dev/null' EXIT INT TERM
 for _ in $(seq 1 40); do curl -s -m 2 "http://127.0.0.1:$PORT/health" > /dev/null && break; sleep 0.5; done
 curl -s -m 2 "http://127.0.0.1:$PORT/health" > /dev/null || { echo "server did not start; see .demo-online.log" >&2; exit 1; }
 
-LINK=$(BASE="http://127.0.0.1:$PORT" "$PY" -I - <<'PY'
-import csv, json, os, urllib.request
-from datetime import date, datetime, timedelta, timezone
-
-BASE = os.environ["BASE"]
-IST = timezone(timedelta(hours=5, minutes=30))
-yesterday = datetime.now(IST).date() - timedelta(days=1)
-
-
-def post(path, body):
-    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode(), headers={"content-type": "application/json"})
-    with urllib.request.urlopen(req, timeout=120) as r:
-        return json.load(r)
-
-
-site = post("/api/sites", json.load(open("fixtures/synthetic_site.json", encoding="utf-8")))
-rows = list(csv.DictReader(open("fixtures/synthetic_site.csv", encoding="utf-8")))
-shift = yesterday - date.fromisoformat(rows[-1]["date"])  # the scenario ends inside its fault window; keep that, move it to yesterday
-for row in rows:
-    day = (date.fromisoformat(row["date"]) + shift).isoformat()
-    post(f"/api/sites/{site['id']}/readings", {"date": day, "kwh": float(row["kwh"]), "kind": row.get("kind") or "daily"})
-print(f"{BASE}/?site={site['id']}")
-PY
-)
+LINK=$("$PY" -I scripts/load_demo_shifted.py "http://127.0.0.1:$PORT" 2>> .demo-online.log)
 [ -n "$LINK" ] || { echo "could not load the demo plant; see .demo-online.log" >&2; exit 1; }
 echo
 echo "Online test mode (live PVGIS and NASA POWER, in-memory store, synthetic demo plant ending yesterday)"
