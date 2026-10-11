@@ -73,21 +73,24 @@
 
   /* header, strip, tabs */
   .topbar { position: sticky; top: 0; z-index: 20; background: var(--canvas); border-bottom: 1px solid var(--hairline); padding-top: env(safe-area-inset-top); }
-  .topbar .wrap { display: flex; align-items: center; gap: 8px; min-height: 56px; }
-  .brand { display: flex; align-items: center; gap: 8px; font-size: 1.125rem; font-weight: 500; white-space: nowrap; }
+  .topbar .wrap { display: flex; align-items: center; gap: 8px; min-height: 56px; padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
+  .brand { display: flex; align-items: center; gap: 6px; font-size: 1rem; font-weight: 500; white-space: nowrap; }
+  @media (max-width: 379.98px) { .brand { font-size: 0.875rem; } .brand svg { width: 24px; height: 24px; } }
+  @media (max-width: 339.98px) { .topbar .wrap { flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; } .prefs { margin-left: 0; } }  /* a 320 px phone: two rows, never a sideways scroll */
   .brand svg { flex: none; }
   .sun { fill: var(--accent); }
   .rays { transform-box: fill-box; transform-origin: center; animation: spin 90s linear infinite; }
   .tagline { display: none; }
   .prefs { display: flex; gap: 8px; align-items: center; margin-left: auto; }
-  .lang { display: inline-flex; border-radius: var(--pill); box-shadow: var(--ring); }
+  .lang { display: inline-flex; gap: 8px; }
+  .lang button { box-shadow: var(--ring); }
   .lang button, .prefs .bigger { min-height: 48px; min-width: 48px; padding: 0 4px; border: 0; border-radius: var(--pill); background: transparent; color: var(--text-2); font-weight: 500; }
   .prefs .bigger { box-shadow: var(--ring); color: var(--text); }
   .lang button[aria-pressed="true"], .prefs .bigger[aria-pressed="true"] { background: var(--text); color: var(--canvas); }
   main { display: grid; gap: 0; }
   #site, #panels, [role="tabpanel"] { display: grid; min-width: 0; }
   #banners:empty { display: none; }
-  .strip { background: var(--canvas); }
+  .strip { background: var(--canvas); margin-top: 4px; }
   .strip > summary { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; padding: 4px 16px; list-style: none; color: var(--text); cursor: pointer; font-size: 0.875rem; }
   .strip > summary::-webkit-details-marker { display: none; }
   .flags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
@@ -99,10 +102,10 @@
   .strip-body { display: grid; gap: 8px; padding: 0 16px 16px; max-width: 1040px; margin: 0 auto; }
   .strip-body p { display: flex; gap: 12px; align-items: flex-start; padding: 8px 12px; border-radius: var(--r); box-shadow: var(--ring); background: var(--surface); }
   .strip-body svg { flex: none; margin-top: 4px; }
-  .saved-note { margin: 16px; padding: 8px 12px; border-radius: var(--r); box-shadow: var(--ring); background: var(--surface); color: var(--text-2); font-size: 0.875rem; }
+  .saved-note { margin: 16px 16px 0; padding: 8px 12px; border-radius: var(--r); box-shadow: var(--ring); background: var(--surface); color: var(--text-2); font-size: 0.875rem; }
   .tabs { background: var(--surface); }
-  [role="tablist"] { position: relative; display: flex; }
-  .tab-indicator { position: absolute; top: 0; left: 0; width: 20%; height: 2px; background: var(--text); pointer-events: none; transform: translateX(calc(var(--i, 0) * 100%)); transition: transform 260ms ease-out; }
+  [role="tablist"] { position: relative; display: flex; gap: 8px; padding: 0 8px; }
+  .tab-indicator { position: absolute; top: 0; left: 8px; width: calc((100% - 48px) / 5); height: 2px; background: var(--text); pointer-events: none; transform: translateX(calc(var(--i, 0) * (100% + 8px))); transition: transform 260ms ease-out; }
   [role="tab"] { flex: 1 1 0; min-height: 48px; padding: 8px 4px; border: 0; border-radius: 0; background: transparent; color: var(--text-2); font-weight: 500; gap: 4px; }
   [role="tab"] svg { flex: none; }
   [role="tab"][aria-selected="true"] { color: var(--text); }
@@ -110,7 +113,7 @@
   /* phones and tablets: a bottom bar with icon and word; the selected tab has a 2px rule on top */
   @media (max-width: 1023.98px) {
     body.has-tabs { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
-    html { scroll-padding-top: 8px; scroll-padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+    html { scroll-padding-top: calc(64px + env(safe-area-inset-top)); scroll-padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
     .tabs { position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; border-top: 1px solid var(--hairline); padding: 0 0 env(safe-area-inset-bottom); }
     [role="tablist"] { max-width: 720px; margin: 0 auto; }
     [role="tab"] { flex-direction: column; min-height: 64px; font-size: 0.875rem; }
@@ -120,7 +123,8 @@
   @media (min-width: 1024px) {
     .topbar .wrap { min-height: 64px; }
     .tabs { position: fixed; z-index: 21; top: env(safe-area-inset-top); left: 0; right: 0; height: 64px; background: transparent; pointer-events: none; }
-    [role="tablist"] { width: 520px; height: 64px; margin: 0 auto; }
+    [role="tablist"] { width: 520px; height: 64px; margin: 0 auto; padding: 0; }
+    .tab-indicator { left: 0; width: calc((100% - 32px) / 5); }
     .tab-indicator { top: auto; bottom: 0; }
     [role="tab"] { pointer-events: auto; min-height: 64px; font-size: 1rem; }
     [role="tab"] svg { display: none; }
@@ -201,11 +205,12 @@
   /* Today: two columns on a desktop (the verdict and the impact stay in view on the left), one column on a phone */
   .today { display: grid; gap: 32px; padding: 24px 16px 48px; min-width: 0; }
   .today-left, .today-right { display: grid; gap: 24px; align-content: start; min-width: 0; }
+  @media (min-width: 1024px) and (min-height: 960px) { .today-left:not(:has(details[open])) { position: sticky; top: 88px; } }
   .today-foot { display: grid; gap: 32px; padding-top: 24px; border-top: 1px solid var(--hairline); min-width: 0; }
   .today .section { padding: 0; }
   @media (min-width: 1024px) {
     .today { grid-template-columns: 5fr 7fr; gap: 48px; max-width: 1040px; width: 100%; margin: 0 auto; padding: 48px 24px 64px; }
-    .today-left { position: sticky; top: 88px; align-self: start; }
+    .today-left { align-self: start; }
     .today-left:has(details[open]) { position: static; }
     .today-foot { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); gap: 32px; }
   }
@@ -363,8 +368,8 @@
   body:not(.ready) footer { display: none; }  /* until there is something above it: a footer that waits at the top and then jumps down is a layout shift */
   footer { padding: 16px 16px 32px; color: var(--text-2); font-size: 0.875rem; display: grid; gap: 6px; }
   footer strong { color: var(--text); }
+  footer p { max-width: 65ch; }
   .busy { opacity: 0.6; }
-  .saved-note { margin: 0 0 16px; padding: 8px 12px; border: 1px solid var(--hairline); border-radius: var(--r); background: var(--surface); color: var(--text-2); font-size: 0.875rem; }
   .reveal { animation: rise 420ms ease-out both; animation-delay: calc(var(--k, 0) * 70ms); }
   .confetti { position: fixed; z-index: 30; width: 0; height: 0; pointer-events: none; }
   .confetti i { position: absolute; width: 6px; height: 10px; border-radius: var(--r); animation: burst 1.1s cubic-bezier(0.2, 0.7, 0.3, 1) forwards; }
@@ -404,7 +409,7 @@
     #draft-text { field-sizing: content; min-height: 0; padding: 0; border: 0; font-size: 0.875rem; line-height: 1.45; resize: none; overflow: visible; color: #000; outline: 0; }
   }
   @media (forced-colors: active) {
-    :is(.card, .verdict-card, .lang, .prefs .bigger, .tag, .chip, button.secondary, .button.secondary, .speak, .share, .strip-body p, .photo-review, .saved-note, .loop li::before) { box-shadow: none; border: 1px solid CanvasText; }
+    :is(.card, .verdict-card, .lang button, .prefs .bigger, .tag, .chip, button.secondary, .button.secondary, .speak, .share, .strip-body p, .photo-review, .saved-note, .loop li::before) { box-shadow: none; border: 1px solid CanvasText; }
     .action, .cause, .band, .tabs { border-color: CanvasText; }
     .band { border: 1px solid CanvasText; }
     .tab-indicator { background: Highlight; forced-color-adjust: none; }
@@ -451,7 +456,7 @@
   <form id="setup-form" autocomplete="off">
    <fieldset id="wiz-1" class="card" style="padding:0;border:0;background:none">
     <legend class="wizard-q" data-i18n="qWhere"></legend>
-    <button type="button" class="hero-btn" id="locate" data-i18n="useLocation"></button>
+    <button type="button" class="secondary" id="locate" data-i18n="useLocation"></button>
     <p class="note" data-i18n="locationNote"></p>
     <div class="fields">
      <label><span data-i18n="lat"></span><input name="lat" type="number" step="any" min="-90" max="90" required inputmode="decimal" placeholder="26.85"></label>
@@ -502,7 +507,8 @@
    <section role="tabpanel" id="panel-today" aria-labelledby="tab-today" tabindex="0">
     <div class="today">
      <div class="today-left">
-      <section class="verdict-card" id="hero" aria-live="polite">
+      <section class="verdict-card" id="hero">
+       <p id="verdict-live" class="sr-only" aria-live="polite"></p>
        <p class="eyebrow" id="today-eyebrow"></p>
        <div id="light-card" data-testid="light"></div>
        <div id="headline" data-testid="headline"></div>
@@ -522,8 +528,8 @@
       <form id="assume-form" class="fields" autocomplete="off">
        <label><span data-i18n="aTariff"></span> <span class="tag" data-i18n="assumption"></span><input name="tariff" type="number" step="any" min="0" max="50" inputmode="decimal" required></label>
        <label><span data-i18n="aCo2"></span> <span class="tag" data-i18n="assumption"></span><input name="co2" type="number" step="any" min="0" max="2" inputmode="decimal"></label>
-       <label><span data-i18n="aCeaVersion"></span> <span class="tag" data-i18n="assumption"></span><input name="cea_version" type="text" maxlength="80"></label>
-       <label><span data-i18n="aMargin"></span> <span class="tag" data-i18n="assumption"></span><input name="factor_type" type="text" maxlength="80"></label>
+       <label><span data-i18n="aCeaVersion"></span> <span class="tag" data-i18n="assumption"></span><input name="cea_version" type="text" maxlength="80" spellcheck="false"></label>
+       <label><span data-i18n="aMargin"></span> <span class="tag" data-i18n="assumption"></span><input name="factor_type" type="text" maxlength="80" spellcheck="false"></label>
        <label><span data-i18n="aClean"></span> <span class="tag" data-i18n="assumption"></span><input name="clean_cost_per_kw" type="number" step="any" min="0" max="5000" inputmode="decimal" required></label>
        <label><span data-i18n="aCleans"></span> <span class="tag" data-i18n="assumption"></span><input name="cleans_per_month" type="number" step="any" min="0" max="31" inputmode="decimal" required></label>
        <div class="row"><button type="submit" class="secondary" data-i18n="useValues"></button><button type="button" class="link" id="assume-reset" data-i18n="resetDefaults"></button></div>
@@ -1000,8 +1006,10 @@ const L = {
   approving: ['Approving…', 'मंज़ूर हो रहा है…', 'ਮਨਜ਼ੂਰ ਹੋ ਰਿਹਾ ਹੈ…'],
   drafting: ['Drafting…', 'मसौदा बन रहा है…', 'ਖਰੜਾ ਬਣ ਰਿਹਾ ਹੈ…'],
   evTitle: ['Evidence behind this result', 'इस नतीजे के पीछे का सबूत', 'ਇਸ ਨਤੀਜੇ ਪਿੱਛੇ ਦਾ ਸਬੂਤ'],
+  evWeatherKnown: ['Actual weather known for {n} of {total} readings', 'आपकी {total} में से {n} रीडिंग का असली मौसम पता है', 'ਤੁਹਾਡੀਆਂ {total} ਵਿੱਚੋਂ {n} ਰੀਡਿੰਗਾਂ ਦਾ ਅਸਲ ਮੌਸਮ ਪਤਾ ਹੈ'],
+  evWeatherTypical: ['Typical weather for the month, not the actual days', 'महीने का सामान्य मौसम, असली दिनों का नहीं', 'ਮਹੀਨੇ ਦਾ ਆਮ ਮੌਸਮ, ਅਸਲ ਦਿਨਾਂ ਦਾ ਨਹੀਂ'],
+  evReadingsSynth: ['{n} readings (synthetic)', '{n} रीडिंग (synthetic)', '{n} ਰੀਡਿੰਗਾਂ (synthetic)'],
   evExpected: ['Expected output for your plant', 'आपके प्लांट का अपेक्षित उत्पादन', 'ਤੁਹਾਡੇ ਪਲਾਂਟ ਦਾ ਉਮੀਦ ਕੀਤਾ ਉਤਪਾਦਨ'],
-  evWeather: ['Weather on each day you logged', 'आपकी हर रीडिंग के दिन का मौसम', 'ਤੁਹਾਡੀ ਹਰ ਰੀਡਿੰਗ ਵਾਲੇ ਦਿਨ ਦਾ ਮੌਸਮ'],
   evReadings: ['{n} readings you confirmed', 'आपकी पुष्टि की हुई {n} रीडिंग', 'ਤੁਹਾਡੀਆਂ ਪੱਕੀਆਂ ਕੀਤੀਆਂ {n} ਰੀਡਿੰਗਾਂ'],
   evBaseline: ['Your plant’s usual output, learnt from {n} readings', 'आपके प्लांट का सामान्य उत्पादन, {n} रीडिंग से सीखा', 'ਤੁਹਾਡੇ ਪਲਾਂਟ ਦਾ ਆਮ ਉਤਪਾਦਨ, {n} ਰੀਡਿੰਗਾਂ ਤੋਂ ਸਿੱਖਿਆ'],
   evBaselineEst: ['Not learnt yet ({n} of {need} readings): compared with the estimate', 'अभी सीखा नहीं ({n} / {need} रीडिंग): अनुमान से तुलना', 'ਹਾਲੇ ਸਿੱਖਿਆ ਨਹੀਂ ({n} / {need} ਰੀਡਿੰਗਾਂ): ਅੰਦਾਜ਼ੇ ਨਾਲ ਤੁਲਨਾ'],
@@ -1208,7 +1216,7 @@ const ASSUME_SOURCES = [
 ];
 const QUEUE_KEY = 'surya-audit-queued-readings';
 const state = {
-  id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, photoFill: null, flushing: null, saving: null, replay: null, cached: null,
+  id: null, audit: null, photoUrl: null, draft: null, photoSeq: 0, photoFill: null, flushing: null, saving: null, replay: null, cached: null, rev: 0,
   tab: 'today', seenTabs: new Set(), chartPlayed: false, chartWidth: 0, tiltAuto: null,
   prevOutcomes: null, prevSteps: {}, heroValue: 0, heroFrac: 0,
 };
@@ -1363,7 +1371,10 @@ function speakButton(partsFn) {
   });
   return b;
 }
-if ('speechSynthesis' in window) idle(() => speechSynthesis.addEventListener('voiceschanged', () => { if (state.audit) render(state.audit); }));
+if ('speechSynthesis' in window) idle(() => {
+  speechSynthesis.addEventListener('voiceschanged', () => { if (state.audit) render(state.audit); });
+  if (state.audit && speechSynthesis.getVoices().length) render(state.audit);  // the voices may have arrived before this ran
+});
 
 idle(function initMic() {
   const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1416,6 +1427,7 @@ async function request(method, path, body, ms) {
   const stop = new AbortController();
   const timer = setTimeout(() => stop.abort(), ms);
   let res;
+  let data = null;
   try {
     res = await fetch(path, {
       method,
@@ -1423,15 +1435,14 @@ async function request(method, path, body, ms) {
       body: body ? JSON.stringify(body) : undefined,
       signal: stop.signal,
     });
+    try { data = await res.json(); } catch { if (stop.signal.aborted) throw new Error('timeout'); /* else: no body */ }
   } catch {
     const err = new Error(t('netFail'));
     err.timedOut = stop.signal.aborted;
     throw err;
   } finally {
-    clearTimeout(timer);
+    clearTimeout(timer);  // after the body: a stalled body is a timeout too
   }
-  let data = null;
-  try { data = await res.json(); } catch { /* no body */ }
   if (!res.ok) {
     const detail = data && data.detail;
     // API Gateway's own timeouts and errors carry no "detail": say what happened, not "check the values".
@@ -1456,7 +1467,7 @@ async function api(method, path, body, opts) {
 }
 
 async function busy(button, fn, pending) {
-  const site = $('site');
+  const site = $('panels');  // not #site: its dimming would put the fixed desktop tab bar behind the header
   const was = button ? button.textContent : '';
   if (button) { button.disabled = true; if (pending) button.textContent = t(pending); }
   site.classList.add('busy');
@@ -1714,6 +1725,7 @@ $('switch').addEventListener('click', () => {
   const link = `${location.origin}/?site=${state.id}`;
   if (!confirm(tf('switchConfirm', { link }))) return;
   if (storeGet() === state.id) storeClear();
+  lastClear(state.id);
   if (location.search || location.hash) history.replaceState(null, '', location.pathname);
   showSetup('');
 });
@@ -1760,6 +1772,7 @@ $('reading-form').addEventListener('submit', async (ev) => {
       }
       if (landed) {
         audit = landed;
+        if (waiting) setQueue(site, queuedFor(site).filter((q) => q.body.date !== body.date));  // the saved value replaces the waiting one
       } else {
         // No answer at all: keep the reading here and send it when the connection is back.
         setQueue(site, [...queuedFor(site).filter((q) => q.body.date !== body.date), { site, body }]);
@@ -2145,14 +2158,14 @@ function renderSavedNote() {
 
 function render(audit, opts) {
   // Celebrate only a suggestion that flips to "came back" while the owner is here, never old data.
-  const before = state.prevOutcomes;
+  const before = state.cached ? null : state.prevOutcomes;  // a saved draw is not a result the owner watched arrive
   const newlyRecovered = before ? audit.actions.filter((x) => x.verification.outcome === 'recovered'
     && !x.verification.provisional && before[x.id] && before[x.id] !== 'recovered') : [];
   state.prevOutcomes = Object.fromEntries(audit.actions.map((x) => [x.id, x.verification.outcome]));
   const fresh = !(opts && opts.cached) && audit !== state.audit;  // a redraw of the same audit (a language switch) is not a new result
   document.body.classList.add('ready');
   state.audit = audit;
-  if (fresh) { state.cached = null; lastSet(state.id, audit); }
+  if (fresh) { state.cached = null; state.rev += 1; lastSet(state.id, audit); }
   renderSavedNote();
   $('setup').hidden = true;
   $('skeleton').hidden = true;
@@ -2163,6 +2176,10 @@ function render(audit, opts) {
   renderLight(audit);
   renderHeadline(audit);
   renderEvidence(audit);
+  if (fresh) {  // announce the verdict once: the sentence and the possible cause, not the whole card
+    const said = [document.querySelector('#light-card .verdict-sentence'), document.querySelector('#headline .verdict'), document.querySelector('#headline .verdict + p')].filter(Boolean).map((n) => n.textContent.trim());
+    $('verdict-live').textContent = said.join(' ');
+  }
   renderActions(audit);
   renderQueue();
   renderTimeline(audit);
@@ -2225,17 +2242,25 @@ function renderEvidence(a) {
   const copy = (src) => (src && src.fixture ? ` ${t('recorded')}` : '');
   const when = (d) => `${t('evRetrieved')} ${d}`;
   const line = (mark, kind, text, source) => list.append(el('li', {},
-    el('span', { class: `ev-mark ${kind}`, 'aria-hidden': 'true', text: mark }),
+    el('span', { class: `ev-mark ${kind}`, text: mark }),  // read as "check mark" or "exclamation mark"
     el('span', {}, text, el('span', { class: 'ev-src meta' }, source))));
-  const daily = tl.map((p) => p.weather_source).filter(Boolean);
-  const dates = daily.map((d) => d.retrieved).sort();
-  const weatherDate = dates.length ? (dates[0] === dates[dates.length - 1] ? dates[0] : `${dates[0]} - ${dates[dates.length - 1]}`) : a.sources.irradiance_climatology.retrieved;
+  const lastDate = last ? ` · ${t('evLatest')} ${last.date}` : '';
+  // Weather: only the days whose actual weather was published count; the rest are compared with the typical month.
+  const known = tl.filter((p) => p.weather_known && p.weather_source);
+  const dates = known.map((p) => p.weather_source.retrieved).sort();
   line('✓', 'ok', t('evExpected'), `PVGIS · ${when(a.sources.pvgis.retrieved)}${copy(a.sources.pvgis)}`);
-  line('✓', 'ok', t('evWeather'), `NASA POWER · ${when(weatherDate)}${copy(daily.length ? daily[0] : a.sources.irradiance_climatology)}`);
-  if (last) line('✓', 'ok', tf('evReadings', { n: tl.length }), `${t('evYou')} · ${t('evLatest')} ${last.date}`);
-  line('✓', 'ok', a.baseline.learnt ? tf('evBaseline', { n: a.baseline.points_used }) : tf('evBaselineEst', { n: a.baseline.points_used, need: a.baseline.points_needed }),
-    `${t('evYou')}${last ? ` · ${t('evLatest')} ${last.date}` : ''}`);
-  const flagSource = `Surya Audit${last ? ` · ${last.date}` : ''}`;
+  if (known.length) {
+    const range = dates[0] === dates[dates.length - 1] ? dates[0] : `${dates[0]} \u2013 ${dates[dates.length - 1]}`;
+    line(known.length === tl.length ? '✓' : '!', known.length === tl.length ? 'ok' : 'flag', tf('evWeatherKnown', { n: known.length, total: tl.length }),
+      `NASA POWER · ${when(range)}${copy(known[0].weather_source)}`);
+  } else {
+    line('!', 'flag', t('evWeatherTypical'), `NASA POWER · ${when(a.sources.irradiance_climatology.retrieved)}${copy(a.sources.irradiance_climatology)}`);
+  }
+  if (last) line(a.synthetic ? '!' : '✓', a.synthetic ? 'flag' : 'ok', tf(a.synthetic ? 'evReadingsSynth' : 'evReadings', { n: tl.length }), `${a.synthetic ? 'Surya Audit' : t('evYou')}${lastDate}`);
+  const learnt = a.baseline.learnt;
+  line(learnt ? '✓' : '!', learnt ? 'ok' : 'flag', learnt ? tf('evBaseline', { n: a.baseline.points_used }) : tf('evBaselineEst', { n: a.baseline.points_used, need: a.baseline.points_needed }),
+    `${a.synthetic ? 'Surya Audit' : t('evYou')}${lastDate}`);
+  const flagSource = `Surya Audit${lastDate}`;
   if (a.synthetic) line('!', 'flag', t('synthTitle'), flagSource);
   if (a.sample) line('!', 'flag', tf('evSampleLine', { pct: a.site.loss_pct }), flagSource);
   if (a.heuristic) line('!', 'flag', t('footerHeuristic'), flagSource);
@@ -2933,7 +2958,9 @@ new ResizeObserver(() => {
 
 // start
 async function load(id) {
+  const rev = state.rev;
   const audit = await api('GET', `/api/sites/${encodeURIComponent(id)}/audit`);
+  if (state.id === id && state.rev !== rev) return;  // a save or an approval drew a newer result while this read was on its way
   if (state.id !== id) clearImport();
   state.id = id;
   render(audit);
@@ -2972,11 +2999,13 @@ async function load(id) {
       }
     } catch (e) {
       $('skeleton').hidden = true;
+      document.body.classList.add('ready');
       if (e.status !== 404) {
         if (drawn && state.cached) { state.cached.failed = true; renderSavedNote(); }  // keep what is saved, and say it is not current
         showError(e.message); $('retry').hidden = false; return;
       }
       lastClear(id);
+      state.audit = null; state.cached = null; $('saved-note').hidden = true; $('site').hidden = true;
       if (id === fromUrl) {
         history.replaceState(null, '', `${location.pathname}${location.hash}`);
         if (stored && stored !== id) {

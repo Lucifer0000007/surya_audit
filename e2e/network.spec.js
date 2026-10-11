@@ -182,3 +182,83 @@ test('first visit: nothing shifts while the page loads (layout shift under 0.1),
   await page.waitForTimeout(1500);  // late paints and the count-up
   expect(await page.evaluate(() => window.__cls)).toBeLessThan(0.1);
 });
+
+test('a read that fails with a 4xx is not retried', async ({ page, request }) => {
+  const id = await plant(request, 3);
+  let reads = 0;
+  await page.route('**/api/sites/*/audit', (route) => { reads += 1; route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ detail: 'That request was not valid.' }) }); });
+  await page.goto(`/?site=${id}&four=1`);
+  await expect(page.locator('#error')).toContainText('That request was not valid.');
+  await page.waitForTimeout(1500);
+  expect(reads).toBe(1);
+});
+
+test('a slow refresh never overwrites a newer result: a reading saved while the read is on its way stays', async ({ page, request }) => {
+  const id = await plant(request, 3);
+  await page.goto(`/?site=${id}`);
+  await expect(page.locator('#headline .ring')).toBeVisible();
+  const stale = await (await request.get(`/api/sites/${id}/audit`)).json();  // the audit as it is before the save
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  await page.route('**/api/sites/*/audit', async (route) => { await gate; await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(stale) }); });
+  await page.goto(`/?site=${id}&race=1#log`);
+  await expect(page.locator('#saved-note')).toBeVisible();  // the saved result is drawn while the read waits
+  await page.locator('input[name=kwh]').fill('9.1');
+  await page.getByRole('button', { name: 'Save reading' }).click();
+  await expect(page.locator('#status')).toContainText('Saved the reading');
+  const before = await page.evaluate(() => state.audit.timeline.length);
+  release();
+  await page.waitForTimeout(500);
+  expect(await page.evaluate(() => state.audit.timeline.length), 'the late, older answer is dropped').toBe(before);
+  expect(before).toBeGreaterThan(stale.timeline.length);
+});
+
+test('a save found on the server after a timeout also replaces the copy that was waiting in the queue', async ({ page, request }) => {
+  const id = await plant(request, 3);
+  await page.clock.install();
+  await page.goto(`/?site=${id}&clock=2`);
+  await page.getByRole('tab', { name: /Log/ }).click();
+  await page.route('**/api/sites/*/readings', (route) => route.abort('internetdisconnected'));
+  await page.locator('input[name=kwh]').fill('5.5');
+  await page.getByRole('button', { name: 'Save reading' }).click();
+  await expect(page.locator('#queue')).toBeVisible();
+  await page.unroute('**/api/sites/*/readings');
+  await page.route('**/api/sites/*/readings', async (route) => { await request.post(`/api/sites/${id}/readings`, { data: route.request().postDataJSON() }); /* the answer never comes */ });
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.locator('input[name=kwh]').fill('5.6');
+  await page.getByRole('button', { name: 'Save reading' }).click();
+  await page.clock.fastForward(21000);
+  await expect(page.locator('#status')).toContainText('Saved the reading');
+  await expect(page.locator('#queue')).toBeHidden();
+  expect(await page.evaluate(() => localStorage.getItem('surya-audit-queued-readings'))).toBeNull();
+});
+
+test('first visit in Hindi: nothing shifts either (the fonts come after the content)', async ({ page, request }) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  const id = await plant(request);
+  await page.addInitScript(() => {
+    localStorage.setItem('surya-audit-lang', 'hi');
+    window.__cls = 0;
+    new PerformanceObserver((list) => { for (const e of list.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; }).observe({ type: 'layout-shift', buffered: true });
+  });
+  await page.route('**/api/sites/*/audit', async (route) => { await new Promise((r) => setTimeout(r, 700)); await route.continue(); });
+  await page.goto(`/?site=${id}&cls=hi`);
+  await expect(page.locator('#headline .ring')).toBeVisible();
+  await page.waitForTimeout(1500);
+  expect(await page.evaluate(() => window.__cls)).toBeLessThan(0.1);
+});
+
+test('the evidence panel says how many days had actual weather, and marks the line with "!" when not all did', async ({ page, request }) => {
+  const id = await plant(request);
+  const audit = await (await request.get(`/api/sites/${id}/audit`)).json();
+  const known = audit.timeline.filter((p) => p.weather_known).length;
+  await page.goto(`/?site=${id}`);
+  const line = page.locator('#ev-lines li').filter({ hasText: /weather/i });
+  await expect(line).toHaveCount(1);
+  if (known) await expect(line).toContainText(`Actual weather known for ${known} of ${audit.timeline.length} readings`);
+  else await expect(line).toContainText('Typical weather for the month, not the actual days');
+  await expect(line.locator('.ev-mark')).toHaveText(known === audit.timeline.length ? '✓' : '!');
+  // A synthetic plant's readings are not "confirmed by you".
+  await expect(page.locator('#ev-lines')).not.toContainText('readings you confirmed');
+  await expect(page.locator('#ev-lines')).toContainText(`${audit.timeline.length} readings (synthetic)`);
+});
