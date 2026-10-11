@@ -87,6 +87,25 @@ images (`app/main.py:45-63`, `app/refresh.py:5-6,41`; `tests/test_loop.py:479` c
 **Gaps:** there is no way to delete a plant's data from the server (**Roadmap**, `NEXT_BACKEND.md`), and a plant is kept
 indefinitely: the table has no expiry (`template.yaml:32-41`). The page can only forget a plant in the browser.
 
+## The one exception to "the page never sends a write twice" (the offline queue)
+
+The page never retries a write by itself, with ONE documented exception that the owner chose on 2026-10-11: a reading saved while the phone could
+not reach the server waits in this browser and is sent later. **Built**, `flushQueue` in `app/index.html`, proven by `e2e/queue.spec.js`
+(run by `scripts/verify.sh`). The conditions:
+
+- It is sent only on the browser's `online` event, when a plant loads, or when the owner taps **Try now**. No timers (the test reads the source:
+  `flushQueue` has no `setInterval` or `setTimeout` and has exactly four references).
+- One reading at a time: the next is not sent until the first has been answered.
+- A reading leaves the queue only after the server confirmed it. A 5xx, a 429, a refusal (4xx) or no answer leaves it queued; a refusal also shows the server's message.
+- Before sending, the page reads what the server holds. A reading for a day the server already has is **not sent by itself**: it stays queued and the status says
+  "N readings waiting, review". Only **Try now** can send it, and only after the same overwrite question the Save button asks ("A reading for {date} is already saved
+  ({kwh}). Replace it?"); Cancel sends nothing.
+- "Forget this plant on this device" with readings waiting adds a line ("N readings haven't been saved yet. Forgetting will delete them from this device.") and
+  deletes them only after the owner confirms; the existing honesty wording is unchanged.
+
+What a judge may still ask: two devices queueing the same day are not coordinated; the last one the owner confirms wins. The server's routes are frozen, so there is no
+idempotency key; the read-then-send check narrows the window but cannot close it (a reading saved from another device between the read and the send is replaced).
+
 ## Where the pitch differs from the code
 
 The 12 claims of the pitch were checked against the code on 2026-10-10 and accepted by the user with the wording below.

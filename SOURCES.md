@@ -19,20 +19,17 @@ from a source, it says so. Vendor pages are labelled as such.
   the household's top-slab energy charge plus duty: Rs 5.78 / 6.30 / 6.83 per kWh (our arithmetic), so Rs 7
   slightly overstates the loss. Outside UP the owner should edit it; the page labels it an assumption either way.
 
-## Grid CO2 emission factor (default 0.675 kg CO2 per kWh)
+## Grid CO2 emission factor (default 0.710 kg CO2 per kWh, PROVISIONAL)
 
-- **CEA, "CO2 Baseline Database for the Indian Power Sector", User Guide Version 22.0, August 2026**:
-  weighted average emission factor of the grid, FY 2025-26, **0.675 tCO2/MWh including imports** (0.678 excluding),
-  = 1189.04 Mt CO2 / 1761.28 BU net generation. Earlier years: FY 2023-24 0.727, FY 2024-25 0.710.
-  PDF https://cea.nic.in/api/cdm-report-version/view-pdf/en/82, XLSX .../83, retrieved 2026-10-08.
-- Re-checked 2026-10-10 for the page's "CEA database version" and "factor type" labels: the User Guide PDF (35 pages) and the
-  workbook (dated 2026-08-01, Results sheet) both open at the links above and give the figures quoted; the same URLs for the
-  next two document numbers (.../84, .../85) return nothing, so Version 22.0 is the newest this route reaches. The CEA
-  baseline page itself is an application that asks for a login, so it could not be read as a page from here: if a newer
-  version exists, the owner can type its factor into the editable field, and the page labels the number an assumption.
-- Factor type used: the weighted average grid emission rate (including renewables and captive plants), including imports,
-  FY 2025-26. The same Results sheet also has simple operating margin, build margin and combined margin rows; they are
-  different measures from the weighted average and are not used here.
+- **Default since 2026-10-11, set by the project owner's decision: 0.710 tCO2/MWh, "CEA CO2 Baseline Database v21.0, FY 2024-25, weighted average incl. RES
+  (provisional)".** This is NOT verified by us: the CEA document could not be opened from here on 2026-10-11 (the CEA pages ask for a login and return a sign-in
+  page), a search finds the User Guide for v21.0 (released November 2025, FY 2024-25 data) and v22.0 listed on cea.nic.in but does not show the figure, and the owner
+  reports finding no database version 22.0. A newer version is not ruled out. The page says so next to the number and the field stays editable.
+- Record of the earlier default, kept for the history: on 2026-10-08 and 2026-10-10 an earlier session recorded opening a "User Guide Version 22.0" PDF and workbook
+  (https://cea.nic.in/api/cdm-report-version/view-pdf/en/82 and .../83) and reading 0.675 tCO2/MWh for FY 2025-26 including imports (0.678 excluding), with
+  FY 2024-25 at 0.710 and FY 2023-24 at 0.727 in the same table. Those URLs could not be re-opened on 2026-10-11, and the owner could not find that version, so the
+  0.675 figure and its "version 22.0" label were removed from the page. If a CEA document is opened and read, replace the default with its figure and cite its exact version.
+- A browser that saved the old default pair (0.675 under version 22.0) falls back to the current default, and so does an owner who typed exactly that pair; any other figure the owner typed is kept.
 
 ## Water per panel cleaning (REMOVED from the page on 2026-10-10: no sourced litre figure is shown any more; kept as the record of what was read)
 
