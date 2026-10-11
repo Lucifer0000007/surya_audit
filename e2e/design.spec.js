@@ -117,3 +117,29 @@ test('Fix on a phone: each suggestion is a card, the progress comes after the Ap
   const y = await page.locator('#panel-fix .action').first().evaluate((n) => [n.querySelector('.approve-btn'), n.querySelector('.steps')].map((x) => x.getBoundingClientRect().top));
   expect(y[0], 'Approve comes before the progress steps').toBeLessThan(y[1]);
 });
+
+test('Why: controls 48 px and 8 px apart, no sideways scroll from 320 px; on a desktop the chart is a card and the causes sit in two columns; the replay button has no white halo', async ({ page, request }) => {
+  const id = await plant(request);
+  for (const width of [320, 375]) {
+    await page.setViewportSize({ width, height: 700 });
+    await page.goto(`/?site=${id}&w=${width}#why`);
+    await expect(page.locator('#chart svg')).toBeVisible();
+    const found = await page.evaluate(scan);
+    expect(found.small, `${width}px: controls under 48 px`).toEqual([]);
+    expect(found.close, `${width}px: controls closer than 8 px`).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${width}px: sideways scroll`).toBeLessThanOrEqual(0);
+  }
+  const ring = await page.locator('#replay-btn').evaluate((n) => getComputedStyle(n).boxShadow);
+  expect(ring, 'one 1px ring in the band\'s own control colour, no canvas halo').not.toMatch(/\) 0px 0px 0px 2px/);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`/?site=${id}&w=1280#why`);
+  await expect(page.locator('#chart svg')).toBeVisible();
+  const box = await page.evaluate(() => {
+    const b = document.querySelector('#panel-why > .band').getBoundingClientRect();
+    const c = [...document.querySelectorAll('#cause-list .cause')].map((n) => Math.round(n.getBoundingClientRect().left));
+    return { width: Math.round(b.width), radius: getComputedStyle(document.querySelector('#panel-why > .band')).borderTopLeftRadius, columns: new Set(c).size };
+  });
+  expect(box.width).toBeLessThanOrEqual(1040);
+  expect(box.radius).toBe('6px');
+  expect(box.columns).toBe(2);
+});

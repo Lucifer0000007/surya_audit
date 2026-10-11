@@ -137,7 +137,8 @@
   .section { display: grid; gap: 16px; padding: 32px 16px; min-width: 0; }
   .section.tight { padding-top: 24px; padding-bottom: 32px; }
   .band { display: grid; gap: 24px; padding: 32px 16px; min-width: 0; background: var(--inverted); color: var(--text); border-block: 1px solid var(--dk-hairline);
-    --text: var(--dk-text); --text-2: var(--dk-text-2); --text-3: var(--dk-text-3); --hairline: var(--dk-hairline); --control: var(--dk-control); --surface: var(--inverted); }
+    --text: var(--dk-text); --text-2: var(--dk-text-2); --text-3: var(--dk-text-3); --hairline: var(--dk-hairline); --control: var(--dk-control); --surface: var(--inverted);
+    --ring: 0 0 0 1px var(--dk-control); }  /* the page's ring has a canvas-coloured halo: on the dark band it would be a white edge */
   .card { display: grid; gap: 16px; min-width: 0; padding: 16px; border-radius: var(--r); background: var(--surface); box-shadow: var(--ring); }
   .card > header, .section > header, .band > header { display: grid; gap: 4px; }
   @media (min-width: 720px) { .section, .band { padding: 40px 24px; } .card { padding: 24px; } }
@@ -313,7 +314,17 @@
   /* Why: chart band, causes */
   .cause { display: grid; gap: 6px; padding: 24px 0; border-top: 1px solid var(--hairline); }
   .cause:first-child { border-top: 0; padding-top: 0; }
-  .cause-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+  .cause-head { display: grid; gap: 4px; }
+  @media (min-width: 720px) { .cause-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; } }
+  /* Why on a desktop: the chart is a card at the content width, the causes sit in two columns */
+  @media (min-width: 1024px) {
+    #panel-why:not([hidden]) { display: grid; gap: 48px; max-width: 1040px; width: 100%; margin: 0 auto; padding: 48px 24px 64px; }
+    #panel-why > .band { padding: 32px; border: 0; border-radius: var(--r); }
+    #panel-why > .section { padding: 0; }
+    #panel-why .causes { grid-template-columns: 1fr 1fr; gap: 0 48px; }
+    #panel-why .cause:nth-child(2) { border-top: 0; padding-top: 0; }
+    #panel-why .cause { align-content: start; }
+  }
   .cause-head .rank { color: var(--text-2); font-weight: 500; margin-right: 6px; }
   .cause ul { margin: 0; padding-left: 20px; color: var(--text-2); font-size: 0.9375rem; display: grid; gap: 4px; }
   .chart { position: relative; min-height: 220px; }
