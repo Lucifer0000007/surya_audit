@@ -75,12 +75,12 @@ Routes and response shapes are frozen during the UI phases (5-8), so these wait 
   error: Today is usable (the headline number shown) after 5.9 s, Log (the energy field shown) after 6.4 s; DOMContentLoaded at 4.4 s.
   Not measured: the deployed stack (the live URL is not used for the app flow).
 
-## Performance proposals (master prompt v4). Nothing here is implemented; the numbers are in docs/PERF_BASELINE.md
+## Performance proposals (master prompt v4). Nothing here is implemented; the numbers were measured during development and are not published
 
 - **Compression for the page and the audit JSON.** API Gateway HTTP APIs do not compress responses by themselves. The options are to
   compress in the Lambda handler (gzip or brotli, with `Content-Encoding` and `Vary: Accept-Encoding`) or to put CloudFront in front,
   which compresses for you. At commit `35ef6f3` the page is 263,472 bytes raw and 86,466 bytes gzip -9 (measured with `gzip -9`); the
-  uncompressed transfer is most of the load time at 2 Mbps in `docs/PERF_BASELINE.md`.
+  uncompressed transfer is most of the load time at 2 Mbps (measured during development; the numbers are not published).
 - **ETag with `Cache-Control: no-cache` on the page.** Today the page is sent in full on every visit. With an ETag the browser asks
   "has it changed?" and gets a 304 with no body. Needs a change to `app/main.py` (protected).
 - **CloudFront in front of the API** (the owner's decision, not made here): compression, caching of the page at the edge, and a lower

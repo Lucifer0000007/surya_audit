@@ -26,7 +26,7 @@ Recorded responses in `fixtures/` (retrieved 2026-10-08, lat 26.85, lon 80.95, 3
 
 ## Heuristics (HEURISTIC_UNVALIDATED)
 
-All thresholds live in `app/heuristics.py`. They are design parameters tuned only against the synthetic scenario; changes are logged in `LOOP_LOG.md`.
+All thresholds live in `app/heuristics.py`. They are design parameters tuned only against the synthetic scenario; changes were logged in a private process log that is not published.
 
 | Step | Rule |
 |---|---|
@@ -55,6 +55,8 @@ uv run python scripts/load_demo.py http://127.0.0.1:8000   # load the SYNTHETIC 
 ```
 
 The screen check (`e2e/`, Playwright 1.64.0) needs Node; `verify.sh` installs it and Chromium on first run and saves screenshots to the git-ignored `local_screens/`.
+
+> **Note:** `scripts/check_frozen.py` and `tests/test_loop.py` read a private rules file (CLAUDE.md) that is not published, so they do not run from this copy; the Playwright screen checks and the other pytest files do.
 
 ## Deploy (AWS, ap-south-1)
 
