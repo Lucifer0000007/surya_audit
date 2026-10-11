@@ -99,3 +99,21 @@ test('Log: the chosen Period and date are filled with ink, and One week is sent 
   await page.locator('#save-btn').click();
   expect((await sent).postDataJSON()).toMatchObject({ kwh: 70.5, kind: 'weekly' });
 });
+
+test('Fix on a phone: each suggestion is a card, the progress comes after the Approve button, controls are 48 px and 8 px apart, nothing scrolls sideways from 320 px', async ({ page, request }) => {
+  const id = await plant(request);
+  for (const width of [320, 375]) {
+    await page.setViewportSize({ width, height: 700 });
+    await page.goto(`/?site=${id}&w=${width}#fix`);
+    await expect(page.locator('#panel-fix .action').first()).toBeVisible();
+    const found = await page.evaluate(scan);
+    expect(found.small, `${width}px: controls under 48 px`).toEqual([]);
+    expect(found.close, `${width}px: controls closer than 8 px`).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${width}px: sideways scroll`).toBeLessThanOrEqual(0);
+  }
+  const card = await page.locator('#panel-fix .action').first().evaluate((n) => { const s = getComputedStyle(n); return { shadow: s.boxShadow, radius: s.borderTopLeftRadius }; });
+  expect(card.shadow).not.toBe('none');
+  expect(card.radius).toBe('6px');
+  const y = await page.locator('#panel-fix .action').first().evaluate((n) => [n.querySelector('.approve-btn'), n.querySelector('.steps')].map((x) => x.getBoundingClientRect().top));
+  expect(y[0], 'Approve comes before the progress steps').toBeLessThan(y[1]);
+});

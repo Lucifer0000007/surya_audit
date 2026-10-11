@@ -278,12 +278,17 @@
 
   /* Fix: suggestions */
   .actions-list, .causes { list-style: none; padding: 0; display: grid; gap: 0; }
-  .action { display: grid; gap: 8px; padding: 24px 0; border-top: 1px solid var(--hairline); }
-  .action:first-child { border-top: 0; padding-top: 0; }
+  .actions-list { gap: 16px; }
+  /* a suggestion is a card: it holds an action, so it needs a boundary */
+  .action { display: grid; gap: 8px; min-width: 0; padding: 16px; border-radius: var(--r); background: var(--surface); box-shadow: var(--ring); }
+  @media (min-width: 720px) { .action { padding: 24px; } }
   .action-head { display: flex; gap: 12px; align-items: center; }
-  .action .approve { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
-  .action .approve label { flex: 1 1 170px; }
-  .action .speak { border-color: transparent; padding-left: 0; justify-self: start; }
+  .action-head .picto { min-width: 0; }
+  .action-head .picto svg { width: 24px; height: 24px; }
+  .action .approve { display: flex; gap: 8px; align-items: end; }
+  .action .approve label { flex: 1 1 0; min-width: 0; }
+  .action .approve:has(.hero-btn) input { min-height: 56px; }
+  .action .approve button { flex: none; width: auto; min-width: 0; padding: 0 24px; }
   .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; font-weight: 600; padding: 4px 12px; border: 1px solid var(--control); border-radius: var(--pill); width: fit-content; }
   .chip svg { flex: none; }
   .picto { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.875rem; color: var(--text-2); min-width: 56px; }
@@ -411,7 +416,7 @@
     #draft-text { field-sizing: content; min-height: 0; padding: 0; border: 0; font-size: 0.875rem; line-height: 1.45; resize: none; overflow: visible; color: #000; outline: 0; }
   }
   @media (forced-colors: active) {
-    :is(.card, .verdict-card, .lang button, .prefs .bigger, .tag, .chip, button.secondary, .button.secondary, .speak, .share, .strip-body p, .photo-review, .saved-note, .loop li::before) { box-shadow: none; border: 1px solid CanvasText; }
+    :is(.card, .action, .verdict-card, .lang button, .prefs .bigger, .tag, .chip, button.secondary, .button.secondary, .speak, .share, .strip-body p, .photo-review, .saved-note, .loop li::before) { box-shadow: none; border: 1px solid CanvasText; }
     .action, .cause, .band, .tabs { border-color: CanvasText; }
     .band { border: 1px solid CanvasText; }
     .tab-indicator { background: Highlight; forced-color-adjust: none; }
@@ -2604,12 +2609,11 @@ function renderActions(a) {
       outcomeChip(v),
       el('p', sug),
       sug['data-srv'] && sug['data-srv'] !== 'translated' ? el('p', { class: 'note', text: t('inEnglish') }) : null,
-      el('p', { class: 'note', text: tf('suggestedOn', { date: fmtDate(action.proposed_on), cause: CAUSES[action.cause] || action.cause }) }),
-      stepper(action));
+      el('p', { class: 'note', text: tf('suggestedOn', { date: fmtDate(action.proposed_on), cause: CAUSES[action.cause] || action.cause }) }));
     if (action.status === 'proposed') {
       const id = `approve-${action.id}`;
       const input = el('input', { id, type: 'date', value: lastDate, min: action.proposed_on, max: todayIso(), required: true });
-      const button = el('button', { type: 'submit', 'aria-label': `${t('approve')}: ${ACTIONS[action.kind] || action.kind}`, class: action === first ? 'approve-btn' : 'approve-btn secondary' },
+      const button = el('button', { type: 'submit', 'aria-label': `${t('approve')}: ${ACTIONS[action.kind] || action.kind}`, class: action === first ? 'approve-btn hero-btn' : 'approve-btn secondary' },
         el('span', { class: 'lbl', text: t('approve') }),
         svg('svg', { class: 'tick', width: 22, height: 22, viewBox: '0 0 24 24', 'aria-hidden': 'true', fill: 'none',
           stroke: 'currentColor', 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
@@ -2627,6 +2631,7 @@ function renderActions(a) {
     }
     const speak = speakButton(() => [{ text: ACTIONS[action.kind], lang }, { text: sug.text, lang: sug.lang || lang }]);
     if (speak) li.append(el('div', { class: 'row' }, speak));
+    li.append(stepper(action));  // the progress comes last, so the Approve button is on the first phone screen
     list.append(li);
   }
 }
