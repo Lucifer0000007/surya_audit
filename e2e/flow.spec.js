@@ -232,7 +232,7 @@ test('phone flow: a busy or unreadable photo, a lifetime-only meter, a weekly to
   const read = (candidate) => ({ status: 200, body: { candidate: { date: null, kwh: null, kind: null, cumulative_meter_kwh: null, what_was_read: '', ...candidate }, saved: false, confirm_required: true, synthetic: true, sample: true, heuristic: true } });
   const note = page.locator('#photo-note');
   const kwhField = page.locator('#kwh-input');
-  const period = page.getByLabel('Period');
+  const period = page.locator('input[name=kind]:checked');  // the Period choice is a segmented control (radios)
   const dateField = page.getByLabel('Date', { exact: true });
   const today = page.getByRole('radio', { name: 'Today' });
   const NOTHING = 'Could not find an energy value in this photo. Type the reading by hand.';

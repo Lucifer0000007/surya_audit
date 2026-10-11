@@ -157,7 +157,7 @@
   html[data-bigger] :is(input, select, button, .button) { min-height: 56px; }
   /* buttons: the main action of a screen is the one 56px primary; everything else is 48px */
   button, .button { font: inherit; font-weight: 500; border-radius: var(--r); padding: 0 20px; min-height: 48px; cursor: pointer; border: 0; background: var(--text); color: var(--canvas); display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; line-height: 1.25; }
-  .hero-btn { min-height: 56px; }
+  .hero-btn { min-height: 56px; min-width: 200px; }
   @media (max-width: 719.98px) { .hero-btn { width: 100%; } }
   button.secondary, .button.secondary, .speak, .mic, .share { background: transparent; color: var(--text-2); box-shadow: var(--ring); }
   button.link, a.link { background: none; box-shadow: none; padding: 12px 0; color: var(--text); font-weight: 500; text-decoration: underline; text-underline-offset: 3px; min-height: 48px; }
@@ -166,11 +166,12 @@
   button[aria-disabled="true"] { background: transparent; color: var(--text-3); box-shadow: var(--ring); cursor: not-allowed; }
   .row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
   details > summary { cursor: pointer; color: var(--text-2); font-size: 0.875rem; min-height: 48px; padding: 12px 0; }
-  .dropzone { position: relative; display: grid; justify-items: center; align-content: center; gap: 8px; min-height: 112px; padding: 16px; border: 2px dashed var(--control); border-radius: var(--r); color: var(--text); font-size: 1rem; font-weight: 500; text-align: center; cursor: pointer; }
+  .dropzone { position: relative; display: grid; grid-template-columns: auto 1fr; justify-items: start; align-items: center; gap: 16px; min-height: 96px; padding: 16px; border: 1px dashed var(--control); border-radius: var(--r); background: var(--surface); color: var(--text); font-size: 1rem; font-weight: 500; text-align: left; cursor: pointer; }
   .dropzone input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
   .dropzone:focus-within { outline: 2px solid var(--text); outline-offset: 2px; }
   .dropzone.over { border-style: solid; border-color: var(--text); }
   .dropzone svg { width: 32px; height: 32px; }
+  .dropzone + .note { margin-top: -8px; }
   .photo-review { display: grid; grid-template-columns: 72px 1fr; gap: 12px; align-items: start; padding: 12px; border-radius: var(--r); box-shadow: var(--ring); background: var(--surface); }
   .photo-review img { width: 72px; height: 72px; object-fit: cover; border-radius: var(--r); }
   .callout { display: flex; gap: 12px; align-items: flex-start; padding: 4px 0 4px 12px; border-left: 2px solid var(--text); }
@@ -195,12 +196,13 @@
   .big-choice { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
   .big-choice label { position: relative; display: grid; place-items: center; gap: 4px; min-height: 64px; padding: 8px; border: 1px solid var(--control); border-radius: var(--r); color: var(--text); font-weight: 600; cursor: pointer; text-align: center; }
   .big-choice input { position: absolute; top: 0; left: 0; width: 1px; height: 1px; min-height: 0; margin: 0; padding: 0; opacity: 0; }  /* in the corner: never over the label's text */
-  .big-choice label:has(input:checked), .big-choice label.checked { border: 2px solid var(--text); padding: 6px; }
+  .big-choice label:has(input:checked), .big-choice label.checked { border-color: var(--text); background: var(--text); color: var(--canvas); }
   .big-choice label:has(input:focus-visible), .big-choice label.focus { outline: 2px solid var(--text); outline-offset: 2px; }
   .datepick { display: grid; gap: 8px; min-width: 0; margin: 0; padding: 0; border: 0; }
   .datepick legend { margin-bottom: 8px; padding: 0; color: var(--text-2); font-size: 0.9375rem; font-weight: 500; }
   .big-choice.chips { grid-template-columns: repeat(3, 1fr); }
   .big-choice.chips label { min-height: 48px; }
+  .big-choice.chips.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   /* Today: two columns on a desktop (the verdict and the impact stay in view on the left), one column on a phone */
   .today { display: grid; gap: 32px; padding: 24px 16px 48px; min-width: 0; }
@@ -621,12 +623,14 @@
        </div>
        <p class="note" id="date-shown"></p>
       </fieldset>
-      <div class="fields">
-       <label id="date-other" hidden><span data-i18n="date"></span><input name="date" type="date" required></label>
-       <label><span data-i18n="period"></span>
-        <select name="kind"><option value="daily" data-i18n="oneDay"></option><option value="weekly" data-i18n="oneWeek"></option></select>
-       </label>
-      </div>
+      <label id="date-other" hidden><span data-i18n="date"></span><input name="date" type="date" required></label>
+      <fieldset class="datepick">
+       <legend data-i18n="period"></legend>
+       <div class="big-choice chips two">
+        <label><input type="radio" name="kind" value="daily" checked><span data-i18n="oneDay"></span></label>
+        <label><input type="radio" name="kind" value="weekly"><span data-i18n="oneWeek"></span></label>
+       </div>
+      </fieldset>
       <div class="row"><button type="submit" class="hero-btn" id="save-btn" aria-disabled="true" aria-describedby="save-hint" data-i18n="save"></button></div>
       <div id="queue" hidden></div>
       <p class="note" id="save-hint" data-i18n="saveHint"></p>
@@ -957,7 +961,7 @@ const L = {
   dateOther: ['Other date', 'दूसरी तारीख़', 'ਹੋਰ ਤਾਰੀਖ਼'],
   dateShown: ['Reading for {date}', '{date} की रीडिंग', '{date} ਦੀ ਰੀਡਿੰਗ'],
   kwhPlaceholder: ['e.g. 12.4…', 'जैसे 12.4…', 'ਜਿਵੇਂ 12.4…'],
-  unitsWord: ['units', 'यूनिट', 'ਯੂਨਿਟ'],
+  unitsWord: ['kWh', 'यूनिट', 'ਯੂਨਿਟ'],
   saveHint: ['Enter the energy produced to save this reading.', 'यह रीडिंग सेव करने के लिए बनी बिजली लिखें।', 'ਇਹ ਰੀਡਿੰਗ ਸੇਵ ਕਰਨ ਲਈ ਬਣੀ ਬਿਜਲੀ ਲਿਖੋ।'],
   geoUnavailable: ['Location is not available in this browser. Type the latitude and longitude instead.', 'इस ब्राउज़र में लोकेशन नहीं मिल सकती। अक्षांश और देशांतर लिखें।', 'ਇਸ ਬ੍ਰਾਊਜ਼ਰ ਵਿੱਚ ਲੋਕੇਸ਼ਨ ਨਹੀਂ ਮਿਲ ਸਕਦੀ। ਅਕਸ਼ਾਂਸ਼ ਅਤੇ ਦੇਸ਼ਾਂਤਰ ਲਿਖੋ।'],
   geoFinding: ['Finding your location…', 'आपकी लोकेशन ढूँढ रहे हैं…', 'ਤੁਹਾਡੀ ਲੋਕੇਸ਼ਨ ਲੱਭ ਰਹੇ ਹਾਂ…'],

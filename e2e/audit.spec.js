@@ -791,10 +791,10 @@ test('Log: Save stays aria-disabled until there is a value; tapping it goes to t
   // The only solid primary on the Log tab is Save; the photo zone is outlined.
   const zone = await page.locator('#photo-pick').evaluate((n) => { const s = getComputedStyle(n); return { bg: s.backgroundColor, border: s.borderTopStyle }; });
   expect(zone.border).toBe('dashed');
-  expect(zone.bg).toBe('rgba(0, 0, 0, 0)');
   await kwhField.fill('12.4');
   const primary = await save.evaluate((n) => getComputedStyle(n).backgroundColor);
   expect(primary).not.toBe('rgba(0, 0, 0, 0)');
+  expect(zone.bg, 'the photo zone is a plain surface, not a second solid primary').not.toBe(primary);
 });
 
 test('Log: the kWh field has a placeholder, a decimal keyboard, no spinners and a units label', async ({ page, request }) => {
@@ -805,7 +805,7 @@ test('Log: the kWh field has a placeholder, a decimal keyboard, no spinners and 
   await expect(field).toHaveAttribute('inputmode', 'decimal');
   await expect(field).toHaveCSS('appearance', 'textfield');  // no spinner buttons
   await expect(page.locator('#reading-form')).toHaveAttribute('autocomplete', 'off');
-  await expect(page.locator('.with-mic .unit')).toHaveText('units');
+  await expect(page.locator('.with-mic .unit')).toHaveText('kWh');
   await page.getByRole('button', { name: 'हिन्दी' }).click();
   await expect(page.locator('.with-mic .unit')).toHaveText('यूनिट');
   await expect(page.locator('#kwh-input')).toHaveAttribute('placeholder', 'जैसे 12.4…');

@@ -68,3 +68,34 @@ test('Today: one inverted block, no native select or spinner, a clear type hiera
   expect(look.mainHeight).toBeGreaterThanOrEqual(56);
   expect(look.mainBottom, 'the main action is above the tab bar on a 667 px phone').toBeLessThanOrEqual(look.tab);
 });
+
+test('Log on a phone: every control is at least 48 px and 8 px apart, Period is a segmented control not a select, nothing scrolls sideways from 320 px', async ({ page, request }) => {
+  const id = await plant(request);
+  for (const width of [320, 375]) {
+    await page.setViewportSize({ width, height: 700 });
+    await page.goto(`/?site=${id}&w=${width}#log`);
+    await expect(page.locator('#panel-log')).toBeVisible();
+    const found = await page.evaluate(scan);
+    expect(found.small, `${width}px: controls under 48 px`).toEqual([]);
+    expect(found.close, `${width}px: controls closer than 8 px`).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${width}px: sideways scroll`).toBeLessThanOrEqual(0);
+  }
+  await expect(page.locator('#panel-log select')).toHaveCount(0);
+  await expect(page.locator('#reading-form input[name=kind]')).toHaveCount(2);
+  await expect(page.locator('#reading-form .unit')).toHaveText('kWh');  // the same unit as the label, not "units"
+});
+
+test('Log: the chosen Period and date are filled with ink, and One week is sent as a weekly reading', async ({ page, request }) => {
+  const id = await plant(request);
+  await page.goto(`/?site=${id}#log`);
+  await expect(page.locator('#panel-log')).toBeVisible();
+  const fill = (name) => page.locator(`label:has(input[name=${name}]:checked)`).evaluate((n) => getComputedStyle(n).backgroundColor);
+  expect(await fill('kind')).toBe(await fill('datechip'));  // one look for both choices
+  expect(await fill('kind')).not.toBe('rgba(0, 0, 0, 0)');
+  await page.locator('label:has(input[name=kind][value=weekly])').click();
+  await expect(page.locator('input[name=kind][value=weekly]')).toBeChecked();
+  await page.fill('#kwh-input', '70.5');
+  const sent = page.waitForRequest((r) => r.method() === 'POST' && r.url().includes(`/api/sites/${id}/readings`));
+  await page.locator('#save-btn').click();
+  expect((await sent).postDataJSON()).toMatchObject({ kwh: 70.5, kind: 'weekly' });
+});
